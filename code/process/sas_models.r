@@ -2,8 +2,8 @@ library(geepack)
 library(haven)
 library(tidyverse)
 
-modelwd <- "/home/cameron/silvertsunami/statepilsna18/lhume/naaccord/Silver/Data/parameters"
-outdir <- "/home/cameron/silvertsunami/pearl/data/processed"
+wd <- getwd()
+modelwd <- paste0(wd, "/../../data/param")
 
 #####################################################################################
 # Model 1: Mortality among those in care
@@ -208,12 +208,12 @@ model5$sex[model5$sex==2] <- "Females"
 #####################################################################################
 # Save
 #####################################################################################
-setwd(outdir)
+setwd(modelwd)
 
-save(model1, file = "coeff_mortality_in_care_190508.Rda")
-save(model2, file = "coeff_mortality_out_care_190508.Rda")
-save(model3, file = "coeff_ltfu_190508.Rda")
-save(model4, file = "coeff_cd4_decrease_190508.Rda")
-save(model5, file = "coeff_cd4_increase_190508.Rda")
+save(model1, file = "coeff_mortality_in_care_190508.rda")
+save(model2, file = "coeff_mortality_out_care_190508.rda")
+save(model3, file = "coeff_ltfu_190508.rda")
+save(model4, file = "coeff_cd4_decrease_190508.rda")
+save(model5, file = "coeff_cd4_increase_190508.rda")
 
 

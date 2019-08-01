@@ -1,5 +1,4 @@
 #'Changes 09/11/18 - use 2014 and 2015 in addition to 2009-2013 to fit mixture model
-#' 09/25/18: Inflate the number of new HAART initiators by 29% (black MSM), 38% (Hisp MSM), and 37% (white MSM)
 #' 09/26/18: Base the mortality function on 2009-2015 not 2005-2015
 #' 10/18/18: Update inflation factors
 #' 01/25/19: Drop the inflation factors because we are now accounting for loss to follow-up in the model
@@ -284,7 +283,6 @@ predict_it <- function(model) {
 ######################################################################################
 fx6 <- function(age2009_ci, on_art, naaccord_prop_2009, naaccord_cd4_2009) {
   
-  stop()
   # Sample from the 95% CIs
   chk <- age2009_ci %>%
     mutate(mu1 = runif(1, min = mu1_p025, max = mu1_p975),

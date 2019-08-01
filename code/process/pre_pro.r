@@ -2,17 +2,6 @@
 # Load packages
 ######################################################################################
 
-suppressPackageStartupMessages(library(argparse))
-parser <- ArgumentParser()
-parser$add_argument("-d", "--data_dir", type="character",
-                    default="/home/cameron/silvertsunami/statepilsna18/lhume/naaccord/Silver/Data",
-                    help="Directory of data e.g. .../Silver/Data")
-args <-parser$parse_args()
-
-if (Sys.getenv('HOSTNAME') == 'statepilsna18') {
-  args$data_dir <- '/home/lhume/naaccord/Silver/Data'
-}
-
 suppressPackageStartupMessages(library(MASS))
 suppressPackageStartupMessages(library(haven))
 suppressPackageStartupMessages(library(lubridate))
@@ -26,14 +15,15 @@ suppressPackageStartupMessages(library(binom))
 suppressPackageStartupMessages(library(tidyverse))
 
 wd <- getwd()
-paramwd <- paste0(args$data_dir, "/parameters")
-naaccordwd <- paste0(args$data_dir, "/naaccord")
+
+paramwd <- paste0(wd, "/../../data/param")
+naaccordwd <- paste0(wd, "/../../data/input")
 outwd <- paste0(wd, "/../../data/processed")
 
 ######################################################################################
 # Call function source file
 ######################################################################################
-source(paste0(wd,"/fx.R"))
+source(paste0(wd,"/fx.r"))
 
 setwd(paramwd)
 # 95% CIs for age params in 2009
@@ -125,7 +115,6 @@ test <- test  %>%
 # 1. Get population of NA-ACCORD particiapnts alive in 2009
 test <- test %>%
   mutate(naaccord_2009 = map(data_popu, fx1, naaccordwd))
-stop()
 
 # 2. Fit a weibull distribution to age in 2009
 #test <- test %>%
