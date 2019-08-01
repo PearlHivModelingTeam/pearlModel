@@ -78,7 +78,6 @@ popu <- popu %>%
   rename(data_popu = data)
 
 # Persons living with diagnosed HIV infection on HAART in 2009
-setwd(paramwd)
 art2009 <- read.csv("surveillance_estimates_cdc_2009.csv", stringsAsFactors = FALSE)
 colnames(art2009) <- tolower(colnames(art2009))
 
@@ -158,7 +157,6 @@ test <- test %>%
 # 2009 - 2030 population of new HIV Dx's - TIME-FIXED COMPONENTS
 ######################################################################################
 # Read in dataset of # of new HIV diagnoses, 2009-2015 reported by CDC in Table 1
-setwd(paramwd)
 surv <- read.csv("dx_estimates_cdc_table1.csv", stringsAsFactors = FALSE)
 colnames(surv) <- tolower(colnames(surv))
 
