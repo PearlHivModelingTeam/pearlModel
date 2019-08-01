@@ -21,8 +21,9 @@ pandas2ri.activate()
 
 # Define directories
 cwd = os.getcwd()
-in_dir = '/home/cameron/silvertsunami/statepilsna18/lhume/naaccord/Silver/Data'
-out_dir = cwd + '/../data/processed'
+in_dir = cwd + '/../../data/input'
+param_dir = cwd + '/../../data/param'
+out_dir = cwd + '/../../data/processed'
 
 ###############################################################################
 # Functions                                                                   #
@@ -101,7 +102,7 @@ def get_naaccord_2009(df):
     df['age2009'] = 2009 - df.yob
 
     # Read in care status by year for naaccord population
-    care_status = pd.read_sas(in_dir + '/naaccord/popu16_carestatus.sas7bdat')
+    care_status = pd.read_sas(in_dir + '/popu16_carestatus.sas7bdat')
     care_status.columns = care_status.columns.str.lower()
     care_status = care_status.loc[care_status['year'] == 2009]
     care_status = care_status.loc[care_status['in_care'] == 1]
@@ -274,7 +275,7 @@ def main():
     """Perform preproccessing for the PEARL model""" 
 
     # Read in and format cdc surveillance data
-    cdc_surv_2009 = pd.read_csv(in_dir + '/parameters/surveillance_estimates_cdc_2009.csv')
+    cdc_surv_2009 = pd.read_csv(in_dir + '/surveillance_estimates_cdc_2009.csv')
 
     # Get number of people on art in 2009
     on_art = get_on_art(cdc_surv_2009)
@@ -283,7 +284,7 @@ def main():
     template = on_art.drop(['on_art'], axis=1)
 
     # Read in and format naaccord data
-    naaccord = format_naaccord(pd.read_sas(in_dir + '/naaccord/popu16.sas7bdat'))
+    naaccord = format_naaccord(pd.read_sas(in_dir + '/popu16.sas7bdat'))
 
     # Get population of NA-ACCORD participants in care in 2009
     naaccord_2009 = get_naaccord_2009(naaccord.copy())
@@ -294,44 +295,41 @@ def main():
     # Fit mean and stddev of initial sqrt(cd4n) as a glm of art init year for each group in 2009 pop
     init_cd4n_coeffs = get_initial_cd4n(naaccord_2009.copy(), template.copy())
 
-    # Get number of new diagnoses from cdc surveillance data
-    new_dx = format_new_dx(pd.read_csv(in_dir + '/parameters/dx_estimates_cdc_table1.csv'))
-
     # Fit a mixed normal distribution to age at art initiation for each year, 2009-2015
     init_age_gmix_coeffs = art_init_fit(naaccord.copy())
 
     # Fit a GLM to each parameter from the Gaussian mixture model and predict parameters into 2030
     gmix_param_coeffs = gmix_param_fit(init_age_gmix_coeffs)
 
-    # Read in CD4 decrease coefficients
-    coeff_cd4_decrease = pd.read_sas(in_dir + '/parameters/coeff_cd4_decrease_190508.sas7bdat')
+    # Read in CD4 decrease coefficients 
+    coeff_cd4_decrease = pd.read_sas(param_dir + '/coeff_cd4_decrease_190508.sas7bdat')
     coeff_cd4_decrease.columns = coeff_cd4_decrease.columns.str.lower()
 
-    # Read in out-of-care mortality coefficients
-    coeff_mortality_out = coeff_format(pd.read_sas(in_dir + '/parameters/coeff_mortality_out_care_190508.sas7bdat'))
+    # Read in out-of-care mortality coefficients 
+    coeff_mortality_out = coeff_format(pd.read_sas(param_dir + '/coeff_mortality_out_care_190508.sas7bdat'))
 
-    # Read in in-care mortality coefficients
-    coeff_mortality_in = coeff_format(pd.read_sas(in_dir + '/parameters/coeff_mortality_in_care_190508.sas7bdat'))
-
-    # Read in loss to follow up coefficients
-    coeff_ltfu = coeff_format(pd.read_sas(in_dir + '/parameters/coeff_ltfu_190508.sas7bdat'))
+    # Read in loss to follow up coefficients 
+    coeff_ltfu = coeff_format(pd.read_sas(param_dir + '/coeff_ltfu_190508.sas7bdat'))
 
     # Percentiles used for spline in LTFU model
-    pctls_ltfu = coeff_format(pd.read_sas(in_dir + '/parameters/pctls_ltfu_190508.sas7bdat'))
+    pctls_ltfu = coeff_format(pd.read_sas(param_dir + '/pctls_ltfu_190508.sas7bdat'))
     
-    # Read in r data
-    base.load(out_dir + '/dx_interval.rda')
-    base.load(in_dir + '/parameters/age2009_mixture_ci.Rda') 
-    base.load(out_dir + '/coeff_cd4_increase.rda')
-
     # Gaussian mixture coefficient confidence intervals for age in 2009
-    coeff_age_2009_ci = format_age_2009_ci(base.mget(base.ls())[0])
+    base.load(param_dir + '/age2009_mixture_ci.rda') 
+    coeff_age_2009_ci = format_age_2009_ci(robjects.r['age2009_mixture_ci'])
    
+    # Convert some r objects
+    robjects.r.source('convert.r')
+
     # CD4 increase coefficients
-    coeff_cd4_increase = coeff_format(base.mget(base.ls())[1])
+    coeff_cd4_increase = coeff_format(robjects.r['coeff_cd4_increase'])
+
+    # Mortality in care coefficients
+    coeff_mortality_in = coeff_format(robjects.r['coeff_mortality_in'])
 
     # Predicted interval of new diagnoses 
-    dx_interval = coeff_format(base.mget(base.ls())[2])
+    base.load(param_dir + '/dx_interval.rda') 
+    dx_interval = coeff_format(robjects.r['dx_interval'])
     dx_interval = dx_interval.reset_index().set_index(['group','year'])
     
     
@@ -342,7 +340,6 @@ def main():
         store['naaccord_2009'] = naaccord_2009
         store['naaccord_prop_2009'] = naaccord_prop_2009
         store['init_cd4n_coeffs'] = init_cd4n_coeffs
-        store['new_dx'] = new_dx
         store['dx_interval'] = dx_interval
         store['init_age_gmix_coeffs'] = init_age_gmix_coeffs
         store['gmix_param_coeffs'] = gmix_param_coeffs

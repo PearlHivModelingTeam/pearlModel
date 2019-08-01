@@ -24,9 +24,9 @@ suppressPackageStartupMessages(library(triangle))
 
 # Load Functions
 wd <- getwd()
-indir <- paste0(wd,"/../../data/processed")
-load(paste0(indir,"/sense.data"))
-source(paste0(wd,"/fx.R"))
+proc_dir <- paste0(wd,"/../../data/processed")
+load(paste0(proc_dir,"/sense.data"))
+source(paste0(wd,"/fx.r"))
 
 today <- format(Sys.Date(), format="%y%m%d")
 outwd <- paste0(wd,"/../../out/sense")
@@ -36,24 +36,23 @@ outwd <- paste0(wd,"/../../out/sense")
 #' See: https://stackoverflow.com/questions/38109501/how-does-predict-lm-compute-confidence-interval-and-prediction-interval 
 #' for creating prediction intervals later in code
 ######################################################################################
-setwd(indir)
+setwd(paramwd)
 
 # CD4 increase
-coeff_cd4_increase <- get(load("coeff_cd4_increase_190508.Rda"))
+coeff_cd4_increase <- get(load("coeff_cd4_increase_190508.rda"))
 
 # CD4 decrease
-coeff_cd4_decrease <- get(load("coeff_cd4_decrease_190508.Rda"))
+coeff_cd4_decrease <- get(load("coeff_cd4_decrease_190508.rda"))
 
 # Mortality for persons out of care
-coeff_mortality_out <- get(load("coeff_mortality_out_care_190508.Rda"))
+coeff_mortality_out <- get(load("coeff_mortality_out_care_190508.rda"))
 
 # Mortality for persons in care
-coeff_mortality_in <- get(load("coeff_mortality_in_care_190508.Rda"))
+coeff_mortality_in <- get(load("coeff_mortality_in_care_190508.rda"))
 
 # Probability of leaving NA-ACCORD
-coeff_leave_na <- get(load("coeff_ltfu_190508.Rda"))
+coeff_leave_na <- get(load("coeff_ltfu_190508.rda"))
 
-setwd(paramwd)
 # Percentiles used for age for the spline in the LTFU model
 pctls_leave_na <- read_sas("pctls_ltfu_190508.sas7bdat")
 pctls_leave_na <- clean_coeff(pctls_leave_na)
