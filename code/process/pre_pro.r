@@ -27,7 +27,7 @@ source(paste0(wd,"/fx.r"))
 
 setwd(paramwd)
 # 95% CIs for age params in 2009
-age2009_mixture_ci <- get(load("age2009_mixture_ci.Rda"))
+age2009_mixture_ci <- get(load("age2009_mixture_ci.rda"))
 
 ######################################################################################
 # Define group(s) of interest - if multiple, separate by commas
