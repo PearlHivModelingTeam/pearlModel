@@ -256,12 +256,14 @@ def gmix_param_fit(df):
     # We assume that mixed gaussian becomes single guassian when parameters become negative 
     output[output < 0] = 0
     output['model'] = 'mix'
-    output.weight1[output.weight1 < 0] = 0
-    output.weight2[output.weight2 < 0] = 0
-    output.weight1[output.weight1 > 1] = 1
-    output.weight2[output.weight2 > 1] = 1
-    output.model[output.weight1 == 1] = '1'
-    output.model[output.weight2 == 1] = '2'
+    output.loc[output.weight1 < 0, 'weight1'] = 0
+    output.loc[output.weight2 < 0, 'weight2'] = 0
+    output.loc[output.weight1 > 1, 'weight1'] = 1
+    output.loc[output.weight2 > 1, 'weight2'] = 1
+    output.loc[output.weight1 == 1, 'model'] = '1'
+    output.loc[output.weight2 == 1, 'model'] = '2'
+    
+    print(output)
 
     return(output)
 
