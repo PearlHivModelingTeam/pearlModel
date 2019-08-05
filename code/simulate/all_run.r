@@ -62,6 +62,7 @@ pctls_leave_na <- clean_coeff(pctls_leave_na)
 ######################################################################################
 wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   # Filter to group and sex of interest
+  #groupname = c('het_black')
   test <- filterfx(test, groupname)
   
   test <- test %>%
@@ -78,8 +79,6 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   test <- test %>%
     mutate(art2009 = pmap(list(age2009_ci, on_art, naaccord_prop_2009, naaccord_cd4_2009), fx6))
 
-  glimpse(test$art2009)
-  
   #######################################
   # 2009-2015 population of new initiators
   #######################################

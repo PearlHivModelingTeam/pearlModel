@@ -137,7 +137,6 @@ def get_h1yy_proportions(df):
     for name, group in count_df.groupby(['group', 'age2009cat']):
         if(group.pct.sum() == 0):
             count_df.loc[name, 'pct'] = count_df.loc[('msm_white_male', name[1]), 'pct'].values
-            print(name)
 
     return(count_df) 
 
@@ -248,11 +247,24 @@ def gmix_param_fit(df):
                     output.loc[name, column] = pred.summary_frame()['mean'].values
         else:
             for column in output:
-                pass
                 # idu_hisp_female is just constant (statsmodels was throwing an error)
-                output.loc['idu_hisp_female', column] = group_data[column].iloc[0]
+                if (column != 'art_init'):
+                    output.loc['idu_hisp_female', column] = group_data[column].iloc[0]
 
-    return(output.reset_index().set_index(['group','art_init']))
+    output = output.reset_index().set_index(['group', 'art_init'])
+   
+    # We assume that mixed gaussian becomes single guassian when parameters become negative 
+    output[output < 0] = 0
+    output['model'] = 'mix'
+    output.weight1[output.weight1 < 0] = 0
+    output.weight2[output.weight2 < 0] = 0
+    output.weight1[output.weight1 > 1] = 1
+    output.weight2[output.weight2 > 1] = 1
+    output.model[output.weight1 == 1] = '1'
+    output.model[output.weight2 == 1] = '2'
+
+    return(output)
+
 
 def format_age_2009_ci(df):
     df.sex = np.where(df.sex == 'Males', 'male', 'female')
@@ -266,8 +278,11 @@ def coeff_format(df):
     df.columns = df.columns.str.lower() 
     
     # Combine sex risk and race into single group indentifier
-    df['sex'] = np.where(df['sex'] == 1, 'male', 'female')
-    if ('pop2' in df.columns): #Hacking
+    if (np.issubdtype(df.sex.dtype, np.number)):
+        df.sex = np.where(df.sex == 1, 'male', 'female')
+    else:
+        df.sex = np.where(df.sex == 'Males', 'male', 'female')
+    if ('pop2' in df.columns): 
         df = df.rename(columns={'pop2':'group'})
         df.group = df.group.str.decode('utf-8')
     else:
@@ -342,9 +357,8 @@ def main():
 
     # Predicted interval of new diagnoses 
     base.load(param_dir + '/dx_interval.rda') 
-    dx_interval = coeff_format(robjects.r['dx_interval'])
-    dx_interval = dx_interval.reset_index().set_index(['group','year'])
-    
+    new_dx = coeff_format(robjects.r['new_dx']).reset_index().set_index(['group', 'year']).sort_index()
+    dx_interval = coeff_format(robjects.r['dx_interval']).reset_index().set_index(['group', 'year']).sort_index()
     
     # Save everything
     with pd.HDFStore(out_dir + '/preprocessed.h5') as store:
@@ -353,6 +367,7 @@ def main():
         store['naaccord_2009'] = naaccord_2009
         store['naaccord_prop_2009'] = naaccord_prop_2009
         store['init_sqrtcd4n_coeffs'] = init_sqrtcd4n_coeffs
+        store['new_dx'] = new_dx
         store['dx_interval'] = dx_interval
         store['init_age_gmix_coeffs'] = init_age_gmix_coeffs
         store['gmix_param_coeffs'] = gmix_param_coeffs

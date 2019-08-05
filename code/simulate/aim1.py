@@ -28,7 +28,7 @@ out_dir = cwd + '/../out'
 
 # Load everything
 with pd.HDFStore(proc_dir + '/preprocessed.h5') as store:
-    on_art = store['on_art']
+    on_art = store['on_art'] 
     naaccord = store['naaccord']
     naaccord_2009 = store['naaccord_2009']
     naaccord_prop_2009 = store['naaccord_prop_2009']
@@ -123,6 +123,30 @@ def make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_sqrtcd4n_c
 
     return(population.reset_index().set_index('id').sort_index())
 
+def simulate_new_dx(new_dx, dx_interval, group_name):
+    """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of new art initiators by 
+    assuming 75% link in the first year, then another 10% over the next three years. Assume 75% of these initiate art """
+    
+    # Draw new dx from a uniform distribution between upper and lower for 2016-2030 
+    new_dx = new_dx.loc[group_name]
+    dx_interval = dx_interval.loc[group_name].iloc[7:]
+    dx_interval['rand'] = np.random.uniform(size=len(dx_interval.index)) 
+    dx_interval['n_dx'] = dx_interval.lower + (dx_interval.upper - dx_interval.lower) * dx_interval.rand
+    new_dx = pd.concat([new_dx, dx_interval.filter(items=['n_dx'])])
+    new_dx = np.floor(new_dx)
+  
+    # We assume 75% link to care in the first year and a further 10% link in the next 3 years with equal probability
+    new_dx['lag_step'] = new_dx.n_dx * 0.1 * (1./3.)
+    new_dx['year0'] = new_dx.n_dx * 0.75
+    new_dx['year1'] = new_dx.lag_step.shift(1, fill_value=0)
+    new_dx['year2'] = new_dx.lag_step.shift(2, fill_value=0)
+    new_dx['year3'] = new_dx.lag_step.shift(3, fill_value=0)
+    new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
+
+    # TODO why take off another 25%?
+    new_dx['n_art_init'] = np.floor(new_dx.total_linked * 0.75)
+
+    return(new_dx.filter(items=['n_art_init']))
 
 ###############################################################################
 # Simulate Function                                                           #
@@ -136,13 +160,17 @@ def simulate(group_name):
     naaccord_2009_group = filter_group(naaccord_2009, group_name)
     
     # Create 2009 population
-    population = make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_sqrtcd4n_coeffs, group_name)
+    population_2009 = make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009.copy(), init_sqrtcd4n_coeffs, group_name)
+
+    # Simulate number of new art initiators
+    art_init_sim = simulate_new_dx(new_dx.copy(), dx_interval.copy(), group_name)
+
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
 
 def main():
-    simulate('idu_hisp_female')
+    simulate('het_black_female')
 
 main()

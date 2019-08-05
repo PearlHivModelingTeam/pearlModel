@@ -207,7 +207,7 @@ setwd(naaccordwd)
 surv <- read.csv("dx_estimates_cdc_table1.csv", stringsAsFactors = FALSE)
 colnames(surv) <- tolower(colnames(surv))
 
-surv <- surv_fx1(surv)
-dx_interval <- surv_fx2(surv)
+new_dx <- surv_fx1(surv)
+dx_interval <- surv_fx2(new_dx)
 
-save(dx_interval, file=paste0(paramwd, '/dx_interval.rda'))
+save(new_dx, dx_interval, file=paste0(paramwd, '/dx_interval.rda'))

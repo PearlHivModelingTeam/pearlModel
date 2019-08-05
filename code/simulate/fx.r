@@ -581,7 +581,8 @@ surv_fx3 <- function(DF, SURV) {
     mutate(lag0 = n_dx*0.75,
            N1 = (1-0.75)*0.4*0.33*n_dx) %>%
     ungroup
-  
+ 
+
   ini <- ini %>%
     mutate(lag1 = lag(N1),
            lag2 = lag(N1,2),
@@ -615,6 +616,7 @@ inifx3 <- function(DATA) {
   pred18 <- DATA %>% 
     filter(H1YY==2018) %>%
     select(param, pred18 = pred)
+  print(pred18)
   
   DF2 <- DATA %>%
     mutate(pred = replace(pred, pred < 0, 0))
