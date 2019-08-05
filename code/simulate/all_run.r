@@ -77,7 +77,8 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   # NEW 05/18/19: Sample mixture params using 95% CIs to create dataset of simulated patients alive in 2009
   test <- test %>%
     mutate(art2009 = pmap(list(age2009_ci, on_art, naaccord_prop_2009, naaccord_cd4_2009), fx6))
-  
+
+  glimpse(test$art2009)
   
   #######################################
   # 2009-2015 population of new initiators
@@ -968,7 +969,6 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   
 }
 
-######################################################################################
 # Replicate the wrapper function r times
 ######################################################################################
 
@@ -978,7 +978,7 @@ if (args$cores == 0) {
     nCores <- args$cores
 }
 
-cl <- makeCluster(nCores, type='FORK')
+cl <- makeCluster(1, type='FORK', outfile="")
 
 groups <- read.csv(paste0(wd,'/../../data/processed/groups.csv'))
 

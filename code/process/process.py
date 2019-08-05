@@ -110,6 +110,7 @@ def get_naaccord_2009(df):
     # Filter naaccord patients to those in care in 2009
     df = pd.merge(df, care_status, on='naid')
     df = df.drop(['year','in_care'], axis=1)
+    df.art_init = np.where(df.art_init <= 2000, 2000, df.art_init)
 
     return df
 
@@ -126,7 +127,18 @@ def get_h1yy_proportions(df):
     count_df = df.groupby(['group','age2009cat','art_init']).agg({'naid': 'count'})
     count_df['pct'] = count_df.naid / sum_df.naid
     count_df = count_df.rename(columns = {'naid' : 'n'})
-    
+
+    # Reindex to add missing h1yy and age2009cat
+    count_df = count_df.reindex( pd.MultiIndex.from_product([df.group.unique(), df.age2009cat.unique(), 
+                                                         df.art_init.unique()], names=['group', 'age2009cat', 'art_init']), 
+                             fill_value=0).sort_index()
+
+    # Account for age2009cat with no data
+    for name, group in count_df.groupby(['group', 'age2009cat']):
+        if(group.pct.sum() == 0):
+            count_df.loc[name, 'pct'] = count_df.loc[('msm_white_male', name[1]), 'pct'].values
+            print(name)
+
     return(count_df) 
 
 def get_initial_cd4n(df, result_df):
@@ -293,7 +305,7 @@ def main():
     naaccord_prop_2009 = get_h1yy_proportions(naaccord_2009.copy())
 
     # Fit mean and stddev of initial sqrt(cd4n) as a glm of art init year for each group in 2009 pop
-    init_cd4n_coeffs = get_initial_cd4n(naaccord_2009.copy(), template.copy())
+    init_sqrtcd4n_coeffs = get_initial_cd4n(naaccord_2009.copy(), template.copy())
 
     # Fit a mixed normal distribution to age at art initiation for each year, 2009-2015
     init_age_gmix_coeffs = art_init_fit(naaccord.copy())
@@ -317,6 +329,7 @@ def main():
     # Gaussian mixture coefficient confidence intervals for age in 2009
     base.load(param_dir + '/age2009_mixture_ci.rda') 
     coeff_age_2009_ci = format_age_2009_ci(robjects.r['age2009_mixture_ci'])
+    coeff_age_2009_ci = coeff_age_2009_ci.fillna(0)
    
     # Convert some r objects
     robjects.r.source('convert.r')
@@ -339,7 +352,7 @@ def main():
         store['naaccord'] = naaccord
         store['naaccord_2009'] = naaccord_2009
         store['naaccord_prop_2009'] = naaccord_prop_2009
-        store['init_cd4n_coeffs'] = init_cd4n_coeffs
+        store['init_sqrtcd4n_coeffs'] = init_sqrtcd4n_coeffs
         store['dx_interval'] = dx_interval
         store['init_age_gmix_coeffs'] = init_age_gmix_coeffs
         store['gmix_param_coeffs'] = gmix_param_coeffs

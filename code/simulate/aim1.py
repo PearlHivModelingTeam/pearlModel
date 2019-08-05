@@ -23,16 +23,16 @@ import scipy.stats as stats
 
 # Define directories
 cwd = os.getcwd()
-in_dir = cwd + '/../data/processed'
-out_dir = cwd + '/../data/out'
+proc_dir = cwd + '/../../data/processed'
+out_dir = cwd + '/../out'
 
 # Load everything
-with pd.HDFStore(in_dir + '/preprocessed.h5') as store:
+with pd.HDFStore(proc_dir + '/preprocessed.h5') as store:
     on_art = store['on_art']
     naaccord = store['naaccord']
     naaccord_2009 = store['naaccord_2009']
     naaccord_prop_2009 = store['naaccord_prop_2009']
-    init_cd4n_coeffs = store['init_cd4n_coeffs']
+    init_sqrtcd4n_coeffs = store['init_sqrtcd4n_coeffs']
     new_dx = store['new_dx']
     dx_interval = store['dx_interval']
     init_age_gmix_coeffs = store['init_age_gmix_coeffs']
@@ -54,8 +54,16 @@ def filter_group(df, group_name):
     df = df.loc[df['group'] == group_name]
     return df
 
-def make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_cd4n_coeffs, group_name):
-    """ Not sure yet """
+def make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_sqrtcd4n_coeffs, group_name):
+    """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. Mixed normal coefficient are
+    drawn uniformly from the 95% CI. h1yy is assigned using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated
+    normal for each h1yy"""
+
+    def draw_from_trunc_norm(a, b, mu, sigma, size):
+        """ Draws `size` values from a truncated normal with the given parameters """
+        a_mod = (a - mu) / sigma
+        b_mod = (b - mu) / sigma
+        return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=size)
 
     # Sample from 95% confidence intervals
     mus = [np.random.uniform(coeff_age_2009_ci.loc[group_name, 'mu1_p025'], coeff_age_2009_ci.loc[group_name, 'mu1_p975']), 
@@ -74,44 +82,46 @@ def make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_cd4n_coeff
     pop_size_2 = (components == 2).sum()
 
     # Draw age from each respective truncated normal
-    pop1 = stats.truncnorm.rvs((18 - mus[0]) / sigmas[0], (85 - mus[0]) / sigmas[0], loc=mus[0], scale=sigmas[0], size=pop_size_1)
-    pop2 = stats.truncnorm.rvs((18 - mus[1]) / sigmas[1], (85 - mus[1]) / sigmas[1], loc=mus[1], scale=sigmas[1], size=pop_size_2)
+    population = draw_from_trunc_norm(18, 85, mus[0], sigmas[0], pop_size_1)
+    if(group_name != 'idu_hisp_female'):
+        pop2 = draw_from_trunc_norm(18, 85, mus[1], sigmas[1], pop_size_2)
+        population = np.concatenate((population, pop2))
     
     # Create DataFrame
-    mixed_pop = np.concatenate((pop1, pop2))
-    mixed_pop = pd.DataFrame(data={'age': mixed_pop})
+    population = pd.DataFrame(data={'age': population})
 
     # Create age categories
-    mixed_pop.age = np.floor(mixed_pop.age)
-    mixed_pop['age_cat'] = np.floor(mixed_pop.age / 10)
-    mixed_pop.loc[mixed_pop.age_cat > 7, 'age_cat'] = 7
+    population.age = np.floor(population.age)
+    population['age_cat'] = np.floor(population.age / 10)
+    population.loc[population.age_cat > 7, 'age_cat'] = 7
+    population['id'] = range(population.index.size)
+    population = population.sort_values('age')
+    population = population.set_index(['age_cat', 'id'])
 
-    mixed_pop['id'] = range(mixed_pop.index.size)
-    mixed_pop = mixed_pop.sort_values('age')
-    mixed_pop = mixed_pop.set_index(['age_cat', 'id'])
- 
     # Assign H1YY to match naaccord distribution from naaccord_prop_2009
-    for age_cat, grouped in mixed_pop.groupby('age_cat'):
+    for age_cat, grouped in population.groupby('age_cat'):
         h1yy_data = naaccord_prop_2009.loc[(group_name, age_cat)]
-        mixed_pop.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data.index.values, size=grouped.shape[0], p=h1yy_data.pct.values)
+        population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data.index.values, size=grouped.shape[0], p=h1yy_data.pct.values)
 
     # Pull cd4 count coefficients
-    print(init_cd4n_coeffs)
-    mean_intercept = init_cd4n_coeffs.loc[group_name, 'meanint']
-    mean_slope = init_cd4n_coeffs.loc[group_name, 'meanslope']
-    std_intercept = init_cd4n_coeffs.loc[group_name, 'stdint']
-    std_slope = init_cd4n_coeffs.loc[group_name, 'stdslope']
-    print(mean_intercept)
-    print(mean_slope)
-    print(std_intercept)
-    print(std_slope)
+    mean_intercept = init_sqrtcd4n_coeffs.loc[group_name, 'meanint']
+    mean_slope = init_sqrtcd4n_coeffs.loc[group_name, 'meanslope']
+    std_intercept = init_sqrtcd4n_coeffs.loc[group_name, 'stdint']
+    std_slope = init_sqrtcd4n_coeffs.loc[group_name, 'stdslope']
 
+    # Reindex for group operation
+    population.h1yy = population.h1yy.astype(int)
+    population = population.reset_index().set_index(['h1yy', 'id']).sort_index()
 
+    # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
+    for h1yy, group in population.groupby(level=0):
+        mu = mean_intercept + (h1yy * mean_slope)
+        sigma = std_intercept + (h1yy * std_slope)
+        size = group.shape[0]
+        sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
+        population.loc[(h1yy,),'sqrt_init_cd4n'] = sqrt_cd4n
 
-
-
-
-    #print(mixed_pop)
+    return(population.reset_index().set_index('id').sort_index())
 
 
 ###############################################################################
@@ -126,13 +136,13 @@ def simulate(group_name):
     naaccord_2009_group = filter_group(naaccord_2009, group_name)
     
     # Create 2009 population
-    make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_cd4n_coeffs, group_name)
+    population = make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_sqrtcd4n_coeffs, group_name)
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
 
 def main():
-    simulate('het_black_female')
+    simulate('idu_hisp_female')
 
 main()

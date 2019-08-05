@@ -369,6 +369,7 @@ fx6 <- function(age2009_ci, on_art, naaccord_prop_2009, naaccord_cd4_2009) {
     mutate(sqrtcd4n = map(data, assign_cd4)) %>%
     select(H1YY, sqrtcd4n) %>%
     unnest
+
 }
 
 ######################################################################################
