@@ -183,14 +183,7 @@ test <- test %>%
 test <- test %>%
   mutate(ini2 = map(ini1, inifx2))
 
-# Clean the mixed normal parameter estimates and sample the param estimate values for age at HAART initiation
-test <- test %>%
-  mutate(ini3 = map(ini2, inifx3))
-  
-
-
 ######################################################################################
 # Save preprocessed data                                                             #
 ######################################################################################
-glimpse(test)
 save(test, paramwd, file=paste0(outwd,"/sense.data")) 

@@ -86,6 +86,10 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   test <- test %>%
     mutate(data_ini = map2(hiv_pred_interval, surv, surv_fx3))
   
+  # Clean the mixed normal parameter estimates and sample the param estimate values for age at HAART initiation
+  test <- test %>%
+    mutate(ini3 = map(ini2, inifx3))
+  
   # 6. Simulate the population (mixed normal)
   test <- test %>%
     mutate(new_art_age_mixed = pmap(list(data_ini, ini3), inifx4))

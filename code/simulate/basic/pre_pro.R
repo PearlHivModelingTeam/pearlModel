@@ -172,7 +172,6 @@ test <- test %>%
 
 # 5. Get Mean/SD of CD4N at HAART initiation - stratified by H1YY - updated 04/24/19
 test <- test %>%
-  #mutate(naaccord_cd4_2009 = map(data_popu, fx5))
   mutate(naaccord_cd4_2009 = map(naaccord_2009, fx5))
 
 ######################################################################################
