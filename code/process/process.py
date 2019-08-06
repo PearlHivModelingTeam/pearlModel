@@ -260,11 +260,9 @@ def gmix_param_fit(df):
     output.loc[output.weight2 < 0, 'weight2'] = 0
     output.loc[output.weight1 > 1, 'weight1'] = 1
     output.loc[output.weight2 > 1, 'weight2'] = 1
-    output.loc[output.weight1 == 1, 'model'] = '1'
-    output.loc[output.weight2 == 1, 'model'] = '2'
+    output.loc[output.weight1 == 1, 'model'] = 'young'
+    output.loc[output.weight2 == 1, 'model'] = 'old'
     
-    print(output)
-
     return(output)
 
 

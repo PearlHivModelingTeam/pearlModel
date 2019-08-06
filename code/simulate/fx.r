@@ -616,7 +616,6 @@ inifx3 <- function(DATA) {
   pred18 <- DATA %>% 
     filter(H1YY==2018) %>%
     select(param, pred18 = pred)
-  print(pred18)
   
   DF2 <- DATA %>%
     mutate(pred = replace(pred, pred < 0, 0))
@@ -660,6 +659,8 @@ inifx4 <- function(INI, DATA) {
   # Determine size of population to simulate
   n_ini <- data.frame(t(INI))
   n_ini <- tibble::rownames_to_column(n_ini)
+  print(n_ini)
+  print(DATA)
   
   colnames(n_ini) <- c("H1YY", "n")
   

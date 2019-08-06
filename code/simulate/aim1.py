@@ -54,16 +54,16 @@ def filter_group(df, group_name):
     df = df.loc[df['group'] == group_name]
     return df
 
+def draw_from_trunc_norm(a, b, mu, sigma, size):
+    """ Draws `size` values from a truncated normal with the given parameters """
+    a_mod = (a - mu) / sigma
+    b_mod = (b - mu) / sigma
+    return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=size)
+
 def make_pop_2009(on_art, coeff_age_2009_ci, naaccord_prop_2009, init_sqrtcd4n_coeffs, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. Mixed normal coefficient are
     drawn uniformly from the 95% CI. h1yy is assigned using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated
     normal for each h1yy"""
-
-    def draw_from_trunc_norm(a, b, mu, sigma, size):
-        """ Draws `size` values from a truncated normal with the given parameters """
-        a_mod = (a - mu) / sigma
-        b_mod = (b - mu) / sigma
-        return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=size)
 
     # Sample from 95% confidence intervals
     mus = [np.random.uniform(coeff_age_2009_ci.loc[group_name, 'mu1_p025'], coeff_age_2009_ci.loc[group_name, 'mu1_p975']), 
@@ -144,9 +144,35 @@ def simulate_new_dx(new_dx, dx_interval, group_name):
     new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
 
     # TODO why take off another 25%?
-    new_dx['n_art_init'] = np.floor(new_dx.total_linked * 0.75)
+    new_dx['n_art_init'] = (new_dx.total_linked * 0.75).astype(int)
 
     return(new_dx.filter(items=['n_art_init']))
+
+def simulate_age(art_init_sim, gmix_param_coeffs, group_name):
+    """ Draw ages for new art initiators """ 
+    gmix_param_coeffs = gmix_param_coeffs.loc[group_name]
+
+    def sim_pop(coeffs, pop_size):
+        """ Pick from young normal, old normal, or mixed normal and draw ages """
+        print(coeffs)
+        print(pop_size)
+        
+        if (coeffs.model == 'mix'):
+            components = np.random.choice([1,2], size=pop_size, p=[coeffs.weight1, coeffs.weight2], replace=True)
+            pop_size_1 = (components == 1).sum()
+            pop_size_2 = (components == 2).sum()
+
+            #pop1 = draw_from_trunc_norm(18, 85, coeffs.mu1, , pop_size_1)
+        elif (coeffs.model == 'young'):
+            pass
+        else:
+            pass
+
+
+    print(gmix_param_coeffs.to_string())
+    print(art_init_sim)
+
+    sim_pop(gmix_param_coeffs.loc[2009], art_init_sim.loc[2009].iloc[0]) 
 
 ###############################################################################
 # Simulate Function                                                           #
@@ -164,6 +190,9 @@ def simulate(group_name):
 
     # Simulate number of new art initiators
     art_init_sim = simulate_new_dx(new_dx.copy(), dx_interval.copy(), group_name)
+
+    # Simulate the ages of new art initiators
+    new_art_age_mixed = simulate_age(art_init_sim.copy(), gmix_param_coeffs, group_name)
 
 
 ###############################################################################

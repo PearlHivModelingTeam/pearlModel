@@ -62,7 +62,7 @@ pctls_leave_na <- clean_coeff(pctls_leave_na)
 ######################################################################################
 wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   # Filter to group and sex of interest
-  #groupname = c('het_black')
+  groupname = c('het_black')
   test <- filterfx(test, groupname)
   
   test <- test %>%
@@ -85,10 +85,6 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   # INI - Simulate # of new HAART initiators in the US, 2009-2030
   test <- test %>%
     mutate(data_ini = map2(hiv_pred_interval, surv, surv_fx3))
-  
-  # Clean the mixed normal parameter estimates and sample the param estimate values for age at HAART initiation
-  test <- test %>%
-    mutate(ini3 = map(ini2, inifx3))
   
   # 6. Simulate the population (mixed normal)
   test <- test %>%
