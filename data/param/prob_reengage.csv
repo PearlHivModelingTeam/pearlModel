@@ -1,0 +1,16 @@
+group,sex,prob
+het_black,Females,0.9
+het_black,Males,0.73
+het_hisp,Females,0.99
+het_hisp,Males,0.72
+het_white,Females,0.89
+het_white,Males,0.76
+idu_black,Females,0.84
+idu_black,Males,0.32
+idu_hisp,Females,0.77
+idu_hisp,Males,0.72
+idu_white,Females,0.85
+idu_white,Males,0.38
+msm_black,Males,0.57
+msm_hisp,Males,0.59
+msm_white,Males,0.49

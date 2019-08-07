@@ -1,0 +1,7 @@
+out/*
+data/input/*
+data/processed/*
+data/param/*
+!data/param/prob_reengage.csv
+*.swp
+
