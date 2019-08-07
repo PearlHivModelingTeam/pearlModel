@@ -35,8 +35,8 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     mixture_2009 = store['mixture_2009']
     naaccord_prop_2009 = store['naaccord_prop_2009']
     init_sqrtcd4n_coeffs = store['init_sqrtcd4n_coeffs']
-    #new_dx = store['new_dx']
-    #dx_interval = store['dx_interval']
+    new_dx = store['new_dx']
+    new_dx_interval = store['new_dx_interval']
     #init_age_gmix_coeffs = store['init_age_gmix_coeffs']
     #gmix_param_coeffs = store['gmix_param_coeffs']
     #coeff_age_2009_ci = store['coeff_age_2009_ci']
@@ -192,7 +192,8 @@ def simulate(group_name):
     population_2009 = make_pop_2009(on_art, mixture_2009, naaccord_prop_2009.copy(), init_sqrtcd4n_coeffs, group_name)
 
     # Simulate number of new art initiators
-    art_init_sim = simulate_new_dx(new_dx.copy(), dx_interval.copy(), group_name)
+    art_init_sim = simulate_new_dx(new_dx.copy(), new_dx_interval.copy(), group_name)
+    print(art_init_sim)
 
     # Simulate the ages of new art initiators
     #new_art_age_mixed = simulate_age(art_init_sim.copy(), gmix_param_coeffs, group_name)
