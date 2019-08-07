@@ -379,4 +379,7 @@ def main():
         store['coeff_ltfu'] = coeff_ltfu
         store['pctls_ltfu'] = pctls_ltfu
 
+    print(new_dx)
+    print(dx_interval)
+
 main()
