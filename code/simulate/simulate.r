@@ -1,27 +1,50 @@
 ######################################################################################
-# Load preprocessed data
+# Load packages
 ######################################################################################
-library(parallel)
-library(binom)
-library(broom)
-library(gamlss)
-library(geepack)
-library(haven)
-library(lubridate)
-library(MASS)
-library(mixtools)
-library(RGeode)
-library(tidyverse)
-library(triangle)
+suppressPackageStartupMessages(library(argparse))
+parser <- ArgumentParser() 
+parser$add_argument("-p", "--parallel", type="logical", default=FALSE,
+                    help="Run parallel? default is FALSE")
+parser$add_argument("-c", "--cores", type="integer", default=0, 
+                    help="Number of cores to use, default is (total cores -1)") 
+parser$add_argument("-r", "--replications", type="integer", default=100, 
+                    help="Number of replications, default is 100") 
+parser$add_argument("-f", "--filter", type="logical", default=FALSE, 
+                    help="Filter to het_black? default: FALSE") 
+args <- parser$parse_args()
 
-load(paste0(getwd(),"/../../../basic.data"))
-outwd <- paste0(getwd(),"/../../../out/basic")
+library(MASS)
+library(haven)
+suppressMessages(library(lubridate))
+library(broom)
+library(geepack)
+suppressMessages(library(mixtools))
+library(RGeode)
+library(triangle)
+suppressMessages(library(gamlss))
+library(binom)
+suppressMessages(library(tidyverse))
+
+cwd <- getwd()
+file <- paste0(cwd, '/../../data/processed/processed.rda')
+load(file)
+
+rep <- 1
+
+######################################################################################
+# Define group(s) of interest - if multiple, separate by commas
+######################################################################################
+filtergroup <- c("idu_black", "idu_hisp", "idu_white",
+                 "het_black", "het_hisp", "het_white",
+                 "msm_black", "msm_hisp", "msm_white")
+if(args$filter) {filtergroup <- c('het_black')}
+
 today <- format(Sys.Date(), format="%y%m%d")
 
 ######################################################################################
 # Time-varying components
 ######################################################################################
-wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
+wrapper <- function(rep, groupname, sexvalue, prob_reengage, linelist) {
   # Temporarily run on a subset of groups
   test <- filterfx(test, groupname)
   
@@ -573,24 +596,51 @@ wrapper <- function(reps, groupname, sexvalue, prob_reengage, linelist) {
   
 }
 
+
 ######################################################################################
-# Replicate the wrapper function 100x: FINAL
+# Replicate the wrapper function r times: FINAL
 ######################################################################################
 
-nCores = detectCores()
-cl <- makeCluster(nCores-1, type='FORK')
+# Read in probability to reengage and filter
+groups <- read.csv(paste0(paramwd, '/prob_reengage.csv'))
+groups <- filterfx(groups, filtergroup) 
+print(groups)
+setwd(outwd)
 
-groups <- read.csv('/home/cameron/silvertsunami/pearl/data/processed/groups.csv')
+par_replicate <- function(group_row, nreps) { 
+  gr=group_row['group']
+  s =group_row['sex'] 
+  outfile = paste0(outwd,'/',gr,'_',tolower(s),'.rda')     
+  out <- parSapply(cl, 1:nreps, wrapper, groupname=gr, sexvalue=s, prob_reengage=group_row['prob'],  
+                   linelist=0, simplify=F) 
+  save(out, file=outfile) }
 
-par_replicate <- function(group_row) {
-    gr=group_row['group']
-    s =group_row['sex']
-    outfile = paste0(outwd,'/',gr,'_',tolower(s),'.rda')
-    test <- parSapply(cl, 1:100, wrapper, groupname=gr, sexvalue=s, prob_reengage=group_row['prob'], 
-                                   linelist=0, simplify=F)
-    save(test, file=outfile)
+serial_replicate <- function(group_row, nreps) { 
+  gr=group_row['group']
+  s =group_row['sex'] 
+  outfile = paste0(outwd,'/',gr,'_',tolower(s),'.rda')     
+  out <- sapply(1:nreps, wrapper, groupname=gr, sexvalue=s, prob_reengage=group_row['prob'],  
+                   linelist=0, simplify=F) 
+  save(out, file=outfile) }
+
+if (args$parallel) {
+  # Decide number of cores
+  if (args$cores == 0) {
+    nCores <- detectCores() - 1
+  } else {
+    nCores <- args$cores
+  }
+  
+  # Make the cluster and set RNG
+  cl <- makeCluster(nCores, type='FORK', outfile='')
+  clusterSetRNGStream(cl)
+
+  print(system.time({
+    apply(groups, 1, par_replicate, args$replications)
+  }))
+  } else {
+  print(system.time({  
+    apply(groups, 1, serial_replicate, args$replications)
+  }))
 }
 
-clusterSetRNGStream(cl)
-apply(groups,1,par_replicate)
-stopCluster(cl)
