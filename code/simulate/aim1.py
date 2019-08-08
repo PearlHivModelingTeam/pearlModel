@@ -29,16 +29,16 @@ out_dir = cwd + '/../out'
 
 # Load everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
-    on_art = store['on_art'] 
+    on_art_2009 = store['on_art_2009'] 
     #naaccord = store['naaccord']
     #naaccord_2009 = store['naaccord_2009']
-    mixture_2009 = store['mixture_2009']
+    mixture_2009_coeff = store['mixture_2009_coeff']
     naaccord_prop_2009 = store['naaccord_prop_2009']
-    init_sqrtcd4n_coeffs = store['init_sqrtcd4n_coeffs']
+    init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
     new_dx = store['new_dx']
     new_dx_interval = store['new_dx_interval']
     #init_age_gmix_coeffs = store['init_age_gmix_coeffs']
-    #gmix_param_coeffs = store['gmix_param_coeffs']
+    mixture_h1yy_coeff= store['mixture_h1yy_coeff']
     #coeff_age_2009_ci = store['coeff_age_2009_ci']
     #coeff_cd4_decrease = store['coeff_cd4_decrease']
     #coeff_cd4_increase = store['coeff_cd4_increase']
@@ -62,18 +62,18 @@ def draw_from_trunc_norm(a, b, mu, sigma, size):
     b_mod = (b - mu) / sigma
     return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=size)
 
-def make_pop_2009(on_art, mixture_2009, naaccord_prop_2009, init_sqrtcd4n_coeffs, group_name):
+def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
-
+    
     # Get coefficients 
-    mus = [mixture_2009.loc[group_name, 'mu1'], mixture_2009.loc[group_name, 'mu2']]
-    sigmas = [mixture_2009.loc[group_name, 'sigma1'], mixture_2009.loc[group_name, 'sigma2']]
-    lambda1 = mixture_2009.loc[group_name, 'lambda1']
+    mus = [mixture_2009_coeff['mu1'], mixture_2009_coeff['mu2']]
+    sigmas = [mixture_2009_coeff['sigma1'], mixture_2009_coeff['sigma2']]
+    lambda1 = mixture_2009_coeff['lambda1']
     lambdas = [lambda1, 1.0 - lambda1] 
 
     # Define size of group population
-    pop_size = on_art.loc[group_name][0].astype('int')
+    pop_size = on_art_2009[0].astype('int')
 
     # Draw population size for each component of the mixed normal
     components = np.random.choice([1,2], size=pop_size, p=lambdas, replace=True)
@@ -94,7 +94,7 @@ def make_pop_2009(on_art, mixture_2009, naaccord_prop_2009, init_sqrtcd4n_coeffs
     # Create age categories
     population.age = np.floor(population.age)
     population['age_cat'] = np.floor(population.age / 10)
-    population.loc[population.age_cat > 7, 'age_cat'] = 7
+    population.loc[population['age_cat'] > 7, 'age_cat'] = 7
     population['id'] = range(population.index.size)
     population = population.sort_values('age')
     population = population.set_index(['age_cat', 'id'])
@@ -108,13 +108,13 @@ def make_pop_2009(on_art, mixture_2009, naaccord_prop_2009, init_sqrtcd4n_coeffs
         population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data.index.values, size=grouped.shape[0], p=h1yy_data.pct.values)
 
     # Pull cd4 count coefficients
-    mean_intercept = init_sqrtcd4n_coeffs.loc[group_name, 'meanint']
-    mean_slope = init_sqrtcd4n_coeffs.loc[group_name, 'meanslp']
-    std_intercept = init_sqrtcd4n_coeffs.loc[group_name, 'stdint']
-    std_slope = init_sqrtcd4n_coeffs.loc[group_name, 'stdslp']
+    mean_intercept = init_sqrtcd4n_coeff['meanint']
+    mean_slope = init_sqrtcd4n_coeff['meanslp']
+    std_intercept = init_sqrtcd4n_coeff['stdint']
+    std_slope = init_sqrtcd4n_coeff['stdslp']
 
     # Reindex for group operation
-    population.h1yy = population.h1yy.astype(int)
+    population['h1yy'] = population['h1yy'].astype(int)
     population = population.reset_index().set_index(['h1yy', 'id']).sort_index()
 
     # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
@@ -127,33 +127,31 @@ def make_pop_2009(on_art, mixture_2009, naaccord_prop_2009, init_sqrtcd4n_coeffs
 
     return(population.reset_index().set_index('id').sort_index())
 
-def simulate_new_dx(new_dx, dx_interval, group_name):
+def simulate_new_dx(new_dx, dx_interval):
     """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of new art initiators by 
     assuming 75% link in the first year, then another 10% over the next three years. Assume 75% of these initiate art """
     
     # Draw new dx from a uniform distribution between upper and lower for 2016-2030 
-    new_dx = new_dx.loc[group_name]
-    dx_interval = dx_interval.loc[group_name].iloc[7:]
+    dx_interval = dx_interval[dx_interval.index > 2015].copy()
     dx_interval['rand'] = np.random.uniform(size=len(dx_interval.index)) 
-    dx_interval['n_dx'] = dx_interval.lower + (dx_interval.upper - dx_interval.lower) * dx_interval.rand
+    dx_interval['n_dx'] = dx_interval['lower'] + (dx_interval['upper'] - dx_interval['lower']) * dx_interval['rand']
     new_dx = pd.concat([new_dx, dx_interval.filter(items=['n_dx'])])
     new_dx = np.floor(new_dx)
-  
+    
     # We assume 75% link to care in the first year and a further 10% link in the next 3 years with equal probability
-    new_dx['lag_step'] = new_dx.n_dx * 0.1 * (1./3.)
-    new_dx['year0'] = new_dx.n_dx * 0.75
-    new_dx['year1'] = new_dx.lag_step.shift(1, fill_value=0)
-    new_dx['year2'] = new_dx.lag_step.shift(2, fill_value=0)
-    new_dx['year3'] = new_dx.lag_step.shift(3, fill_value=0)
+    new_dx['lag_step'] = new_dx['n_dx'] * 0.1 * (1./3.)
+    new_dx['year0'] = new_dx['n_dx'] * 0.75
+    new_dx['year1'] = new_dx['lag_step'].shift(1, fill_value=0)
+    new_dx['year2'] = new_dx['lag_step'].shift(2, fill_value=0)
+    new_dx['year3'] = new_dx['lag_step'].shift(3, fill_value=0)
     new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
 
-    new_dx['n_art_init'] = (new_dx.total_linked * 0.75).astype(int)
+    new_dx['n_art_init'] = (new_dx['total_linked'] * 0.75).astype(int)
 
     return(new_dx.filter(items=['n_art_init']))
 
-def simulate_age(art_init_sim, gmix_param_coeffs, group_name):
+def simulate_age(art_init_sim, mixture_h1yy_coeff):
     """ Draw ages for new art initiators """ 
-    gmix_param_coeffs = gmix_param_coeffs.loc[group_name]
 
     def sim_pop(coeffs, pop_size):
         """ Pick from young normal, old normal, or mixed normal and draw ages """
@@ -171,11 +169,35 @@ def simulate_age(art_init_sim, gmix_param_coeffs, group_name):
         else:
             pass
 
+    # Replace negative values with 0
+    mixture_h1yy_coeff[mixture_h1yy_coeff < 0] = 0
+   
+    # Split into before and after 2018
+    sim_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') >= 2018].copy()
+    observed_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'sim'})
+    observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='sim', index='h1yy', columns='param')
+    
+    # Pull coefficients in 2018 
+    sim_coeff['pred18'] = np.nan
+    for name, group in sim_coeff.groupby('param'):
+        sim_coeff.loc[(name, ), 'pred18'] = sim_coeff.loc[(name, 2018), 'pred'] 
 
-    print(gmix_param_coeffs.to_string())
+    # Draw uniformly between predicted coeffs and coeff in 2018
+    sim_coeff['rand'] = np.random.rand(len(sim_coeff.index))
+    sim_coeff['min'] = np.minimum(sim_coeff['pred'], sim_coeff['pred18'])
+    sim_coeff['max'] = np.maximum(sim_coeff['pred'], sim_coeff['pred18'])
+    sim_coeff['sim'] = sim_coeff['min'] + sim_coeff['rand'] * (sim_coeff['max'] - sim_coeff['min'])
+
+    # Reorganize table and glue them back together
+    sim_coeff = pd.pivot_table(sim_coeff.reset_index(), values='sim', index='h1yy', columns='param')
+    sim_coeff = pd.concat([observed_coeff, sim_coeff])
+
+    # Lambdas should add to 1.0
+    sim_coeff['lambda2'] = 1.0 - sim_coeff['lambda1']
+
     print(art_init_sim)
-
-    sim_pop(gmix_param_coeffs.loc[2009], art_init_sim.loc[2009].iloc[0]) 
+    print(sim_coeff)
+    
 
 ###############################################################################
 # Simulate Function                                                           #
@@ -184,19 +206,14 @@ def simulate_age(art_init_sim, gmix_param_coeffs, group_name):
 def simulate(group_name):
     """ Run one replication of the pearl model for a given group"""
     
-    # Filter population to one group
-    #naaccord_group = filter_group(naaccord, group_name)
-    #naaccord_2009_group = filter_group(naaccord_2009, group_name)
-    
     # Create 2009 population
-    population_2009 = make_pop_2009(on_art, mixture_2009, naaccord_prop_2009.copy(), init_sqrtcd4n_coeffs, group_name)
+    population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff.loc[group_name], group_name)
 
     # Simulate number of new art initiators
-    art_init_sim = simulate_new_dx(new_dx.copy(), new_dx_interval.copy(), group_name)
-    print(art_init_sim)
+    art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
 
     # Simulate the ages of new art initiators
-    #new_art_age_mixed = simulate_age(art_init_sim.copy(), gmix_param_coeffs, group_name)
+    new_art_age_mixed = simulate_age(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy())
 
 
 ###############################################################################
@@ -204,7 +221,7 @@ def simulate(group_name):
 ###############################################################################
 
 def main():
-    for group_name in on_art.index.values:
+    for group_name in on_art_2009.index.values:
         print(group_name)
         simulate(group_name)
         
@@ -214,4 +231,4 @@ def main1():
     print(group_name)
     simulate(group_name)
 
-main()
+main1()

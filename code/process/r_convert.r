@@ -39,7 +39,7 @@ test <- test %>% mutate(sex = replace(sex, sex == 'Males', 'male'),
 on_art <- test %>% select(group, on_art)
 
 # mixture_2009
-mixture_2009 <- test %>% select(group, mixture_2009) %>% unnest
+mixture_2009_coeff <- test %>% select(group, mixture_2009) %>% unnest
 
 # naaccord
 naaccord <- test %>% select(group, data_popu) %>% unnest
@@ -48,7 +48,7 @@ naaccord <- test %>% select(group, data_popu) %>% unnest
 naaccord_prop_2009 <- test %>% select(group, naaccord_prop_2009) %>% unnest
 
 # init_sqrtcd4n_coeffs
-init_sqrtcd4n_coeffs <- test %>% select(group, naaccord_cd4_2009) %>% unnest
+init_sqrtcd4n_coeff <- test %>% select(group, naaccord_cd4_2009) %>% unnest
 
 # coeff_age_2009_ci
 #coeff_age_2009_ci <- test %>% select(group, age2009_ci) %>% unnest
@@ -59,8 +59,8 @@ new_dx <- test %>% select(group, surv) %>% unnest
 # new_dx_interval
 new_dx_interval <- test %>% select(group, hiv_pred_interval) %>% unnest
 
-# gmix_param_coeffs
-gmix_param_coeffs <- test%>% select(group, ini2) %>% unnest %>% spread(param, pred)
+# mixture_h1yy_coeff
+mixture_h1yy_coeff <- test%>% select(group, ini2) %>% unnest # %>% spread(param, pred)
 
 #setwd(paramwd)
 

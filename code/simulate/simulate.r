@@ -13,22 +13,23 @@ parser$add_argument("-f", "--filter", type="logical", default=FALSE,
                     help="Filter to het_black? default: FALSE") 
 args <- parser$parse_args()
 
-library(MASS)
-library(haven)
+suppressMessages(library(MASS))
+suppressMessages(library(haven))
 suppressMessages(library(lubridate))
-library(broom)
-library(geepack)
+suppressMessages(library(broom))
+suppressMessages(library(geepack))
 suppressMessages(library(mixtools))
-library(RGeode)
-library(triangle)
+suppressMessages(library(RGeode))
+suppressMessages(library(triangle))
 suppressMessages(library(gamlss))
-library(binom)
+suppressMessages(library(binom))
 suppressMessages(library(tidyverse))
 
 cwd <- getwd()
 file <- paste0(cwd, '/../../data/processed/processed.rda')
 load(file)
 
+source(paste0(cwd, "/fx.r"))
 rep <- 1
 
 ######################################################################################
