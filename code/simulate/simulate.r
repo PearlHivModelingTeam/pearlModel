@@ -32,6 +32,8 @@ load(file)
 source(paste0(cwd, "/fx.r"))
 rep <- 1
 
+set.seed(as.numeric(Sys.time()))
+
 ######################################################################################
 # Define group(s) of interest - if multiple, separate by commas
 ######################################################################################
