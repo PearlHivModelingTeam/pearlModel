@@ -76,6 +76,12 @@ cd4_increase_coeff['p35'] = 3.0
 cd4_increase_coeff['p65'] = 6.0
 cd4_increase_coeff['p95'] = 12.0
 
+# Coefficients for loss to follow up
+ltfu_coeff = clean_coeff(pd.read_sas(param_dir + '/coeff_ltfu_190508.sas7bdat'))
+ltfu_pctls = clean_coeff(pd.read_sas(param_dir + '/pctls_ltfu_190508.sas7bdat'))
+ltfu_coeff = pd.concat([ltfu_coeff, ltfu_pctls], axis=1)
+
+
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['on_art_2009'] = on_art_2009
@@ -90,3 +96,5 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['init_sqrtcd4n_coeff'] = init_sqrtcd4n_coeff
 
     store['cd4_increase_coeff'] = cd4_increase_coeff
+
+    store['ltfu_coeff'] = ltfu_coeff
