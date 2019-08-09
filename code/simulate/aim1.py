@@ -81,10 +81,10 @@ def sim_pop(coeffs, pop_size):
 
 def calculate_initial_cd4n_cat(population):
     """ Given inital sqrtcd4n, add columns with categories used for cd4 increase function """
-    population['init_cd4_cat'] = np.select([population['sqrt_init_cd4n'].lt(np.sqrt(200.0)),
-                                            population['sqrt_init_cd4n'].ge(np.sqrt(200.0)) & population['sqrt_init_cd4n'].lt(np.sqrt(350.0)),
-                                            population['sqrt_init_cd4n'].ge(np.sqrt(350.0)) & population['sqrt_init_cd4n'].lt(np.sqrt(500.0)),
-                                            population['sqrt_init_cd4n'].ge(np.sqrt(500.0))], 
+    population['init_cd4_cat'] = np.select([population['init_sqrtcd4n'].lt(np.sqrt(200.0)),
+                                            population['init_sqrtcd4n'].ge(np.sqrt(200.0)) & population['init_sqrtcd4n'].lt(np.sqrt(350.0)),
+                                            population['init_sqrtcd4n'].ge(np.sqrt(350.0)) & population['init_sqrtcd4n'].lt(np.sqrt(500.0)),
+                                            population['init_sqrtcd4n'].ge(np.sqrt(500.0))], 
                                             [1, 2, 3, 4])
     population['cd4_cat_349'] = (population['init_cd4_cat'] == 2).astype(int)
     population['cd4_cat_499'] = (population['init_cd4_cat'] == 3).astype(int)
@@ -169,7 +169,7 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
         sigma = std_intercept + (h1yy * std_slope)
         size = group.shape[0]
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
-        population.loc[(h1yy,),'sqrt_init_cd4n'] = sqrt_cd4n
+        population.loc[(h1yy,),'init_sqrtcd4n'] = sqrt_cd4n
 
     population = population.reset_index().set_index('id').sort_index()
 
@@ -206,7 +206,7 @@ def simulate_new_dx(new_dx, dx_interval):
 
     return new_dx.filter(items=['n_art_init'])
 
-def make_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, pop_size_2009):
+def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, cd4_increase_coeff, pop_size_2009):
     """ Draw ages for new art initiators """ 
 
     # Replace negative values with 0
@@ -237,17 +237,22 @@ def make_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, pop_s
     sim_coeff.loc[sim_coeff['lambda2'] < 0, 'lambda1'] = 1.0
     sim_coeff.loc[sim_coeff['lambda2'] < 0, 'lambda2'] = 0
 
+    # Dont simulate new dxs in 2009
+    sim_coeff = sim_coeff.drop(2009)
 
-    total_population = pd.DataFrame()
+    new_population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
         population = sim_pop(coeffs.iloc[0], art_init_sim.loc[h1yy, 'n_art_init'])
         population['h1yy'] = h1yy
-        total_population = pd.concat([total_population, population])
+        new_population = pd.concat([new_population, population])
 
-    total_population['age'] = np.floor(total_population['age'])
+    new_population['age'] = np.floor(new_population['age'])
+    new_population['age_cat'] = np.floor(new_population['age'] / 10)
+    new_population.loc[new_population['age_cat'] < 2, 'age_cat'] = 2
+    new_population.loc[new_population['age_cat'] > 7, 'age_cat'] = 7
     
     # Add id number
-    total_population['id'] = np.arange(pop_size_2009, (pop_size_2009 + total_population.index.size))
+    new_population['id'] = np.arange(pop_size_2009, (pop_size_2009 + new_population.index.size))
 
     # Pull cd4 count coefficients
     mean_intercept = init_sqrtcd4n_coeff['meanint']
@@ -256,17 +261,22 @@ def make_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, pop_s
     std_slope = init_sqrtcd4n_coeff['stdslp']
 
     # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
-    total_population = total_population.set_index('h1yy')
-    for h1yy, group in total_population.groupby(level=0):
+    new_population = new_population.set_index('h1yy')
+    for h1yy, group in new_population.groupby(level=0):
         mu = mean_intercept + (h1yy * mean_slope)
         sigma = std_intercept + (h1yy * std_slope)
         size = group.shape[0]
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
-        total_population.loc[h1yy, 'sqrt_init_cd4n'] = sqrt_cd4n
+        new_population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
    
-    total_population = total_population.reset_index().set_index('id')
+    new_population = new_population.reset_index().set_index('id')
+    
+    # Calculate time varying cd4 count
+    new_population = calculate_initial_cd4n_cat(new_population)
+    new_population = calculate_time_from_h1yy(new_population, cd4_increase_coeff, new_population['h1yy'])
+    new_population['time_varying_sqrtcd4n'] = new_population['init_sqrtcd4n']
 
-    return total_population
+    return new_population
 
 
 
@@ -284,8 +294,10 @@ def simulate(group_name):
     # Simulate number of new art initiators
     art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
 
-    # Simulate the ages of new art initiators
-    new_population = make_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], population_2009.shape[0])
+    # Create population of new art initiators
+    new_population = make_new_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], 
+                                         cd4_increase_coeff.loc[group_name], population_2009.shape[0])
+
 
 
 
@@ -305,4 +317,4 @@ def main1():
     print(group_name)
     simulate(group_name)
 
-main()
+main1()
