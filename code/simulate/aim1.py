@@ -39,6 +39,8 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
 
     mixture_h1yy_coeff= store['mixture_h1yy_coeff']
     init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
+    
+    cd4_increase_coeff = store['cd4_increase_coeff']
 
 ###############################################################################
 # Functions                                                                   #
@@ -77,7 +79,56 @@ def sim_pop(coeffs, pop_size):
 
     return population
 
-def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, group_name):
+def calculate_initial_cd4n_cat(population):
+    """ Given inital sqrtcd4n, add columns with categories used for cd4 increase function """
+    population['init_cd4_cat'] = np.select([population['sqrt_init_cd4n'].lt(np.sqrt(200.0)),
+                                            population['sqrt_init_cd4n'].ge(np.sqrt(200.0)) & population['sqrt_init_cd4n'].lt(np.sqrt(350.0)),
+                                            population['sqrt_init_cd4n'].ge(np.sqrt(350.0)) & population['sqrt_init_cd4n'].lt(np.sqrt(500.0)),
+                                            population['sqrt_init_cd4n'].ge(np.sqrt(500.0))], 
+                                            [1, 2, 3, 4])
+    population['cd4_cat_349'] = (population['init_cd4_cat'] == 2).astype(int)
+    population['cd4_cat_499'] = (population['init_cd4_cat'] == 3).astype(int)
+    population['cd4_cat_500'] = (population['init_cd4_cat'] == 4).astype(int)
+
+    return population
+
+def calculate_time_from_h1yy(population, coeffs, year):
+    """ Calculate the time_from_h1yy variables used in the time varying cd4 count calculation """
+    population['time_from_h1yy'] = year - population['h1yy']
+    population['time_from_h1yy_'] =   (np.maximum(0, population['time_from_h1yy'] - coeffs['p5' ])**2 -
+                                       np.maximum(0, population['time_from_h1yy'] - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
+    population['time_from_h1yy__'] =  (np.maximum(0, population['time_from_h1yy'] - coeffs['p35'])**2 -
+                                       np.maximum(0, population['time_from_h1yy'] - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
+    population['time_from_h1yy___'] = (np.maximum(0, population['time_from_h1yy'] - coeffs['p65'])**2 -
+                                       np.maximum(0, population['time_from_h1yy'] - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
+
+    return population
+
+def calculate_time_varying_cd4n(pop, coeffs):
+    """ Calculate time varying cd4n as a linear function of age_cat, cd4_cat, time_from_h1yy and their cross terms """
+    pop['time_varying_sqrtcd4n'] = (coeffs['intercept_c'] +
+                                   (coeffs['agecat_c'] * pop['age_cat']) + 
+                                   (coeffs['cd4cat349_c'] * pop['cd4_cat_349']) +
+                                   (coeffs['cd4cat499_c'] * pop['cd4_cat_499']) +
+                                   (coeffs['cd4cat500_c'] * pop['cd4_cat_500']) +
+                                   (coeffs['time_from_h1yy_c'] * pop['time_from_h1yy']) +
+                                   (coeffs['_time_from_h1yy_c'] * pop['time_from_h1yy_']) +
+                                   (coeffs['__time_from_h1yy_c'] * pop['time_from_h1yy__']) +
+                                   (coeffs['___time_from_h1yy_c'] * pop['time_from_h1yy___']) +
+                                   (coeffs['_time_from_cd4cat349_c'] * pop['time_from_h1yy_'] * pop['cd4_cat_349']) +
+                                   (coeffs['_time_from_cd4cat499_c'] * pop['time_from_h1yy_'] * pop['cd4_cat_499']) +
+                                   (coeffs['_time_from_cd4cat500_c'] * pop['time_from_h1yy_'] * pop['cd4_cat_500']) +
+                                   (coeffs['__time_fro_cd4cat349_c'] * pop['time_from_h1yy__'] * pop['cd4_cat_349']) +
+                                   (coeffs['__time_fro_cd4cat499_c'] * pop['time_from_h1yy__'] * pop['cd4_cat_499']) +
+                                   (coeffs['__time_fro_cd4cat500_c'] * pop['time_from_h1yy__'] * pop['cd4_cat_500']) +
+                                   (coeffs['___time_fr_cd4cat349_c'] * pop['time_from_h1yy___'] * pop['cd4_cat_349']) +
+                                   (coeffs['___time_fr_cd4cat499_c'] * pop['time_from_h1yy___'] * pop['cd4_cat_499']) +
+                                   (coeffs['___time_fr_cd4cat500_c'] * pop['time_from_h1yy___'] * pop['cd4_cat_500'])) 
+
+
+    return pop
+
+def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
@@ -87,8 +138,8 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
     population = sim_pop(mixture_2009_coeff, pop_size)
 
     # Create age categories
-    population.age = np.floor(population.age)
-    population['age_cat'] = np.floor(population.age / 10)
+    population['age'] = np.floor(population['age'])
+    population['age_cat'] = np.floor(population['age'] / 10)
     population.loc[population['age_cat'] > 7, 'age_cat'] = 7
     population['id'] = range(population.index.size)
     population = population.sort_values('age')
@@ -120,7 +171,17 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
         population.loc[(h1yy,),'sqrt_init_cd4n'] = sqrt_cd4n
 
-    return population.reset_index().set_index('id').sort_index()
+    population = population.reset_index().set_index('id').sort_index()
+
+    # Toss out age_cat < 2
+    population.loc[population['age_cat'] < 2, 'age_cat'] = 2
+
+    # Calculate time varying cd4 count
+    population = calculate_initial_cd4n_cat(population)
+    population = calculate_time_from_h1yy(population, cd4_increase_coeff, 2009.0)
+    population = calculate_time_varying_cd4n(population, cd4_increase_coeff)
+    
+    return population
 
 def simulate_new_dx(new_dx, dx_interval):
     """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of new art initiators by 
@@ -203,7 +264,9 @@ def make_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, pop_s
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
         total_population.loc[h1yy, 'sqrt_init_cd4n'] = sqrt_cd4n
    
-    return total_population.reset_index().set_index('id') 
+    total_population = total_population.reset_index().set_index('id')
+
+    return total_population
 
 
 
@@ -215,13 +278,16 @@ def simulate(group_name):
     """ Run one replication of the pearl model for a given group"""
     
     # Create 2009 population
-    population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name], group_name)
+    population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
+                                    cd4_increase_coeff.loc[group_name], group_name)
 
     # Simulate number of new art initiators
     art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
 
     # Simulate the ages of new art initiators
-    total_population = make_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], population_2009.shape[0])
+    new_population = make_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], population_2009.shape[0])
+
+
 
 
 ###############################################################################

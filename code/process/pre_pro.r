@@ -25,7 +25,6 @@ outwd <- paste0(cwd, '/../../out')
 filtergroup <- c("idu_black", "idu_hisp", "idu_white",
                  "het_black", "het_hisp", "het_white",
                  "msm_black", "msm_hisp", "msm_white")
-#filtergroup <- c('idu_hisp')
 
 today <- format(Sys.Date(), format="%y%m%d")
 
