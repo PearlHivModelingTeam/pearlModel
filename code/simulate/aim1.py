@@ -21,16 +21,14 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     mixture_2009_coeff = store['mixture_2009_coeff']
     naaccord_prop_2009 = store['naaccord_prop_2009']
     init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
-
     new_dx = store['new_dx']
     new_dx_interval = store['new_dx_interval']
-
     mixture_h1yy_coeff= store['mixture_h1yy_coeff']
     init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
-    
     cd4_increase_coeff = store['cd4_increase_coeff']
-
+    cd4_decrease_coeff = store['cd4_decrease_coeff']
     ltfu_coeff = store['ltfu_coeff']
+    mortality_in_care_coeff = store['mortality_in_care_coeff']
 
 ###############################################################################
 # Functions                                                                   #
@@ -118,6 +116,15 @@ def calculate_time_varying_cd4n(pop, coeffs, year):
 
     return pop['time_varying_sqrtcd4n'].values
 
+def calculate_cd4n_decrease(pop, coeffs, year):
+    """ Calculate new time varying cd4 count for population out of care """
+    time_out = year - pop['ltfu_year']
+    diff = (coeffs['time_out_of_naaccord_c'] * time_out) + (coeffs['sqrtcd4_exit_c'] * pop['sqrtcd4n_exit']) +  coeffs['intercept_c'] 
+    time_varying_sqrtcd4n = np.sqrt((pop['sqrtcd4n_exit']**2) * np.exp(diff) * 1.5)
+    
+    return time_varying_sqrtcd4n.values
+
+
 def calculate_ltfu_prob(pop, coeffs, year):
     """ Calculate the probability of loss to follow up """
 
@@ -133,24 +140,30 @@ def calculate_ltfu_prob(pop, coeffs, year):
     pop['haart_period'] = (pop['h1yy'] > 2010).astype(int)
     
     # Calculate log odds
-    pop['ltfu_prob'] = (coeffs['intercept_c'] + 
-                       (coeffs['age_c'] * pop['age']) + 
-                       (coeffs['_age_c'] * pop['age_']) + 
-                       (coeffs['__age_c'] * pop['age__']) + 
-                       (coeffs['___age_c'] * pop['age___']) + 
-                       (coeffs['year_c'] * year ) +
-                       (coeffs['sqrtcd4n_c'] * pop['init_sqrtcd4n']) +
-                       (coeffs['haart_period_c'] * pop['haart_period']))
+    odds = (coeffs['intercept_c'] + 
+           (coeffs['age_c'] * pop['age']) + 
+           (coeffs['_age_c'] * pop['age_']) + 
+           (coeffs['__age_c'] * pop['age__']) + 
+           (coeffs['___age_c'] * pop['age___']) + 
+           (coeffs['year_c'] * year ) +
+           (coeffs['sqrtcd4n_c'] * pop['init_sqrtcd4n']) +
+           (coeffs['haart_period_c'] * pop['haart_period']))
 
     # Convert to probability
-    pop['ltfu_prob'] = np.exp(pop['ltfu_prob']) / (1.0 + np.exp(pop['ltfu_prob']))
-
-    return pop['ltfu_prob'].values
+    prob = np.exp(odds) / (1.0 + np.exp(odds))
+    return prob.values
 
 def calculate_death_in_care_prob(pop, coeffs, year):
-    """ Calculate the individual probability of dying in care """
-    pass
+    """ Calcu late the individual probability of dying in care """
+    odds = (coeffs['intercept_est'] + 
+           (coeffs['ageby10_est'] * pop['age_cat']) +
+           (coeffs['sqrtcd4n_est'] * pop['init_sqrtcd4n']) +
+           (coeffs['year_est'] * year) +
+           (coeffs['h1yy_est'] * pop['h1yy']))
 
+    # Convert to probability
+    prob = np.exp(odds) / (1.0 + np.exp(odds))
+    return prob.values
 
 def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
     """ Create initial 2 009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
@@ -308,6 +321,7 @@ class Population:
         self.in_care = init_pop.copy()[new_pop.columns] # Use consistent column order
         self.new_dx = new_pop.copy()
         self.out_care = pd.DataFrame()
+        self.new_out_care = pd.DataFrame()
         self.dead = pd.DataFrame()
 
     def lose_to_follow_up(self):
@@ -316,25 +330,39 @@ class Population:
 
         ltfu_prob = calculate_ltfu_prob(self.in_care.copy(), ltfu_coeff.loc[self.group_name], self.year)
         lost = ltfu_prob > np.random.rand(len(self.in_care.index))
-        new_out_care = self.in_care.loc[lost].copy()
-        new_out_care['sqrtcd4n_exit'] = new_out_care['time_varying_sqrtcd4n']
-        new_out_care['ltfu_year'] = self.year
-        self.out_care = self.out_care.append(new_out_care.copy())
+        self.new_out_care = self.in_care.loc[lost].copy()
+        self.new_out_care['sqrtcd4n_exit'] = self.new_out_care['time_varying_sqrtcd4n']
+        self.new_out_care['ltfu_year'] = self.year
         self.in_care = self.in_care.loc[~lost].copy()
 
     def increment_age(self):
+        """ Increment age of in care and out of care population """
         self.in_care['age'] = self.in_care['age'] + 1.0
         self.in_care['age_cat'] = np.floor(self.in_care['age'] / 10)
         self.in_care.loc[self.in_care['age_cat'] < 2, 'age_cat'] = 2
         self.in_care.loc[self.in_care['age_cat'] > 7, 'age_cat'] = 7
+        
+        self.out_care['age'] = self.out_care['age'] + 1.0
+        self.out_care['age_cat'] = np.floor(self.out_care['age'] / 10)
+        self.out_care.loc[self.out_care['age_cat'] < 2, 'age_cat'] = 2
+        self.out_care.loc[self.out_care['age_cat'] > 7, 'age_cat'] = 7
 
     def increase_cd4_count(self):
         self.in_care['time_varying_sqrtcd4n'] = calculate_time_varying_cd4n(self.in_care.copy(), cd4_increase_coeff.loc[self.group_name], self.year)
+
+    def decrease_cd4_count(self):
+        self.out_care['time_varying_sqrtcd4n'] = calculate_cd4n_decrease(self.out_care.copy(), cd4_decrease_coeff.iloc[0], self.year)
 
     def add_new_dx(self):
         self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy())
 
     def kill_in_care(self):
+        death_prob = calculate_death_in_care_prob(self.in_care.copy(), mortality_in_care_coeff.loc[self.group_name], self.year)
+        died = death_prob > np.random.rand(len(self.in_care.index))
+        new_dead = self.in_care.loc[died].copy()
+        new_dead['year_died'] = self.year
+        self.dead = self.dead.append(new_dead.copy())
+        self.in_care = self.in_care.loc[~died].copy()
 
     def run_simulation(self, end):
         """ Simulate from 2009 to (end) """
@@ -355,8 +383,18 @@ class Population:
         # Add in newly diagnosed ART initiators
         self.add_new_dx()
 
-        print(self.in_care.loc[self.in_care.h1yy == 2014])
+        # Kill people in care
+        self.kill_in_care()
 
+        # Lose some people to follow up
+        self.lose_to_follow_up()
+
+        # Decrease cd4n in those out of care
+        self.decrease_cd4_count()
+
+        # Move new_out_care to out_care
+        self.out_care = self.out_care.append(self.new_out_care.copy())
+        print(self.out_care)
 
         # Increment year
         self.year += 1
@@ -384,12 +422,13 @@ def simulate(group_name):
     
     # Allow loss to follow up to occur in initial year
     population.lose_to_follow_up()
+    population.out_care = population.out_care.append(population.new_out_care.copy())
 
     # Start in 2010
     population.year += 1
 
     # Run simulation
-    population.run_simulation(end=2015)
+    population.run_simulation(end=2012)
 
 
 
