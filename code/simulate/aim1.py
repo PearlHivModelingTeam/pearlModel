@@ -7,6 +7,9 @@ import itertools
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
+# Turn off chained_assignment warnings
+#pd.options.mode.chained_assignment = None
+
 # Define directories
 cwd = os.getcwd()
 proc_dir = cwd + '/../../data/processed'
@@ -38,11 +41,11 @@ def filter_group(df, group_name):
     df = df.loc[df['group'] == group_name]
     return df
 
-def draw_from_trunc_norm(a, b, mu, sigma, size):
-    """ Draws `size` values from a truncated normal with the given parameters """
+def draw_from_trunc_norm(a, b, mu, sigma, n):
+    """ Draws n values from a truncated normal with the given parameters """
     a_mod = (a - mu) / sigma
     b_mod = (b - mu) / sigma
-    return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=size)
+    return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=n)
     
 def sim_pop(coeffs, pop_size):
     """ Draw ages from a mixed or single gaussian truncated at 18 and 85 given the coefficients and population size."""
@@ -66,7 +69,7 @@ def sim_pop(coeffs, pop_size):
 
     return population
 
-def calculate_initial_cd4n_cat(pop):
+def initialize_cd4n_cat(pop):
     """ Given inital sqrtcd4n,  add columns with categories used for cd4 increase function """
     pop['init_cd4_cat'] = np.select([pop['init_sqrtcd4n'].lt(np.sqrt(200.0)),
                                             pop['init_sqrtcd4n'].ge(np.sqrt(200.0)) & pop['init_sqrtcd4n'].lt(np.sqrt(350.0)),
@@ -113,10 +116,7 @@ def calculate_time_varying_cd4n(pop, coeffs, year):
                                    (coeffs['___time_fr_cd4cat499_c'] * pop['time_from_h1yy___'] * pop['cd4_cat_499']) +
                                    (coeffs['___time_fr_cd4cat500_c'] * pop['time_from_h1yy___'] * pop['cd4_cat_500'])) 
 
-    # Drop unneeded columns
-    pop = pop.drop(['time_from_h1yy', 'time_from_h1yy_', 'time_from_h1yy__', 'time_from_h1yy___' ], axis=1)
-
-    return pop
+    return pop['time_varying_sqrtcd4n'].values
 
 def calculate_ltfu_prob(pop, coeffs, year):
     """ Calculate the probability of loss to follow up """
@@ -144,14 +144,16 @@ def calculate_ltfu_prob(pop, coeffs, year):
 
     # Convert to probability
     pop['ltfu_prob'] = np.exp(pop['ltfu_prob']) / (1.0 + np.exp(pop['ltfu_prob']))
-                 
-    # Drop unneeded columns
-    pop = pop.drop(['age_', 'age__', 'age___', 'haart_period'], axis=1)
 
-    return pop
+    return pop['ltfu_prob'].values
 
-def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, ltfu_coeff, group_name):
-    """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
+def calculate_death_in_care_prob(pop, coeffs, year):
+    """ Calculate the individual probability of dying in care """
+    pass
+
+
+def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
+    """ Create initial 2 009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
     # Draw ages from the truncated mixed gaussian
@@ -199,12 +201,8 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
     population.loc[population['age_cat'] < 2, 'age_cat'] = 2
 
     # Calculate time varying cd4 count
-    population = calculate_initial_cd4n_cat(population)
-    population = calculate_time_varying_cd4n(population, cd4_increase_coeff, 2009.0)
-
-    # Calculate probability of loss to follow up
-    population = calculate_ltfu_prob(population, ltfu_coeff, 2009.0)
-
+    population = initialize_cd4n_cat(population)
+    population['time_varying_sqrtcd4n'] = calculate_time_varying_cd4n(population.copy(), cd4_increase_coeff, 2009.0)
     
     return population
 
@@ -297,13 +295,71 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     new_population = new_population.reset_index().set_index('id')
     
     # Calculate time varying cd4 count
-    new_population = calculate_initial_cd4n_cat(new_population)
-    #new_population = calculate_time_from_h1yy(new_population, cd4_increase_coeff, new_population['h1yy'])
+    new_population = initialize_cd4n_cat(new_population)
     new_population['time_varying_sqrtcd4n'] = new_population['init_sqrtcd4n']
 
     return new_population
 
+class Population:
+    
+    def __init__(self, init_pop, new_pop, group_name):
+        self.group_name = group_name
+        self.year = 2009
+        self.in_care = init_pop.copy()[new_pop.columns] # Use consistent column order
+        self.new_dx = new_pop.copy()
+        self.out_care = pd.DataFrame()
+        self.dead = pd.DataFrame()
 
+    def lose_to_follow_up(self):
+        """ Draw a random number between 0 and 1, compare to ltfu_prob, and sort
+        those patients to out of care"""
+
+        ltfu_prob = calculate_ltfu_prob(self.in_care.copy(), ltfu_coeff.loc[self.group_name], self.year)
+        lost = ltfu_prob > np.random.rand(len(self.in_care.index))
+        new_out_care = self.in_care.loc[lost].copy()
+        new_out_care['sqrtcd4n_exit'] = new_out_care['time_varying_sqrtcd4n']
+        new_out_care['ltfu_year'] = self.year
+        self.out_care = self.out_care.append(new_out_care.copy())
+        self.in_care = self.in_care.loc[~lost].copy()
+
+    def increment_age(self):
+        self.in_care['age'] = self.in_care['age'] + 1.0
+        self.in_care['age_cat'] = np.floor(self.in_care['age'] / 10)
+        self.in_care.loc[self.in_care['age_cat'] < 2, 'age_cat'] = 2
+        self.in_care.loc[self.in_care['age_cat'] > 7, 'age_cat'] = 7
+
+    def increase_cd4_count(self):
+        self.in_care['time_varying_sqrtcd4n'] = calculate_time_varying_cd4n(self.in_care.copy(), cd4_increase_coeff.loc[self.group_name], self.year)
+
+    def add_new_dx(self):
+        self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy())
+
+    def kill_in_care(self):
+
+    def run_simulation(self, end):
+        """ Simulate from 2009 to (end) """
+        while(self.year <= end):
+            self.simulate_year()
+
+    def simulate_year(self):
+        """ Simulate a single year of the PEARL model """
+
+        print(self.year)
+
+        # Increment age of in_care populatiobn
+        self.increment_age()
+
+        # Set time varying sqrtcd4n
+        self.increase_cd4_count()
+
+        # Add in newly diagnosed ART initiators
+        self.add_new_dx()
+
+        print(self.in_care.loc[self.in_care.h1yy == 2014])
+
+
+        # Increment year
+        self.year += 1
 
 ###############################################################################
 # Simulate Function                                                           #
@@ -314,7 +370,7 @@ def simulate(group_name):
     
     # Create 2009 population
     population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
-                                    cd4_increase_coeff.loc[group_name], ltfu_coeff.loc[group_name], group_name)
+                                    cd4_increase_coeff.loc[group_name], group_name)
 
     # Simulate number of new art initiators
     art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
@@ -322,6 +378,24 @@ def simulate(group_name):
     # Create population of new art initiators
     new_population = make_new_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], 
                                          cd4_increase_coeff.loc[group_name], population_2009.shape[0])
+
+    # Initialize population object
+    population = Population(population_2009, new_population, group_name)
+    
+    # Allow loss to follow up to occur in initial year
+    population.lose_to_follow_up()
+
+    # Start in 2010
+    population.year += 1
+
+    # Run simulation
+    population.run_simulation(end=2015)
+
+
+
+
+
+
 
 
 
@@ -342,4 +416,4 @@ def main1():
     print(group_name)
     simulate(group_name)
 
-main()
+main1()

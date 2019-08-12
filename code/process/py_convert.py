@@ -96,5 +96,4 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['init_sqrtcd4n_coeff'] = init_sqrtcd4n_coeff
 
     store['cd4_increase_coeff'] = cd4_increase_coeff
-
     store['ltfu_coeff'] = ltfu_coeff
