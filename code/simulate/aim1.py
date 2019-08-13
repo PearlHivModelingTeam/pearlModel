@@ -29,6 +29,7 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     cd4_decrease_coeff = store['cd4_decrease_coeff']
     ltfu_coeff = store['ltfu_coeff']
     mortality_in_care_coeff = store['mortality_in_care_coeff']
+    mortality_out_care_coeff = store['mortality_out_care_coeff']
 
 ###############################################################################
 # Functions                                                                   #
@@ -154,7 +155,7 @@ def calculate_ltfu_prob(pop, coeffs, year):
     return prob.values
 
 def calculate_death_in_care_prob(pop, coeffs, year):
-    """ Calcu late the individual probability of dying in care """
+    """ Calculate the individual probability of dying in care """
     odds = (coeffs['intercept_est'] + 
            (coeffs['ageby10_est'] * pop['age_cat']) +
            (coeffs['sqrtcd4n_est'] * pop['init_sqrtcd4n']) +
@@ -164,6 +165,17 @@ def calculate_death_in_care_prob(pop, coeffs, year):
     # Convert to probability
     prob = np.exp(odds) / (1.0 + np.exp(odds))
     return prob.values
+
+def calculate_death_out_care_prob(pop, coeffs, year):
+    """ Calculate the individual probability of dying in care """
+    odds = (coeffs['intercept_c'] + 
+           (coeffs['agecat_c'] * pop['age_cat']) +
+           (coeffs['tv_sqrtcd4n_c'] * pop['time_varying_sqrtcd4n']) +
+           (coeffs['year_c'] * year))
+
+    # Convert to probability
+    prob = np.exp(odds) / (1.0 + np.exp(odds))
+    return prob.values 
 
 def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
     """ Create initial 2 009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
@@ -364,6 +376,14 @@ class Population:
         self.dead = self.dead.append(new_dead.copy())
         self.in_care = self.in_care.loc[~died].copy()
 
+    def kill_out_care(self):
+        death_prob = calculate_death_out_care_prob(self.out_care.copy(), mortality_out_care_coeff.loc[self.group_name], self.year)
+        died = death_prob > np.random.rand(len(self.out_care.index))
+        new_dead = self.out_care.loc[died].copy()
+        new_dead['year_died'] = self.year
+        self.dead = self.dead.append(new_dead.copy())
+        self.out_care = self.out_care.loc[~died].copy()
+
     def run_simulation(self, end):
         """ Simulate from 2009 to (end) """
         while(self.year <= end):
@@ -374,27 +394,21 @@ class Population:
 
         print(self.year)
 
-        # Increment age of in_care populatiobn
-        self.increment_age()
+        # Everybody ages
+        self.increment_age()                                                        # Increment age of in_care and out_care populatiobn
+        
+        # In care operations
+        self.increase_cd4_count()                                                   # Set time varying sqrtcd4n
+        self.add_new_dx()                                                           # Add in newly diagnosed ART initiators
+        self.kill_in_care()                                                         # Kill people in care
+        self.lose_to_follow_up()                                                    # Lose some people to follow up
+        
+        # Out of care operations
+        self.decrease_cd4_count()                                                   # Decrease cd4n in those out of care
+        self.kill_out_care()                                                        # Kill people out of care
+        self.out_care = self.out_care.append(self.new_out_care.copy())              # Move new_out_care to out_care
+        print(self.dead)
 
-        # Set time varying sqrtcd4n
-        self.increase_cd4_count()
-
-        # Add in newly diagnosed ART initiators
-        self.add_new_dx()
-
-        # Kill people in care
-        self.kill_in_care()
-
-        # Lose some people to follow up
-        self.lose_to_follow_up()
-
-        # Decrease cd4n in those out of care
-        self.decrease_cd4_count()
-
-        # Move new_out_care to out_care
-        self.out_care = self.out_care.append(self.new_out_care.copy())
-        print(self.out_care)
 
         # Increment year
         self.year += 1
@@ -428,17 +442,7 @@ def simulate(group_name):
     population.year += 1
 
     # Run simulation
-    population.run_simulation(end=2012)
-
-
-
-
-
-
-
-
-
-
+    population.run_simulation(end=2011)
 
 ###############################################################################
 # Main Function                                                               #

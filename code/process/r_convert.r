@@ -90,7 +90,6 @@ test <- test %>% mutate(sex = replace(sex, sex == 'Males', 'male'),
                  unite(group, c('group', 'sex'), remove=TRUE) %>% 
                  arrange(group)
 
-
 # on_art
 on_art <- test %>% select(group, on_art)
 

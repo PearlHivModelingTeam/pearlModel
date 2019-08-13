@@ -76,6 +76,10 @@ cd4_increase_coeff['p35'] = 3.0
 cd4_increase_coeff['p65'] = 6.0
 cd4_increase_coeff['p95'] = 12.0
 
+# Coefficients for cd4 decline out of care
+cd4_decrease_coeff = pd.read_sas(param_dir + '/coeff_cd4_decrease_190508.sas7bdat')
+cd4_decrease_coeff.columns = map(str.lower, cd4_decrease_coeff.columns)
+
 # Coefficients for loss to follow up
 ltfu_coeff = clean_coeff(pd.read_sas(param_dir + '/coeff_ltfu_190508.sas7bdat'))
 ltfu_pctls = clean_coeff(pd.read_sas(param_dir + '/pctls_ltfu_190508.sas7bdat'))
@@ -84,10 +88,10 @@ ltfu_coeff = pd.concat([ltfu_coeff, ltfu_pctls], axis=1)
 # Coefficients for mortality in care
 mortality_in_care_coeff = (robjects.r['mortality_in_care_coeff']).set_index('group')
 
-# Coefficients for cd4 decline out of care
-cd4_decrease_coeff = pd.read_sas(param_dir + '/coeff_cd4_decrease_190508.sas7bdat')
-cd4_decrease_coeff.columns = map(str.lower, cd4_decrease_coeff.columns)
-
+# Coefficients for mortality out of care
+mortality_out_care_coeff = pd.read_sas(param_dir + '/coeff_mortality_out_care_190508.sas7bdat')
+mortality_out_care_coeff.columns = map(str.lower, mortality_out_care_coeff.columns)
+mortality_out_care_coeff = clean_coeff(mortality_out_care_coeff)
 
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
@@ -102,5 +106,6 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['cd4_increase_coeff'] = cd4_increase_coeff
     store['ltfu_coeff'] = ltfu_coeff
     store['mortality_in_care_coeff'] = mortality_in_care_coeff
+    store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
 
