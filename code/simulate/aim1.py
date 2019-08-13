@@ -30,6 +30,7 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     ltfu_coeff = store['ltfu_coeff']
     mortality_in_care_coeff = store['mortality_in_care_coeff']
     mortality_out_care_coeff = store['mortality_out_care_coeff']
+    prob_reengage = store['prob_reengage']
 
 ###############################################################################
 # Functions                                                                   #
@@ -124,7 +125,6 @@ def calculate_cd4n_decrease(pop, coeffs, year):
     time_varying_sqrtcd4n = np.sqrt((pop['sqrtcd4n_exit']**2) * np.exp(diff) * 1.5)
     
     return time_varying_sqrtcd4n.values
-
 
 def calculate_ltfu_prob(pop, coeffs, year):
     """ Calculate the probability of loss to follow up """
@@ -325,30 +325,19 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
 
     return new_population
 
-class Population:
+class Pearl:
     
     def __init__(self, init_pop, new_pop, group_name):
         self.group_name = group_name
         self.year = 2009
         self.in_care = init_pop.copy()[new_pop.columns] # Use consistent column order
+        self.new_in_care = pd.DataFrame()
         self.new_dx = new_pop.copy()
         self.out_care = pd.DataFrame()
         self.new_out_care = pd.DataFrame()
         self.dead = pd.DataFrame()
 
-    def lose_to_follow_up(self):
-        """ Draw a random number between 0 and 1, compare to ltfu_prob, and sort
-        those patients to out of care"""
-
-        ltfu_prob = calculate_ltfu_prob(self.in_care.copy(), ltfu_coeff.loc[self.group_name], self.year)
-        lost = ltfu_prob > np.random.rand(len(self.in_care.index))
-        self.new_out_care = self.in_care.loc[lost].copy()
-        self.new_out_care['sqrtcd4n_exit'] = self.new_out_care['time_varying_sqrtcd4n']
-        self.new_out_care['ltfu_year'] = self.year
-        self.in_care = self.in_care.loc[~lost].copy()
-
     def increment_age(self):
-        """ Increment age of in care and out of care population """
         self.in_care['age'] = self.in_care['age'] + 1.0
         self.in_care['age_cat'] = np.floor(self.in_care['age'] / 10)
         self.in_care.loc[self.in_care['age_cat'] < 2, 'age_cat'] = 2
@@ -366,14 +355,14 @@ class Population:
         self.out_care['time_varying_sqrtcd4n'] = calculate_cd4n_decrease(self.out_care.copy(), cd4_decrease_coeff.iloc[0], self.year)
 
     def add_new_dx(self):
-        self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy())
+        self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy(), ignore_index=True)
 
     def kill_in_care(self):
         death_prob = calculate_death_in_care_prob(self.in_care.copy(), mortality_in_care_coeff.loc[self.group_name], self.year)
         died = death_prob > np.random.rand(len(self.in_care.index))
         new_dead = self.in_care.loc[died].copy()
         new_dead['year_died'] = self.year
-        self.dead = self.dead.append(new_dead.copy())
+        self.dead = self.dead.append(new_dead.copy(), sort=False, ignore_index=True)
         self.in_care = self.in_care.loc[~died].copy()
 
     def kill_out_care(self):
@@ -381,11 +370,29 @@ class Population:
         died = death_prob > np.random.rand(len(self.out_care.index))
         new_dead = self.out_care.loc[died].copy()
         new_dead['year_died'] = self.year
-        self.dead = self.dead.append(new_dead.copy())
+        self.dead = self.dead.append(new_dead.copy(), sort=False, ignore_index=True)
         self.out_care = self.out_care.loc[~died].copy()
+    
+    def lose_to_follow_up(self):
+        ltfu_prob = calculate_ltfu_prob(self.in_care.copy(), ltfu_coeff.loc[self.group_name], self.year)
+        lost = ltfu_prob > np.random.rand(len(self.in_care.index))
+        self.new_out_care = self.in_care.loc[lost].copy()
+        self.new_out_care['sqrtcd4n_exit'] = self.new_out_care['time_varying_sqrtcd4n']
+        self.new_out_care['ltfu_year'] = self.year
+        self.in_care = self.in_care.loc[~lost].copy()
+
+    def reengage(self):
+        prob = prob_reengage.loc[self.group_name]
+        reengaged =  np.random.rand(len(self.out_care.index)) < np.full(len(self.out_care.index), prob)
+        self.new_in_care = self.out_care.loc[reengaged].drop(['sqrtcd4n_exit', 'ltfu_year'], axis=1).copy()
+        self.out_care = self.out_care.loc[~reengaged].copy()
+
+    def append_new(self):
+        self.out_care = self.out_care.append(self.new_out_care.copy(), ignore_index=True)
+        self.in_care = self.in_care.append(self.new_in_care.copy(), ignore_index=True)
 
     def run_simulation(self, end):
-        """ Simulate from 2009 to (end) """
+        """ Simulate from 2009 to end """
         while(self.year <= end):
             self.simulate_year()
 
@@ -395,20 +402,21 @@ class Population:
         print(self.year)
 
         # Everybody ages
-        self.increment_age()                                                        # Increment age of in_care and out_care populatiobn
+        self.increment_age()
         
         # In care operations
-        self.increase_cd4_count()                                                   # Set time varying sqrtcd4n
+        self.increase_cd4_count()                                                   # Increase cd4n in people in care
         self.add_new_dx()                                                           # Add in newly diagnosed ART initiators
-        self.kill_in_care()                                                         # Kill people in care
+        self.kill_in_care()                                                         # Kill some people in care
         self.lose_to_follow_up()                                                    # Lose some people to follow up
         
         # Out of care operations
-        self.decrease_cd4_count()                                                   # Decrease cd4n in those out of care
-        self.kill_out_care()                                                        # Kill people out of care
-        self.out_care = self.out_care.append(self.new_out_care.copy())              # Move new_out_care to out_care
-        print(self.dead)
+        self.decrease_cd4_count()                                                   # Decrease cd4n in people out of care
+        self.kill_out_care()                                                        # Kill some people out of care
+        self.reengage()                                                             # Reengage some people out of care
 
+        # Append new populations to their respective DataFrames
+        self.append_new()
 
         # Increment year
         self.year += 1
@@ -432,26 +440,27 @@ def simulate(group_name):
                                          cd4_increase_coeff.loc[group_name], population_2009.shape[0])
 
     # Initialize population object
-    population = Population(population_2009, new_population, group_name)
+    population = Pearl(population_2009, new_population, group_name)
     
     # Allow loss to follow up to occur in initial year
     population.lose_to_follow_up()
-    population.out_care = population.out_care.append(population.new_out_care.copy())
+    population.out_care = population.out_care.append(population.new_out_care.copy(), ignore_index=True)
 
     # Start in 2010
     population.year += 1
 
     # Run simulation
-    population.run_simulation(end=2011)
+    population.run_simulation(end=2030)
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
 
 def main():
-    for group_name in on_art_2009.index.values:
-        print(group_name)
-        simulate(group_name)
+    for i in range(5):
+        for group_name in on_art_2009.index.values:
+            print(i, group_name)
+            simulate(group_name)
         
 
 def main1():

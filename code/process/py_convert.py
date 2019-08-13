@@ -93,6 +93,9 @@ mortality_out_care_coeff = pd.read_sas(param_dir + '/coeff_mortality_out_care_19
 mortality_out_care_coeff.columns = map(str.lower, mortality_out_care_coeff.columns)
 mortality_out_care_coeff = clean_coeff(mortality_out_care_coeff)
 
+# Probability to reengage in care for each group
+prob_reengage = clean_coeff(pd.read_csv(param_dir + '/prob_reengage.csv'))
+
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['on_art_2009'] = on_art_2009
@@ -108,4 +111,5 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['mortality_in_care_coeff'] = mortality_in_care_coeff
     store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
+    store['prob_reengage'] = prob_reengage
 
