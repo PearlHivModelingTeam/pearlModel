@@ -178,7 +178,7 @@ def calculate_death_out_care_prob(pop, coeffs, year):
     return prob.values 
 
 def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
-    """ Create initial 2 009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
+    """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
     # Draw ages from the truncated mixed gaussian
@@ -228,7 +228,12 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
     # Calculate time varying cd4 count
     population = initialize_cd4n_cat(population)
     population['time_varying_sqrtcd4n'] = calculate_time_varying_cd4n(population.copy(), cd4_increase_coeff, 2009.0)
-    
+
+    # Allow for updated h1yy and init_sqrtcd4n on reengagement
+    population['n_lost'] = 0
+    population['h1yy_orig'] = population['h1yy']
+    population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
+
     return population
 
 def simulate_new_dx(new_dx, dx_interval):
@@ -317,12 +322,17 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
         new_population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
    
-    new_population = new_population.reset_index().set_index('id')
+    new_population = new_population.reset_index().set_index('id').sort_index()
     
     # Calculate time varying cd4 count
     new_population = initialize_cd4n_cat(new_population)
     new_population['time_varying_sqrtcd4n'] = new_population['init_sqrtcd4n']
 
+    # Allow for updated h1yy and sqrtcd4n on reengagement
+    new_population['n_lost'] = 0
+    new_population['h1yy_orig'] = new_population['h1yy']
+    new_population['init_sqrtcd4n_orig'] = new_population['init_sqrtcd4n']
+    
     return new_population
 
 class Pearl:
@@ -335,7 +345,8 @@ class Pearl:
         self.new_dx = new_pop.copy()
         self.out_care = pd.DataFrame()
         self.new_out_care = pd.DataFrame()
-        self.dead = pd.DataFrame()
+        self.dead_in_care = pd.DataFrame()
+        self.dead_out_care = pd.DataFrame()
 
     def increment_age(self):
         self.in_care['age'] = self.in_care['age'] + 1.0
@@ -355,14 +366,14 @@ class Pearl:
         self.out_care['time_varying_sqrtcd4n'] = calculate_cd4n_decrease(self.out_care.copy(), cd4_decrease_coeff.iloc[0], self.year)
 
     def add_new_dx(self):
-        self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy(), ignore_index=True)
+        self.in_care = self.in_care.append(self.new_dx.loc[self.new_dx['h1yy'] == self.year].copy())
 
     def kill_in_care(self):
         death_prob = calculate_death_in_care_prob(self.in_care.copy(), mortality_in_care_coeff.loc[self.group_name], self.year)
         died = death_prob > np.random.rand(len(self.in_care.index))
         new_dead = self.in_care.loc[died].copy()
         new_dead['year_died'] = self.year
-        self.dead = self.dead.append(new_dead.copy(), sort=False, ignore_index=True)
+        self.dead_in_care = self.dead_in_care.append(new_dead.copy(), sort=False)
         self.in_care = self.in_care.loc[~died].copy()
 
     def kill_out_care(self):
@@ -370,7 +381,7 @@ class Pearl:
         died = death_prob > np.random.rand(len(self.out_care.index))
         new_dead = self.out_care.loc[died].copy()
         new_dead['year_died'] = self.year
-        self.dead = self.dead.append(new_dead.copy(), sort=False, ignore_index=True)
+        self.dead_out_care = self.dead_out_care.append(new_dead.copy(), sort=False)
         self.out_care = self.out_care.loc[~died].copy()
     
     def lose_to_follow_up(self):
@@ -379,17 +390,22 @@ class Pearl:
         self.new_out_care = self.in_care.loc[lost].copy()
         self.new_out_care['sqrtcd4n_exit'] = self.new_out_care['time_varying_sqrtcd4n']
         self.new_out_care['ltfu_year'] = self.year
+        self.new_out_care['n_lost'] += 1
         self.in_care = self.in_care.loc[~lost].copy()
 
     def reengage(self):
         prob = prob_reengage.loc[self.group_name]
         reengaged =  np.random.rand(len(self.out_care.index)) < np.full(len(self.out_care.index), prob)
         self.new_in_care = self.out_care.loc[reengaged].drop(['sqrtcd4n_exit', 'ltfu_year'], axis=1).copy()
+
+        # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
+        self.new_in_care['init_sqrtcd4n'] = self.new_in_care['time_varying_sqrtcd4n']
+        self.new_in_care['h1yy'] = self.year
         self.out_care = self.out_care.loc[~reengaged].copy()
 
     def append_new(self):
-        self.out_care = self.out_care.append(self.new_out_care.copy(), ignore_index=True)
-        self.in_care = self.in_care.append(self.new_in_care.copy(), ignore_index=True)
+        self.out_care = self.out_care.append(self.new_out_care.copy())
+        self.in_care = self.in_care.append(self.new_in_care.copy())
 
     def run_simulation(self, end):
         """ Simulate from 2009 to end """
@@ -425,7 +441,7 @@ class Pearl:
 # Simulate Function                                                           #
 ###############################################################################
 
-def simulate(group_name):
+def simulate(rep, group_name):
     """ Run one replication of the pearl model for a given group"""
     
     # Create 2009 population
@@ -444,7 +460,7 @@ def simulate(group_name):
     
     # Allow loss to follow up to occur in initial year
     population.lose_to_follow_up()
-    population.out_care = population.out_care.append(population.new_out_care.copy(), ignore_index=True)
+    population.out_care = population.out_care.append(population.new_out_care.copy())
 
     # Start in 2010
     population.year += 1
@@ -452,20 +468,34 @@ def simulate(group_name):
     # Run simulation
     population.run_simulation(end=2030)
 
+    # Some output
+    total = pd.concat([population.in_care, population.out_care, population.dead_in_care, population.dead_out_care], sort=False)
+
+    # Count how many times people left and tally them up
+    n_times_lost = pd.DataFrame(total['n_lost'].value_counts())
+    n_times_lost['pct'] = 100.0 * n_times_lost['n_lost'] / n_times_lost['n_lost'].sum()
+    n_times_lost['rep'] = rep
+    print(n_times_lost)
+
+
+
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
 
 def main():
-    for i in range(5):
-        for group_name in on_art_2009.index.values:
-            print(i, group_name)
-            simulate(group_name)
+    group_names = on_art_2009.index.values
+    for rep in range(5):
+        for group_name in group_names:
+            print(rep, group_name)
+            simulate(rep, group_name)
         
 
 def main1():
-    group_name = 'het_black_female'
-    print(group_name)
-    simulate(group_name)
+    group_names = ['het_black_female']
+    for rep in range(1):
+        for group_name in group_names:
+            print(rep, group_name)
+            simulate(rep, group_name)
 
 main1()
