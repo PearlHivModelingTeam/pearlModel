@@ -6,14 +6,15 @@ import pandas as pd
 import itertools
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+from collections import namedtuple
 
 # print more rows
-#pd.options.display.max_rows = 30
+pd.options.display.max_rows = 150
 
 # Define directories
 cwd = os.getcwd()
 proc_dir = cwd + '/../../data/processed'
-out_dir = cwd + '/../out'
+out_dir = cwd + '/../../out'
 
 # Load everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
@@ -337,7 +338,7 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
 
 class Pearl:
     
-    def __init__(self, init_pop, new_pop, group_name, dataset, snap_flag):
+    def __init__(self, init_pop, new_pop, group_name, dataset):
         self.group_name = group_name
         self.dataset = dataset
         self.year = 2009
@@ -348,14 +349,20 @@ class Pearl:
         self.new_out_care = pd.DataFrame()
         self.dead_in_care = pd.DataFrame()
         self.dead_out_care = pd.DataFrame()
+    
+        # Allow loss to follow up to occur in initial year
+        self.lose_to_follow_up()
+        self.out_care = self.out_care.append(self.new_out_care.copy())
 
         #snapshots
-        self.snap_flag = snap_flag
-        if (self.snap_flag):
-            self.in_care_snap = pd.DataFrame()
-            self.out_care_snap = pd.DataFrame()
-            self.dead_in_care_snap = pd.DataFrame()
-            self.dead_out_care_snap = pd.DataFrame()
+        self.in_care_snap = pd.DataFrame()
+        self.out_care_snap = pd.DataFrame()
+        self.new_in_care_snap = pd.DataFrame()
+        self.new_out_care_snap = pd.DataFrame()
+        self.take_snapshot()
+
+        # Move to 2010
+        self.year += 1
 
     def increment_age(self):
         self.in_care['age'] = self.in_care['age'] + 1.0
@@ -418,44 +425,41 @@ class Pearl:
 
     def take_snapshot(self):
         """ Append the full population of each DataFrame with year label """
-        self.in_care_snap = self.in_care_snap.append(self.in_care.assign(year=self.year))
-        self.out_care_snap = self.out_care_snap.append(self.out_care.assign(year=self.year))
-        self.dead_in_care_snap = self.dead_in_care_snap.append(self.dead_in_care.rename(columns={"year_died": "year"}))
-        self.dead_out_care_snap = self.dead_out_care_snap.append(self.dead_out_care.rename(columns={"year_died": "year"}))
+        self.in_care_snap = self.in_care_snap.append(self.in_care.assign(year=self.year, dataset=self.dataset))
+        self.out_care_snap = self.out_care_snap.append(self.out_care.assign(year=self.year, dataset=self.dataset))
+        self.new_in_care_snap = self.new_in_care_snap.append(self.in_care.assign(year=self.year, dataset=self.dataset))
+        self.new_out_care_snap = self.new_out_care_snap.append(self.out_care.assign(year=self.year, dataset=self.dataset))
 
     def run_simulation(self, end):
         """ Simulate from 2009 to end """
         while(self.year <= end):
-            self.simulate_year()
+            print(self.year)
 
-    def simulate_year(self):
-        """ Simulate a single year of the PEARL model """
+            # Everybody ages
+            self.increment_age()
+            
+            # In care operations
+            self.increase_cd4_count()                                                   # Increase cd4n in people in care
+            self.add_new_dx()                                                           # Add in newly diagnosed ART initiators
+            self.kill_in_care()                                                         # Kill some people in care
+            self.lose_to_follow_up()                                                    # Lose some people to follow up
+            
+            # Out of care operations
+            self.decrease_cd4_count()                                                   # Decrease cd4n in people out of care
+            self.kill_out_care()                                                        # Kill some people out of care
+            self.reengage()                                                             # Reengage some people out of care
 
-        print(self.year)
+            # Append changed populations to their respective DataFrames
+            self.append_new()
 
-        # Everybody ages
-        self.increment_age()
-        
-        # In care operations
-        self.increase_cd4_count()                                                   # Increase cd4n in people in care
-        self.add_new_dx()                                                           # Add in newly diagnosed ART initiators
-        self.kill_in_care()                                                         # Kill some people in care
-        self.lose_to_follow_up()                                                    # Lose some people to follow up
-        
-        # Out of care operations
-        self.decrease_cd4_count()                                                   # Decrease cd4n in people out of care
-        self.kill_out_care()                                                        # Kill some people out of care
-        self.reengage()                                                             # Reengage some people out of care
-
-        # Append new populations to their respective DataFrames
-        self.append_new()
-
-        # Take snapshot
-        if (self.snap_flag):
+            # Take snapshot or prepare output
             self.take_snapshot()
 
-        # Increment year
-        self.year += 1
+            # Increment year
+            self.year += 1
+
+# namedtuple for passing around output
+OutputContainer = namedtuple('Output', ['final_population', 'dead_in_care', 'dead_out_care', 'in_care', 'out_care', 'new_in_care', 'new_out_care', 'new_initiators'])
 
 ###############################################################################
 # Simulate Function                                                           #
@@ -464,8 +468,6 @@ class Pearl:
 def simulate(dataset, group_name):
     """ Run one replication of the pearl model for a given group"""
 
-    snap_flag = False
-    
     # Create 2009 population
     population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
                                     cd4_increase_coeff.loc[group_name], group_name)
@@ -477,60 +479,114 @@ def simulate(dataset, group_name):
     new_population = make_new_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], 
                                          cd4_increase_coeff.loc[group_name], population_2009.shape[0])
 
-    # Initialize population object
-    population = Pearl(population_2009, new_population, group_name, dataset, snap_flag)
-    
-    # Allow loss to follow up to occur in initial year
-    population.lose_to_follow_up()
-    population.out_care = population.out_care.append(population.new_out_care.copy())
-
-    # Take snapshot
-    if (snap_flag):
-        population.take_snapshot()
-
-    # Start in 2010
-    population.year += 1
+    # Initialize Pearl object
+    pearl = Pearl(population_2009, new_population, group_name, dataset)
 
     # Run simulation
-    population.run_simulation(end=2030)
+    pearl.run_simulation(end=2030)
 
-    # Some output
-    total = pd.concat([population.in_care, population.out_care, population.dead_in_care, population.dead_out_care], sort=False).sort_index()
+    # Prepare output
+    final_population = pd.concat([pearl.in_care, pearl.out_care, pearl.dead_in_care, pearl.dead_out_care], sort=False)
+    return OutputContainer(final_population, pearl.dead_in_care, pearl.dead_out_care, pearl.in_care_snap.reset_index(), 
+                           pearl.out_care_snap.reset_index(), pearl.new_in_care_snap.reset_index(), pearl.new_out_care_snap.reset_index(), 
+                           pearl.new_dx)
 
-    # Count how many times people left and tally them up
-    n_times_lost = pd.DataFrame(total['n_lost'].value_counts())
-    n_times_lost['pct'] = 100.0 * n_times_lost['n_lost'] / n_times_lost['n_lost'].sum()
-    n_times_lost['dataset'] = dataset
+###############################################################################
+# Prepare Output Function                                                     #
+###############################################################################
 
-    # Stats about those that died out of care
-    dead_out_care = population.dead_out_care.groupby(['year_died', 'age_cat']).size().reset_index(name='n')
-    dead_out_care['dataset'] = dataset
-    dead_out_care['group'] = group_name
+def output_reindex(df):
+    """ Helper function for reindexing output tables """
+    return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
+
+def prepare_output(final_population, dead_in_care, dead_out_care, in_care, out_care, new_in_care, new_out_care, new_initiators, group_name, dataset):
+    """ Take raw output and aggregate """
     
-    # Stats about those that died in care
-    dead_in_care = population.dead_in_care.groupby(['year_died', 'age_cat']).size().reset_index(name='n')
-    dead_in_care['dataset'] = dataset
-    dead_in_care['group'] = group_name
+    ## Count how many times people left and tally them up
+    #n_times_lost = pd.DataFrame(final_population['n_lost'].value_counts())
+    #n_times_lost['pct'] = 100.0 * n_times_lost['n_lost'] / n_times_lost['n_lost'].sum()
+    #n_times_lost['dataset'] = dataset
 
+    ## Count of those that died out of care
+    #dead_out_care_count = dead_out_care.groupby(['year_died', 'age_cat']).size().reset_index(name='n')
+    #dead_out_care_count = dead_out_care_count.rename(columns={'year_died': 'year'})
+    #dead_out_care_count['dataset'] = dataset
+    #dead_out_care_count['group'] = group_name
+    #
+    ## Count of those that died in care
+    #dead_in_care_count = dead_in_care.groupby(['year_died', 'age_cat']).size().reset_index(name='n')
+    #dead_in_care_count = dead_in_care_count.rename(columns={'year_died': 'year'})
+    #dead_in_care_count['dataset'] = dataset
+    #dead_in_care_count['group'] = group_name
+    #
+    ## Count of those newly reengaged
+    #new_in_care_count = new_in_care.groupby(['year', 'age_cat']).size().reset_index(name='n')
+    #new_in_care_count['dataset'] = dataset
+    #new_in_care_count['group'] = group_name
+
+    ## Count of those newly lost
+    #new_out_care_count = new_out_care.groupby(['year', 'age_cat']).size().reset_index(name='n')
+    #new_out_care_count['dataset'] = dataset
+    #new_out_care_count['group'] = group_name
+
+    # Count of those in care by age_cat
+    in_care_count = output_reindex(in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    in_care_count['dataset'] = dataset
+    in_care_count['group'] = group_name
+    in_care_count = in_care_count.set_index(['group', 'dataset', 'year', 'age_cat'])
+
+    # Count of those out of care
+    out_care_count = output_reindex(out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    out_care_count['dataset'] = dataset
+    out_care_count['group'] = group_name
+    out_care_count = out_care_count.set_index(['group', 'dataset', 'year', 'age_cat'])
+
+
+    ## Count of new initiators
+    #new_init_count = new_initiators.groupby(['h1yy']).size().reset_index(name='n')
+    #new_init_count['dataset'] = dataset
+    #new_init_count['group'] = group_name
+    #
+    ## Count of those in care by age
+    #in_care_age = in_care.groupby(['year', 'age']).size().reset_index(name='n')
+    #in_care_age['dataset'] = dataset
+    #in_care_age['group'] = group_name
+
+    return in_care_count
+
+    
 
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
 
-def main():
-    group_names = on_art_2009.index.values
-    for dataset in range(5):
-        for group_name in group_names:
-            print(dataset, group_name)
-            simulate(dataset, group_name)
+#def main():
+#    group_names = on_art_2009.index.values
+#    age_final = pd.DataFrame()
+#    for group_name in group_names:
+#        for dataset in range(1):
+#            print(dataset, group_name)
+#            output = simulate(dataset, group_name)
+#            age_out = prepare_output(output.final_population, output.dead_in_care, output.dead_out_care, output.in_care, 
+#                                     output.out_care, output.new_in_care, output.new_out_care, output.new_initiators, group_name, dataset)
         
 
-def main1():
-    group_names = ['idu_black_male']
-    for dataset in range(1):
+def main():
+    group_names = ['idu_hisp_female']
+    group_names = on_art_2009.index.values
+    age_final = pd.DataFrame()
+    with pd.HDFStore(out_dir + '/out.h5') as store:
         for group_name in group_names:
-            print(dataset, group_name)
-            simulate(dataset, group_name)
+            for dataset in range(25):
+                print(dataset, group_name)
+                output = simulate(dataset, group_name)
+                age_out = prepare_output(output.final_population, output.dead_in_care, output.dead_out_care, output.in_care, 
+                               output.out_care, output.new_in_care, output.new_out_care, output.new_initiators, group_name, dataset)
+                age_final = age_final.append(age_out)
 
-main1()
+        store['age_final'] = age_final
+
+
+
+main()
