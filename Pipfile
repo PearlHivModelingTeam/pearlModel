@@ -13,6 +13,7 @@ tzlocal = "*"
 tables = "*"
 matplotlib = "*"
 scipy = "*"
+seaborn = "*"
 
 [requires]
 python_version = "3.7"
