@@ -335,8 +335,11 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     
     return new_population
 
+###############################################################################
+# Pearl Class                                                                 #
+###############################################################################
+
 class Pearl:
-    
     def __init__(self, init_pop, new_pop, group_name, replication):
         self.group_name = group_name
         self.replication = replication
@@ -456,7 +459,6 @@ class Pearl:
             # Increment year
             self.year += 1
 
-
 ###############################################################################
 # Simulate Function                                                           #
 ###############################################################################
@@ -489,14 +491,15 @@ def simulate(replication, group_name):
                            pearl.new_dx)
 
 ###############################################################################
-# Prepare Output Function                                                     #
+# Output Classes and Functions                                                #
 ###############################################################################
 
 # namedtuple for passing around raw output
 RawOutputContainer = namedtuple('RawOutput', ['final_population', 'dead_in_care', 'dead_out_care', 'in_care', 'out_care', 'new_in_care', 'new_out_care', 'new_initiators'])
 
 class OutputContainer:
-    def __init__(self, in_care_count=None, out_care_count=None):
+    def __init__(self, n_times_lost = None, in_care_count=None, out_care_count=None):
+        self.n_times_lost = pd.DataFrame() if n_times_lost is None else n_times_lost 
         self.in_care_count = pd.DataFrame() if in_care_count is None else in_care_count 
         self.out_care_count = pd.DataFrame() if out_care_count is None else out_care_count 
 
@@ -505,13 +508,14 @@ def output_reindex(df):
     return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
 
 @ray.remote
-def prepare_output(raw_output_tuple, group_name, replication):
+def prepare_output(raw_output, group_name, replication):
     """ Take raw output and aggregate """
     
-    ## Count how many times people left and tally them up
-    #n_times_lost = pd.DataFrame(final_population['n_lost'].value_counts())
-    #n_times_lost['pct'] = 100.0 * n_times_lost['n_lost'] / n_times_lost['n_lost'].sum()
-    #n_times_lost['replication'] = replication
+    # Count how many times people left and tally them up
+    n_times_lost = pd.DataFrame(raw_output.final_population['n_lost'].value_counts())
+    n_times_lost['pct'] = 100.0 * n_times_lost['n_lost'] / n_times_lost['n_lost'].sum()
+    n_times_lost['replication'] = replication
+    n_times_lost['group'] = group_name
 
     ## Count of those that died out of care
     #dead_out_care_count = dead_out_care.groupby(['year_died', 'age_cat']).size().reset_index(name='n')
@@ -536,17 +540,14 @@ def prepare_output(raw_output_tuple, group_name, replication):
     #new_out_care_count['group'] = group_name
 
     # Count of those in care by age_cat
-    in_care_count = output_reindex(raw_output_tuple.in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    in_care_count = output_reindex(raw_output.in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
     in_care_count['replication'] = replication
     in_care_count['group'] = group_name
-    in_care_count = in_care_count.set_index(['group', 'replication', 'year', 'age_cat'])
 
     # Count of those out of care
-    out_care_count = output_reindex(raw_output_tuple.out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    out_care_count = output_reindex(raw_output.out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
     out_care_count['replication'] = replication
     out_care_count['group'] = group_name
-    out_care_count = out_care_count.set_index(['group', 'replication', 'year', 'age_cat'])
-
 
     ## Count of new initiators
     #new_init_count = new_initiators.groupby(['h1yy']).size().reset_index(name='n')
@@ -558,7 +559,7 @@ def prepare_output(raw_output_tuple, group_name, replication):
     #in_care_age['replication'] = replication
     #in_care_age['group'] = group_name
 
-    return OutputContainer(in_care_count, out_care_count)
+    return OutputContainer(n_times_lost, in_care_count, out_care_count)
 
 def append_replications(output_ids, final_output):
     for i in range(len(output_ids)):
@@ -569,32 +570,28 @@ def append_replications(output_ids, final_output):
 
 def store_output(final_output):
     with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
+        store['n_times_lost'] = final_output.n_times_lost
         store['in_care_count'] = final_output.in_care_count
         store['out_care_count'] = final_output.out_care_count
-
-
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
      
-
 def main(replications):
-    group_names = ['idu_hisp_female', 'msm_black_male']
+    group_names = ['idu_hisp_female', 'het_hisp_female']
     #group_names = on_art_2009.index.values
     
     ray.init(num_cpus=6)
 
-    output_ids = [0] * replications
     final_output = OutputContainer()
     for group_name in group_names:
         print(group_name)
+        output_ids = [0] * replications
         for replication in range(replications):
-            raw_output_tuple_id = simulate.remote(replication, group_name)
-            output_ids[replication] = prepare_output.remote(raw_output_tuple_id, group_name, replication)
+            raw_output_id = simulate.remote(replication, group_name)
+            output_ids[replication] = prepare_output.remote(raw_output_id, group_name, replication)
         final_output = append_replications(output_ids, final_output)
     store_output(final_output)
-
-
 
 main(replications = 6)

@@ -15,10 +15,10 @@ out_dir = cwd + '/../../out'
 
 
 with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
+    n_time_lost = store['n_times_lost']
     in_care_count = store['in_care_count']
     out_care_count = store['out_care_count']
 
-print(out_care_count)
 for name, grouped in in_care_count.groupby(['group']): 
     fig = plt.figure()
     means = grouped.reset_index().groupby(['age_cat', 'year']).mean().drop(columns='replication').rename(columns={'n': 'mean'})
