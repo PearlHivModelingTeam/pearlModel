@@ -3,8 +3,7 @@ import sys
 import os
 import numpy as np
 import pandas as pd
-import itertools
-import matplotlib.pyplot as plt
+import ray
 import scipy.stats as stats
 from collections import namedtuple
 
@@ -433,8 +432,7 @@ class Pearl:
     def run_simulation(self, end):
         """ Simulate from 2009 to end """
         while(self.year <= end):
-            print(self.year)
-
+            
             # Everybody ages
             self.increment_age()
             
@@ -458,13 +456,12 @@ class Pearl:
             # Increment year
             self.year += 1
 
-# namedtuple for passing around output
-OutputContainer = namedtuple('Output', ['final_population', 'dead_in_care', 'dead_out_care', 'in_care', 'out_care', 'new_in_care', 'new_out_care', 'new_initiators'])
 
 ###############################################################################
 # Simulate Function                                                           #
 ###############################################################################
 
+@ray.remote
 def simulate(replication, group_name):
     """ Run one replication of the pearl model for a given group"""
 
@@ -487,20 +484,28 @@ def simulate(replication, group_name):
 
     # Prepare output
     final_population = pd.concat([pearl.in_care, pearl.out_care, pearl.dead_in_care, pearl.dead_out_care], sort=False)
-    return OutputContainer(final_population, pearl.dead_in_care, pearl.dead_out_care, pearl.in_care_snap.reset_index(), 
-                           pearl.out_care_snap.reset_index(), pearl.new_in_care_snap.reset_index(), pearl.new_out_care_snap.reset_index(), 
+    return RawOutputContainer(final_population, pearl.dead_in_care, pearl.dead_out_care, pearl.in_care_snap.reset_index(), 
+                              pearl.out_care_snap.reset_index(), pearl.new_in_care_snap.reset_index(), pearl.new_out_care_snap.reset_index(), 
                            pearl.new_dx)
 
 ###############################################################################
 # Prepare Output Function                                                     #
 ###############################################################################
 
+# namedtuple for passing around raw output
+RawOutputContainer = namedtuple('RawOutput', ['final_population', 'dead_in_care', 'dead_out_care', 'in_care', 'out_care', 'new_in_care', 'new_out_care', 'new_initiators'])
+
+class OutputContainer:
+    def __init__(self, in_care_count=None, out_care_count=None):
+        self.in_care_count = pd.DataFrame() if in_care_count is None else in_care_count 
+        self.out_care_count = pd.DataFrame() if out_care_count is None else out_care_count 
+
 def output_reindex(df):
     """ Helper function for reindexing output tables """
     return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
 
-#def prepare_output(final_population, dead_in_care, dead_out_care, in_care, out_care, new_in_care, new_out_care, new_initiators, group_name, replication):
-def prepare_output(raw_output, group_name, replication):
+@ray.remote
+def prepare_output(raw_output_tuple, group_name, replication):
     """ Take raw output and aggregate """
     
     ## Count how many times people left and tally them up
@@ -531,13 +536,13 @@ def prepare_output(raw_output, group_name, replication):
     #new_out_care_count['group'] = group_name
 
     # Count of those in care by age_cat
-    in_care_count = output_reindex(raw_output.in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    in_care_count = output_reindex(raw_output_tuple.in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
     in_care_count['replication'] = replication
     in_care_count['group'] = group_name
     in_care_count = in_care_count.set_index(['group', 'replication', 'year', 'age_cat'])
 
     # Count of those out of care
-    out_care_count = output_reindex(raw_output.out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
+    out_care_count = output_reindex(raw_output_tuple.out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
     out_care_count['replication'] = replication
     out_care_count['group'] = group_name
     out_care_count = out_care_count.set_index(['group', 'replication', 'year', 'age_cat'])
@@ -553,29 +558,43 @@ def prepare_output(raw_output, group_name, replication):
     #in_care_age['replication'] = replication
     #in_care_age['group'] = group_name
 
-    return in_care_count
+    return OutputContainer(in_care_count, out_care_count)
+
+def append_replications(output_ids, final_output):
+    for i in range(len(output_ids)):
+        final_output.in_care_count = final_output.in_care_count.append(ray.get(output_ids[i]).in_care_count)
+        final_output.out_care_count = final_output.out_care_count.append(ray.get(output_ids[i]).out_care_count)
+
+    return final_output
+
+def store_output(final_output):
+    with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
+        store['in_care_count'] = final_output.in_care_count
+        store['out_care_count'] = final_output.out_care_count
+
+
 
 ###############################################################################
 # Main Function                                                               #
 ###############################################################################
-        
+     
 
-def main():
-    group_names = ['idu_hisp_female']
+def main(replications):
+    group_names = ['idu_hisp_female', 'msm_black_male']
     #group_names = on_art_2009.index.values
-    age_final = pd.DataFrame()
-    with pd.HDFStore(out_dir + '/out.h5') as store:
-        for group_name in group_names:
-            for replication in range(10):
-                print(replication, group_name)
-                raw_output = simulate(replication, group_name)
-                age_out = prepare_output(raw_output, group_name, replication)
-                #age_out = prepare_output(output.final_population, output.dead_in_care, output.dead_out_care, output.in_care, 
-                #               output.out_care, output.new_in_care, output.new_out_care, output.new_initiators, group_name, replication)
-                age_final = age_final.append(age_out)
+    
+    ray.init(num_cpus=6)
 
-        store['age_final'] = age_final
+    output_ids = [0] * replications
+    final_output = OutputContainer()
+    for group_name in group_names:
+        print(group_name)
+        for replication in range(replications):
+            raw_output_tuple_id = simulate.remote(replication, group_name)
+            output_ids[replication] = prepare_output.remote(raw_output_tuple_id, group_name, replication)
+        final_output = append_replications(output_ids, final_output)
+    store_output(final_output)
 
 
 
-main()
+main(replications = 6)
