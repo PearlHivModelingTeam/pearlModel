@@ -17,11 +17,9 @@ out_dir = cwd + '/../../out'
 with pd.HDFStore(out_dir + '/out.h5') as store:
     age_final = store['age_final']
 
-group = age_final.loc['msm_black_male'].reset_index()
-
 for name, grouped in age_final.groupby(['group']): 
     fig = plt.figure()
-    means = grouped.reset_index().groupby(['age_cat', 'year']).mean().drop(columns='dataset').rename(columns={'n': 'mean'})
+    means = grouped.reset_index().groupby(['age_cat', 'year']).mean().drop(columns='replication').rename(columns={'n': 'mean'})
     total = means.reset_index().sort_values('year').set_index(['year', 'age_cat'])
     total = total.groupby('year').sum().rename(columns={'mean':'total'})
 
