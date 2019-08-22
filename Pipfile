@@ -8,11 +8,15 @@ verify_ssl = true
 [packages]
 numpy = "*"
 pandas = "*"
-ray = "*"
-scipy = "*"
-psutil = "*"
+rpy2 = "*"
+tzlocal = "*"
 tables = "*"
+matplotlib = "*"
+scipy = "*"
+seaborn = "*"
+ray = "*"
+psutil = "*"
 setproctitle = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
