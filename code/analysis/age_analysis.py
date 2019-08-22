@@ -7,18 +7,32 @@ import seaborn as sns
 
 
 # print more rows
-pd.options.display.max_rows = 150
+pd.options.display.max_rows = 1000
 
 # Define directories
 cwd = os.getcwd()
 out_dir = cwd + '/../../out'
 
-
 with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
-    n_time_lost = store['n_times_lost']
-    in_care_count = store['in_care_count']
-    out_care_count = store['out_care_count']
+    n_times_lost        = store['n_times_lost']
+    dead_in_care_count  = store['dead_in_care_count']
+    dead_out_care_count = store['dead_out_care_count']
+    new_in_care_count   = store['new_in_care_count']
+    new_out_care_count  = store['new_out_care_count']
+    in_care_count       = store['in_care_count']
+    out_care_count      = store['out_care_count']
+    new_init_count      = store['new_init_count']
+    in_care_age         = store['in_care_age']
+    out_care_age        = store['out_care_age']
+    years_out           = store['years_out']
+    prop_ltfu           = store['prop_ltfu']
+    n_out_2010_2015     = store['n_out_2010_2015']
 
+
+print(prop_ltfu)
+print(n_out_2010_2015)
+
+"""
 for name, grouped in in_care_count.groupby(['group']): 
     fig = plt.figure()
     means = grouped.reset_index().groupby(['age_cat', 'year']).mean().drop(columns='replication').rename(columns={'n': 'mean'})
@@ -42,5 +56,5 @@ for name, grouped in in_care_count.groupby(['group']):
 
     plt.savefig(out_dir + '/fig/' + name + '.png', bbox_inches='tight')
     plt.close(fig)
-
+"""
 
