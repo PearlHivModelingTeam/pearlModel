@@ -633,7 +633,7 @@ def prepare_output(raw_output, group_name, replication):
                            out_care_count, new_init_count, in_care_age, out_care_age, dead_in_care_age, dead_out_care_age, new_in_care_age,
                            new_out_care_age, years_out, prop_ltfu, n_out_2010_2015)
 
-def append_replications(output_ids, final_output):
+def append_replications_parallel(output_ids, final_output):
     for i in range(len(output_ids)):
         final_output.n_times_lost        = final_output.n_times_lost.append(ray.get(output_ids[i]).n_times_lost, ignore_index=True)
         final_output.dead_in_care_count  = final_output.dead_in_care_count.append(ray.get(output_ids[i]).dead_in_care_count, ignore_index=True)
@@ -652,6 +652,28 @@ def append_replications(output_ids, final_output):
         final_output.years_out           = final_output.years_out.append(ray.get(output_ids[i]).years_out, ignore_index=True)
         final_output.prop_ltfu           = final_output.prop_ltfu.append(ray.get(output_ids[i]).prop_ltfu, ignore_index=True)
         final_output.n_out_2010_2015     = final_output.n_out_2010_2015.append(ray.get(output_ids[i]).n_out_2010_2015, ignore_index=True)
+
+    return final_output
+
+def append_replications_serial(output_ids, final_output):
+    for i in range(len(output_ids)):
+        final_output.n_times_lost        = final_output.n_times_lost.append(output_ids[i].n_times_lost, ignore_index=True)
+        final_output.dead_in_care_count  = final_output.dead_in_care_count.append(output_ids[i].dead_in_care_count, ignore_index=True)
+        final_output.dead_out_care_count = final_output.dead_out_care_count.append(output_ids[i].dead_out_care_count, ignore_index=True)
+        final_output.new_in_care_count   = final_output.new_in_care_count.append(output_ids[i].new_in_care_count, ignore_index=True)
+        final_output.new_out_care_count  = final_output.new_out_care_count.append(output_ids[i].new_out_care_count, ignore_index=True)
+        final_output.in_care_count       = final_output.in_care_count.append(output_ids[i].in_care_count, ignore_index=True)
+        final_output.out_care_count      = final_output.out_care_count.append(output_ids[i].out_care_count, ignore_index=True)
+        final_output.new_init_count      = final_output.new_init_count.append(output_ids[i].new_init_count, ignore_index=True)
+        final_output.in_care_age         = final_output.in_care_age.append(output_ids[i].in_care_age, ignore_index=True)
+        final_output.out_care_age        = final_output.out_care_age.append(output_ids[i].out_care_age, ignore_index=True)
+        final_output.dead_in_care_age    = final_output.dead_in_care_age.append(output_ids[i].dead_in_care_age, ignore_index=True)
+        final_output.dead_out_care_age   = final_output.dead_out_care_age.append(output_ids[i].dead_out_care_age, ignore_index=True)
+        final_output.new_in_care_age     = final_output.new_in_care_age.append(output_ids[i].new_in_care_age, ignore_index=True)
+        final_output.new_out_care_age    = final_output.new_out_care_age.append(output_ids[i].new_out_care_age, ignore_index=True)
+        final_output.years_out           = final_output.years_out.append(output_ids[i].years_out, ignore_index=True)
+        final_output.prop_ltfu           = final_output.prop_ltfu.append(output_ids[i].prop_ltfu, ignore_index=True)
+        final_output.n_out_2010_2015     = final_output.n_out_2010_2015.append(output_ids[i].n_out_2010_2015, ignore_index=True)
 
     return final_output
 
@@ -694,7 +716,7 @@ def main(replications):
             raw_output_id = simulate(replication, group_name)
             #output_ids[replication] = prepare_output.remote(raw_output_id, group_name, replication)
             output_ids[replication] = prepare_output(raw_output_id, group_name, replication)
-        final_output = append_replications(output_ids, final_output)
+        final_output = append_replications_serial(output_ids, final_output)
     store_output(final_output)
 
 main(replications = 100)
