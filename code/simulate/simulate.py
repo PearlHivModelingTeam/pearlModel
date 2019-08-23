@@ -473,7 +473,7 @@ class Pearl:
 # Simulate Function                                                           #
 ###############################################################################
 
-@ray.remote
+#@ray.remote
 def simulate(replication, group_name):
     """ Run one replication of the pearl model for a given group"""
 
@@ -533,7 +533,7 @@ def output_reindex(df):
     """ Helper function for reindexing output tables """
     return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
 
-@ray.remote
+#@ray.remote
 def prepare_output(raw_output, group_name, replication):
     """ Take raw output and aggregate """
     
@@ -681,18 +681,20 @@ def store_output(final_output):
      
 def main(replications):
     group_names = ['idu_hisp_female', 'het_black_female']
-    #group_names = on_art_2009.index.values
+    group_names = on_art_2009.index.values
     
-    ray.init(num_cpus=6)
+    #ray.init(num_cpus=6)
 
     final_output = OutputContainer()
     for group_name in group_names:
         print(group_name)
         output_ids = [0] * replications
         for replication in range(replications):
-            raw_output_id = simulate.remote(replication, group_name)
-            output_ids[replication] = prepare_output.remote(raw_output_id, group_name, replication)
+            #raw_output_id = simulate.remote(replication, group_name)
+            raw_output_id = simulate(replication, group_name)
+            #output_ids[replication] = prepare_output.remote(raw_output_id, group_name, replication)
+            output_ids[replication] = prepare_output(raw_output_id, group_name, replication)
         final_output = append_replications(output_ids, final_output)
     store_output(final_output)
 
-main(replications = 6)
+main(replications = 100)
