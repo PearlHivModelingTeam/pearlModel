@@ -17,6 +17,8 @@ seaborn = "*"
 ray = "*"
 psutil = "*"
 setproctitle = "*"
+feather-format = "*"
+pyarrow = "*"
 
 [requires]
 python_version = "3.7"
