@@ -378,7 +378,7 @@ class Pearl:
 
     def kill_in_care(self):
         death_prob = calculate_death_in_care_prob(self.in_care.copy(), mortality_in_care_coeff.loc[self.group_name], self.year)
-        died = death_prob > np.random.rand(len(self.in_care.index))
+        died = (death_prob > np.random.rand(len(self.in_care.index))) | (self.in_care['age'] > 85)
         new_dead = self.in_care.loc[died].copy()
         new_dead['year_died'] = self.year
         self.dead_in_care = self.dead_in_care.append(new_dead.copy(), sort=False).sort_index()
@@ -386,7 +386,7 @@ class Pearl:
 
     def kill_out_care(self):
         death_prob = calculate_death_out_care_prob(self.out_care.copy(), mortality_out_care_coeff.loc[self.group_name], self.year)
-        died = death_prob > np.random.rand(len(self.out_care.index))
+        died = (death_prob > np.random.rand(len(self.out_care.index))) | (self.out_care['age'] > 85)
         new_dead = self.out_care.loc[died].copy().drop(['sqrtcd4n_exit', 'ltfu_year'], axis=1)
         new_dead['year_died'] = self.year
         self.dead_out_care = self.dead_out_care.append(new_dead.copy(), sort=False).sort_index()
@@ -611,8 +611,6 @@ def prepare_output(raw_output, group_name, replication):
     # Number of unique patients lost to follow up 2010-2015
     n_out_2010_2015 = pd.DataFrame([[group_name, replication, numerator]], columns=['group', 'replication', 'n'])
 
-
-    
     return OutputContainer(n_times_lost, dead_in_care_count, dead_out_care_count, new_in_care_count, new_out_care_count, in_care_count, 
                            out_care_count, new_init_count, in_care_age, out_care_age, dead_in_care_age, dead_out_care_age, new_in_care_age,
                            new_out_care_age, years_out, prop_ltfu, n_out_2010_2015)
