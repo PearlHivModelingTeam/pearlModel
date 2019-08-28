@@ -1,4 +1,4 @@
-suppressMessages(library(tidyverse))
+library(tidyverse)
 suppressMessages(library(haven))
 suppressMessages(library(lubridate))
 suppressMessages(library(forcats))
@@ -8,12 +8,14 @@ suppressMessages(library(openxlsx))
 suppressMessages(library(feather))
 
 cwd = getwd()
-out_dir = paste0(cwd, '/../../out')
-input_dir <- paste0(cwd, '/../../data/input')
-fig_dir = paste0(out_dir, '/fig')
+r_dir = paste0(cwd, '/../../out')
+py_dir = paste0(cwd, '/../../out')
 
-load_r_data <- function(out_dir, file){
-  setwd(out_dir)
+input_dir <- paste0(cwd, '/../../data/input')
+fig_dir = paste0(py_dir, '/fig')
+
+load_r_data <- function(file, r_dir){
+  setwd(r_dir)
 
   data <- get(load(file))
   data <- unlist(data, recursive=F)
@@ -21,7 +23,7 @@ load_r_data <- function(out_dir, file){
   return(data)
 }
 
-format_count <- function(data, category_str){
+format_r_data <- function(data, category_str){
   df_r <- data[names(data)==category_str]
 
   names(df_r) = seq(0,99)
@@ -48,9 +50,9 @@ format_count <- function(data, category_str){
 summarize_count <- function(df){
   overall <- df %>%
     group_by(group, year, age_cat) %>%
-    summarise(mean_n = floor(mean(n)),
-              p025_n = floor(quantile(n, probs = 0.025)),
-              p975_n = floor(quantile(n, probs = 0.975))) %>%
+    summarise(mean_n = mean(n),
+              p025_n = quantile(n, probs = 0.025),
+              p975_n = quantile(n, probs = 0.975)) %>%
     ungroup %>%
     group_by(group, year) %>%
     mutate(mean_N = sum(mean_n),
@@ -67,9 +69,9 @@ summarize_count <- function(df){
 summarize_init_count <- function(df){
   overall <- df %>%
     group_by(group, h1yy) %>%
-    summarise(mean_n = floor(mean(n)),
-              p025_n = floor(quantile(n, probs = 0.025)),
-              p975_n = floor(quantile(n, probs = 0.975))) %>%
+    summarise(mean_n = mean(n),
+              p025_n = quantile(n, probs = 0.025),
+              p975_n = quantile(n, probs = 0.975)) %>%
     ungroup 
     
     return(overall)
@@ -88,9 +90,6 @@ plot <- function(group_name, df, title_str, path_str) {
   ggsave(paste0(group_name, '.png'), path=paste0(fig_dir, path_str), height=8, width=13)
 }
 
-# Load R Data
-msm_white_male = load_r_data(out_dir, 'msm_white_males.rda')
-
 plot_init <- function(group_name, df, title_str, path_str) {
   ggplot(df, aes(x=h1yy, y=mean_n)) +
     geom_line(data = df %>% filter(group == group_name, Algorithm == 'R'), aes(color=Algorithm)) +
@@ -103,4 +102,53 @@ plot_init <- function(group_name, df, title_str, path_str) {
   ggsave(paste0(group_name, '.png'), path=paste0(fig_dir, path_str), height=8, width=13)
 }
 
-apply(groups, 1, plot_init, new_init_sum, 'Number of HAART Initiators', '/new_init_count')
+group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male', 'idu_hisp_male',
+                'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male', 'het_black_male', 'het_hisp_male',
+                'het_white_female', 'het_black_female', 'het_hisp_female')
+file_names = paste0(group_names, 's.rda')
+plot_names = c('in_care', 'out_care', 'dead_in_care', 'dead_out_care', 'new_in_care', 'new_out_care')
+
+r_data <- lapply(file_names, load_r_data, r_dir)
+
+for (plot_str in plot_names){
+  df_r <- lapply(r_data, format_r_data, plot_str)
+  df_r <- bind_rows(df_r)
+  
+  df_py <- read_feather(paste0(py_dir, '/feather/', plot_str, '_count.feather'))
+  df_py <- df_py %>% select(group, replication, year, age_cat, n) %>% filter(group %in% group_names)
+
+  
+  df_r <- summarize_count(df_r) %>% mutate(Algorithm = 'R')
+  df_py <- summarize_count(df_py) %>% mutate(Algorithm = 'Python')
+
+  df <- bind_rows(df_r, df_py)
+  df$age_cat <- factor(df$age_cat,
+    levels = c('2', '3', '4', '5', '6', '7'),
+    labels = c('18-29', '30-39', '40-49', '50-59', '60-69', '70+'))
+
+
+  print(group_names)
+  lapply(group_names, plot, df, plot_str, paste0('/', plot_str))
+}
+
+df_r <- lapply(r_data, format_r_data, 'new_init_count')
+df_r <- bind_rows(df_r)
+  
+df_py <- read_feather(paste0(py_dir, '/feather/new_init_count.feather'))
+df_py <- df_py %>% select(group, replication, h1yy, n) %>% filter(group %in% group_names)
+
+df_r <- summarize_init_count(df_r) %>% mutate(Algorithm = 'R')
+df_py <- summarize_init_count(df_py) %>% mutate(Algorithm = 'Python')
+
+df <- bind_rows(df_r, df_py)
+
+print(group_names)
+lapply(group_names, plot_init, df, 'new_init', paste0('/','new_init'))
+
+
+#r_data <-  bind_rows(
+#  format_count(msm_white_male),
+#  format_count(msm_black_male))
+#
+#
+#apply(groups, 1, plot_init, new_init_sum, 'Number of HAART Initiators', '/new_init_count')

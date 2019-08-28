@@ -15,23 +15,6 @@ cwd = os.getcwd()
 proc_dir = cwd + '/../../data/processed'
 out_dir = cwd + '/../../out'
 
-# Load everything
-with pd.HDFStore(proc_dir + '/converted.h5') as store:
-    on_art_2009 = store['on_art_2009'] 
-    mixture_2009_coeff = store['mixture_2009_coeff']
-    naaccord_prop_2009 = store['naaccord_prop_2009']
-    init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
-    new_dx = store['new_dx']
-    new_dx_interval = store['new_dx_interval']
-    mixture_h1yy_coeff= store['mixture_h1yy_coeff']
-    init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
-    cd4_increase_coeff = store['cd4_increase_coeff']
-    cd4_decrease_coeff = store['cd4_decrease_coeff']
-    ltfu_coeff = store['ltfu_coeff']
-    mortality_in_care_coeff = store['mortality_in_care_coeff']
-    mortality_out_care_coeff = store['mortality_out_care_coeff']
-    prob_reengage = store['prob_reengage']
-
 ###############################################################################
 # Functions                                                                   #
 ###############################################################################
@@ -273,7 +256,7 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     observed_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'sim'})
     observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='sim', index='h1yy', columns='param').rename_axis(None, axis=1)
     
-    # Pull coefficients in 2018 
+    # Pull coefficients in 2018
     sim_coeff['pred18'] = np.nan
     for name, group in sim_coeff.groupby('param'):
         sim_coeff.loc[(name, ), 'pred18'] = sim_coeff.loc[(name, 2018), 'pred'] 
@@ -345,6 +328,7 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
 # Pearl Class                                                                 #
 ###############################################################################
 
+#@ray.remote
 class Pearl:
     def __init__(self, init_pop, new_pop, group_name, replication):
         self.group_name = group_name
@@ -478,9 +462,9 @@ def simulate(replication, group_name):
     """ Run one replication of the pearl model for a given group"""
 
     # Create 2009 population
-    population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name], naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
+    population_2009 = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name].copy(), naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
                                     cd4_increase_coeff.loc[group_name], group_name)
-
+    
     # Simulate number of new art initiators
     art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
 
@@ -677,7 +661,7 @@ def append_replications_serial(output_ids, final_output):
 
     return final_output
 
-def store_output(final_output):
+def store_output(final_output, group_name):
     with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
         store['n_times_lost']        = final_output.n_times_lost
         store['dead_in_care_count']  = final_output.dead_in_care_count
@@ -702,21 +686,41 @@ def store_output(final_output):
 ###############################################################################
      
 def main(replications):
-    group_names = ['idu_hisp_female', 'het_black_female']
-    group_names = on_art_2009.index.values
-    
-    #ray.init(num_cpus=6)
 
     final_output = OutputContainer()
     for group_name in group_names:
         print(group_name)
-        output_ids = [0] * replications
+        outputs = []
         for replication in range(replications):
-            #raw_output_id = simulate.remote(replication, group_name)
-            raw_output_id = simulate(replication, group_name)
-            #output_ids[replication] = prepare_output.remote(raw_output_id, group_name, replication)
-            output_ids[replication] = prepare_output(raw_output_id, group_name, replication)
-        final_output = append_replications_serial(output_ids, final_output)
+            #raw_output = simulate.remote(replication, group_name)
+            raw_output = simulate(replication, group_name)
+            #output = prepare_output.remote(raw_output, group_name, replication)
+            output = prepare_output(raw_output, group_name, replication)
+            outputs.append(output)
+        #final_output = append_replications_parallel(output_ids, final_output)
+        final_output = append_replications_serial(outputs, final_output)
     store_output(final_output)
 
-main(replications = 100)
+#ray.init(num_cpus=6)
+
+group_names = ['idu_hisp_female', 'het_black_female']
+#group_names = on_art_2009.index.values
+
+# Load everything
+with pd.HDFStore(proc_dir + '/converted.h5') as store:
+    on_art_2009 = store['on_art_2009']
+    mixture_2009_coeff = store['mixture_2009_coeff']
+    naaccord_prop_2009 = store['naaccord_prop_2009']
+    init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
+    new_dx = store['new_dx']
+    new_dx_interval = store['new_dx_interval']
+    mixture_h1yy_coeff= store['mixture_h1yy_coeff']
+    init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
+    cd4_increase_coeff = store['cd4_increase_coeff']
+    cd4_decrease_coeff = store['cd4_decrease_coeff']
+    ltfu_coeff = store['ltfu_coeff']
+    mortality_in_care_coeff = store['mortality_in_care_coeff']
+    mortality_out_care_coeff = store['mortality_out_care_coeff']
+    prob_reengage = store['prob_reengage']
+
+main(replications = 10)
