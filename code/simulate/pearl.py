@@ -1,36 +1,8 @@
 # Imports
-import sys
-import os
+from os import getcwd
 import numpy as np
 import pandas as pd
-import ray
 import scipy.stats as stats
-from collections import namedtuple
-
-# print more rows
-pd.options.display.max_rows = 150
-
-# Define directories
-cwd = os.getcwd()
-proc_dir = cwd + '/../../data/processed'
-out_dir = cwd + '/../../out'
-
-# Load everything
-with pd.HDFStore(proc_dir + '/converted.h5') as store:
-    on_art_2009 = store['on_art_2009']
-    mixture_2009_coeff = store['mixture_2009_coeff']
-    naaccord_prop_2009 = store['naaccord_prop_2009']
-    init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
-    new_dx = store['new_dx']
-    new_dx_interval = store['new_dx_interval']
-    mixture_h1yy_coeff= store['mixture_h1yy_coeff']
-    init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
-    cd4_increase_coeff = store['cd4_increase_coeff']
-    cd4_decrease_coeff = store['cd4_decrease_coeff']
-    ltfu_coeff = store['ltfu_coeff']
-    mortality_in_care_coeff = store['mortality_in_care_coeff']
-    mortality_out_care_coeff = store['mortality_out_care_coeff']
-    prob_reengage = store['prob_reengage']
 
 ###############################################################################
 # Functions                                                                   #
@@ -357,6 +329,32 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     return population
 
 ###############################################################################
+# Output Classes and Functions                                                #
+###############################################################################
+
+class StatsContainer:
+    def __init__(self):
+        self.n_times_lost        = pd.DataFrame() 
+        self.dead_in_care_count  = pd.DataFrame()
+        self.dead_out_care_count = pd.DataFrame() 
+        self.new_in_care_count   = pd.DataFrame()
+        self.new_out_care_count  = pd.DataFrame() 
+        self.in_care_count       = pd.DataFrame() 
+        self.out_care_count      = pd.DataFrame() 
+        self.new_init_count      = pd.DataFrame() 
+        self.in_care_age         = pd.DataFrame() 
+        self.out_care_age        = pd.DataFrame() 
+        self.dead_in_care_age    = pd.DataFrame()
+        self.dead_out_care_age   = pd.DataFrame()
+        self.new_in_care_age     = pd.DataFrame()
+        self.new_out_care_age    = pd.DataFrame() 
+        self.years_out           = pd.DataFrame() 
+
+def output_reindex(df):
+    """ Helper function for reindexing output tables """
+    return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
+
+###############################################################################
 # Pearl Class                                                                 #
 ###############################################################################
 
@@ -384,7 +382,10 @@ class Pearl:
         self.lose_to_follow_up()
         
         # Initiate output class
-        self.output_container = OutputContainer()
+        self.stats = StatsContainer()
+
+        # First recording of stats
+        self.record_stats()
 
         #Move populations
         self.append_new()
@@ -393,6 +394,9 @@ class Pearl:
 
         # Move to 2010
         self.year += 1
+        
+        # Run
+        self.run()
        
     def __str__(self):
         total = len(self.population.index)
@@ -437,7 +441,8 @@ class Pearl:
                                                                                          cd4_decrease_coeff.iloc[0], self.year)
 
     def add_new_dx(self):
-        self.population.loc[(self.population['status']==0) & (self.population['h1yy']==self.year), 'status'] = 1
+        new_dx = (self.population['status']==0) & (self.population['h1yy']==self.year)
+        self.population.loc[new_dx, 'status'] = 1
 
     def kill_in_care(self):
         in_care = self.population['status'] == 1
@@ -479,11 +484,115 @@ class Pearl:
         self.population.loc[new_out_care, 'status'] = 2
         
     def record_stats(self):
-        pass
+        uninitiated   = self.population['status'] == 0
+        in_care       = self.population['status'] == 1
+        out_care      = self.population['status'] == 2
+        new_in_care   = self.population['status'] == 3
+        new_out_care  = self.population['status'] == 4
+        
+        # Count of new initiators by year
+        if (self.year == 2009):
+            self.stats.new_init_count = (self.population.loc[uninitiated].groupby(['h1yy']).size().reset_index(name='n').
+                                         assign(replication = self.replication, group=self.group_name))
+
+        # Count of those in care by age_cat and year
+        in_care_count = (self.population.loc[in_care|new_out_care].groupby(['age_cat']).size()
+                         .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
+                         .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
+
+        # Count of those out of care by age_cat and year
+        out_care_count = (self.population.loc[out_care|new_in_care].groupby(['age_cat']).size()
+                          .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
+                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
+        
+        # Count of those reengaging in care by age_cat and year
+        new_in_care_count = (self.population.loc[new_in_care].groupby(['age_cat']).size()
+                             .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
+                             .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+        self.stats.new_in_care_count = self.stats.new_in_care_count.append(new_in_care_count)
+        
+        # Count of those lost to care by age_cat and year
+        new_out_care_count = (self.population.loc[new_out_care].groupby(['age_cat']).size()
+                              .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
+                              .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+        self.stats.new_out_care_count = self.stats.new_out_care_count.append(new_out_care_count)
+        
+        # Count of those in care by age and year
+        in_care_age = (self.population.loc[in_care|new_out_care].groupby(['age']).size().reset_index(name='n')
+                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
+
+        # Count of those in care by age and year
+        out_care_age = (self.population.loc[out_care|new_in_care].groupby(['age']).size().reset_index(name='n')
+                        .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
+        
+        # Count of those reengaging in care by age and year
+        new_in_care_age = (self.population.loc[new_in_care].groupby(['age']).size().reset_index(name='n')
+                           .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+        self.stats.new_in_care_age = self.stats.new_in_care_age.append(new_in_care_age)
+        
+        # Count of those lost to care by age and year
+        new_out_care_age = (self.population.loc[new_out_care].groupby(['age']).size().reset_index(name='n')
+                            .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+        self.stats.new_out_care_age = self.stats.new_out_care_age.append(new_out_care_age)
+        
+    def record_final_stats(self):
+        dead_in_care  = self.population['status'] == 5
+        dead_out_care = self.population['status'] == 6
+
+        # Count how many times people left and tally them up
+        self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
+                                   .rename(columns={'n_lost':'n', 'index': 'n_times_lost'}))
+        self.stats.n_times_lost = (self.stats.n_times_lost.assign(pct = 100.0 * self.stats.n_times_lost['n'] / self.stats.n_times_lost['n'].sum())
+                                   .assign(replication = self.replication, group = self.group_name))
     
-    def run_simulation(self, end):
-        """ Simulate from 2009 to end """
-        while(self.year <= end):
+        # Count of those that died in care by age_cat and year
+        self.stats.dead_in_care_count = (output_reindex(self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size())
+                                         .reset_index(name='n').rename(columns={'year_died': 'year'})
+                                         .assign(replication=self.replication, group=self.group_name))
+
+        # Count of those that died in care by age_cat and year
+        self.stats.dead_out_care_count = (output_reindex(self.population.loc[dead_out_care].groupby(['year_died', 'age_cat']).size())
+                                         .reset_index(name='n').rename(columns={'year_died': 'year'})
+                                         .assign(replication=self.replication, group=self.group_name))
+        
+        # Count of those that died in care by age and year
+        self.stats.dead_in_care_age = (self.population.loc[dead_in_care].groupby(['year_died', 'age']).size().reset_index(name='n')
+                                       .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+        
+        # Count of those that died out of care by age and year
+        self.stats.dead_out_care_age = (self.population.loc[dead_out_care].groupby(['year_died', 'age']).size().reset_index(name='n')
+                                       .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+
+        # Count how many years spent out of care and tally
+        self.stats.years_out = (pd.DataFrame(self.population['years_out'].value_counts()).reset_index()
+                                .rename(columns={'years_out':'n', 'index':'years_out'})
+                                .assign(replication=self.replication, group=self.group_name))
+
+
+        with pd.HDFStore(out_dir + '/' + self.group_name + '_' + str(self.replication) + '.h5') as store:
+            store['n_times_lost']        = self.stats.n_times_lost
+            store['dead_in_care_count']  = self.stats.dead_in_care_count
+            store['dead_out_care_count'] = self.stats.dead_out_care_count
+            store['new_in_care_count']   = self.stats.new_in_care_count
+            store['new_out_care_count']  = self.stats.new_out_care_count
+            store['in_care_count']       = self.stats.in_care_count
+            store['out_care_count']      = self.stats.out_care_count
+            store['new_init_count']      = self.stats.new_init_count
+            store['in_care_age']         = self.stats.in_care_age
+            store['out_care_age']        = self.stats.out_care_age
+            store['dead_in_care_age']    = self.stats.dead_in_care_age
+            store['dead_out_care_age']   = self.stats.dead_out_care_age
+            store['new_in_care_age']     = self.stats.new_in_care_age
+            store['new_out_care_age']    = self.stats.new_out_care_age
+            store['years_out']           = self.stats.years_out
+    
+    def run(self):
+        """ Simulate from 2010 to 2030 """
+        while(self.year <= 2030):
             
             # Everybody ages
             self.increment_age()
@@ -499,6 +608,9 @@ class Pearl:
             self.kill_out_care()                                                        # Kill some people out of care
             self.reengage()                                                             # Reengage some people out of care
 
+            # Record output statistics
+            self.record_stats()
+            
             # Append changed populations to their respective DataFrames
             self.append_new()
 
@@ -506,184 +618,34 @@ class Pearl:
 
             # Increment year
             self.year += 1
+        self.record_final_stats()
 
 ###############################################################################
-# Output Classes and Functions                                                #
+# Test Function                                                               #
 ###############################################################################
 
-class OutputContainer:
-    def __init__(self, n_times_lost = None, dead_in_care_count=None, dead_out_care_count=None, new_in_care_count=None, new_out_care_count = None,
-                 in_care_count=None, out_care_count=None, new_init_count=None, in_care_age=None, out_care_age=None, dead_in_care_age=None,
-                 dead_out_care_age=None, new_in_care_age=None, new_out_care_age=None, years_out=None, prop_ltfu=None, n_out_2010_2015=None):
-        self.n_times_lost        = pd.DataFrame() if n_times_lost        is None else n_times_lost 
-        self.dead_in_care_count  = pd.DataFrame() if dead_in_care_count  is None else dead_in_care_count
-        self.dead_out_care_count = pd.DataFrame() if dead_out_care_count is None else dead_out_care_count 
-        self.new_in_care_count   = pd.DataFrame() if new_in_care_count   is None else new_in_care_count
-        self.new_out_care_count  = pd.DataFrame() if new_out_care_count  is None else new_out_care_count 
-        self.in_care_count       = pd.DataFrame() if in_care_count       is None else in_care_count 
-        self.out_care_count      = pd.DataFrame() if out_care_count      is None else out_care_count 
-        self.new_init_count      = pd.DataFrame() if new_init_count      is None else new_init_count 
-        self.in_care_age         = pd.DataFrame() if in_care_age         is None else in_care_age
-        self.out_care_age        = pd.DataFrame() if out_care_age        is None else out_care_age 
-        self.dead_in_care_age    = pd.DataFrame() if dead_in_care_age    is None else dead_in_care_age
-        self.dead_out_care_age   = pd.DataFrame() if dead_out_care_age   is None else dead_out_care_age 
-        self.new_in_care_age     = pd.DataFrame() if new_in_care_age     is None else new_in_care_age
-        self.new_out_care_age    = pd.DataFrame() if new_out_care_age    is None else new_out_care_age 
-        self.years_out           = pd.DataFrame() if years_out           is None else years_out 
-        self.prop_ltfu           = pd.DataFrame() if prop_ltfu           is None else prop_ltfu
-        self.n_out_2010_2015     = pd.DataFrame() if n_out_2010_2015     is None else n_out_2010_2015
 
-def output_reindex(df):
-    """ Helper function for reindexing output tables """
-    return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
-
-def prepare_output(raw_output, group_name, replication):
-    """ Take raw output and aggregate """
-    
-    # Count how many times people left and tally them up
-    n_times_lost = pd.DataFrame(raw_output.final_population['n_lost'].value_counts()).reset_index()
-    n_times_lost = n_times_lost.rename(columns={'n_lost':'n', 'index': 'n_times_lost'}) 
-    n_times_lost['pct'] = 100.0 * n_times_lost['n'] / n_times_lost['n'].sum()
-    n_times_lost['replication'] = replication
-    n_times_lost['group'] = group_name
-    
-    # Count of those that died out of care by age_cat and year
-    dead_in_care_count = output_reindex(raw_output.dead_in_care.groupby(['year_died', 'age_cat']).size()).reset_index(name='n')
-    dead_in_care_count = dead_in_care_count.rename(columns={'year_died': 'year'})
-    dead_in_care_count['replication'] = replication
-    dead_in_care_count['group'] = group_name
-    
-    # Count of those that died out of care by age_cat and year
-    dead_out_care_count = output_reindex(raw_output.dead_out_care.groupby(['year_died', 'age_cat']).size()).reset_index(name='n')
-    dead_out_care_count = dead_out_care_count.rename(columns={'year_died': 'year'})
-    dead_out_care_count['replication'] = replication
-    dead_out_care_count['group'] = group_name
-    
-    # Count of those that reengaged with care by age_cat and year
-    new_in_care_count = output_reindex(raw_output.new_in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
-    new_in_care_count['replication'] = replication
-    new_in_care_count['group'] = group_name
-
-    # Count of those that left care by age_cat and year
-    new_out_care_count = output_reindex(raw_output.new_out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
-    new_out_care_count['replication'] = replication
-    new_out_care_count['group'] = group_name
-   
-    # Count of those in care by age_cat and year
-    in_care_count = output_reindex(raw_output.in_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
-    in_care_count['replication'] = replication
-    in_care_count['group'] = group_name
-
-    # Count of those out of care by age_cat and year
-    out_care_count = output_reindex(raw_output.out_care.groupby(['year', 'age_cat']).size()).reset_index(name='n')
-    out_care_count['replication'] = replication
-    out_care_count['group'] = group_name
-    
-    # Count of new initiators
-    new_init_count = raw_output.new_initiators.groupby(['h1yy']).size().reset_index(name='n')
-    new_init_count['replication'] = replication
-    new_init_count['group'] = group_name
-
-    # Count of those in care by age
-    in_care_age = raw_output.in_care.groupby(['year', 'age']).size().reset_index(name='n')
-    in_care_age['replication'] = replication
-    in_care_age['group'] = group_name
-    
-    # Count of those out of care by age
-    out_care_age = raw_output.out_care.groupby(['year', 'age']).size().reset_index(name='n')
-    out_care_age['replication'] = replication
-    out_care_age['group'] = group_name
-    
-    # Count of those dead in care by age
-    dead_in_care_age = raw_output.dead_in_care.groupby(['year_died', 'age']).size().reset_index(name='n')
-    dead_in_care_age = dead_in_care_age.rename(columns={'year_died': 'year'})
-    dead_in_care_age['replication'] = replication
-    dead_in_care_age['group'] = group_name
-    
-    # Count of those dead out of care by age
-    dead_out_care_age = raw_output.dead_out_care.groupby(['year_died', 'age']).size().reset_index(name='n')
-    dead_out_care_age = dead_out_care_age.rename(columns={'year_died': 'year'})
-    dead_out_care_age['replication'] = replication
-    dead_out_care_age['group'] = group_name
-    
-    # Count of those reengaging in care by age
-    new_in_care_age = raw_output.new_in_care.groupby(['year', 'age']).size().reset_index(name='n')
-    new_in_care_age['replication'] = replication
-    new_in_care_age['group'] = group_name
-
-    # Count of those newly lost to care by age
-    new_out_care_age = raw_output.new_out_care.groupby(['year', 'age']).size().reset_index(name='n')
-    new_out_care_age['replication'] = replication
-    new_out_care_age['group'] = group_name
-    
-    # Count how many years spent out of care and tally
-    years_out = pd.DataFrame(raw_output.final_population['years_out'].value_counts()).reset_index()    
-    years_out = years_out.rename(columns={'years_out':'n', 'index':'years_out'})
-    years_out['replication'] = replication
-    years_out['group'] = group_name
-
-    # Proportion of initial population and new inits 2010-2015 lost to follow up 2010-2015 TODO: 2009?
-    denominator = len(raw_output.final_population.loc[raw_output.final_population['h1yy_orig'] <= 2015].index)
-    numerator = len(raw_output.new_out_care.loc[(raw_output.new_out_care['year'] <= 2015) & (raw_output.new_out_care['year'] >= 2010)]['id'].unique())
-    prop_ltfu = pd.DataFrame([[group_name, replication, 100.0 * numerator / denominator]], columns=['group', 'replication', 'pct'])
-
-    # Number of unique patients lost to follow up 2010-2015
-    n_out_2010_2015 = pd.DataFrame([[group_name, replication, numerator]], columns=['group', 'replication', 'n'])
-
-    return OutputContainer(n_times_lost, dead_in_care_count, dead_out_care_count, new_in_care_count, new_out_care_count, in_care_count, 
-                           out_care_count, new_init_count, in_care_age, out_care_age, dead_in_care_age, dead_out_care_age, new_in_care_age,
-                           new_out_care_age, years_out, prop_ltfu, n_out_2010_2015)
-
-def append_replications(outputs, final_output):
-    for i in range(len(outputs)):
-        final_output.n_times_lost        = final_output.n_times_lost.append(outputs[i].n_times_lost, ignore_index=True)
-        final_output.dead_in_care_count  = final_output.dead_in_care_count.append(outputs[i].dead_in_care_count, ignore_index=True)
-        final_output.dead_out_care_count = final_output.dead_out_care_count.append(outputs[i].dead_out_care_count, ignore_index=True)
-        final_output.new_in_care_count   = final_output.new_in_care_count.append(outputs[i].new_in_care_count, ignore_index=True)
-        final_output.new_out_care_count  = final_output.new_out_care_count.append(outputs[i].new_out_care_count, ignore_index=True)
-        final_output.in_care_count       = final_output.in_care_count.append(outputs[i].in_care_count, ignore_index=True)
-        final_output.out_care_count      = final_output.out_care_count.append(outputs[i].out_care_count, ignore_index=True)
-        final_output.new_init_count      = final_output.new_init_count.append(outputs[i].new_init_count, ignore_index=True)
-        final_output.in_care_age         = final_output.in_care_age.append(outputs[i].in_care_age, ignore_index=True)
-        final_output.out_care_age        = final_output.out_care_age.append(outputs[i].out_care_age, ignore_index=True)
-        final_output.dead_in_care_age    = final_output.dead_in_care_age.append(outputs[i].dead_in_care_age, ignore_index=True)
-        final_output.dead_out_care_age   = final_output.dead_out_care_age.append(outputs[i].dead_out_care_age, ignore_index=True)
-        final_output.new_in_care_age     = final_output.new_in_care_age.append(outputs[i].new_in_care_age, ignore_index=True)
-        final_output.new_out_care_age    = final_output.new_out_care_age.append(outputs[i].new_out_care_age, ignore_index=True)
-        final_output.years_out           = final_output.years_out.append(outputs[i].years_out, ignore_index=True)
-        final_output.prop_ltfu           = final_output.prop_ltfu.append(outputs[i].prop_ltfu, ignore_index=True)
-        final_output.n_out_2010_2015     = final_output.n_out_2010_2015.append(outputs[i].n_out_2010_2015, ignore_index=True)
-
-    return final_output
-
-def store_output(final_output, group_name):
-    with pd.HDFStore(out_dir + '/pearl_out.h5') as store:
-        store['n_times_lost']        = final_output.n_times_lost
-        store['dead_in_care_count']  = final_output.dead_in_care_count
-        store['dead_out_care_count'] = final_output.dead_out_care_count
-        store['new_in_care_count']   = final_output.new_in_care_count
-        store['new_out_care_count']  = final_output.new_out_care_count
-        store['in_care_count']       = final_output.in_care_count
-        store['out_care_count']      = final_output.out_care_count
-        store['new_init_count']      = final_output.new_init_count
-        store['in_care_age']         = final_output.in_care_age
-        store['out_care_age']        = final_output.out_care_age
-        store['dead_in_care_age']    = final_output.dead_in_care_age
-        store['dead_out_care_age']   = final_output.dead_out_care_age
-        store['new_in_care_age']     = final_output.new_in_care_age
-        store['new_out_care_age']    = final_output.new_out_care_age
-        store['years_out']           = final_output.years_out
-        store['prop_ltfu']           = final_output.prop_ltfu
-        store['n_out_2010_2015']     = final_output.n_out_2010_2015
-
-###############################################################################
-# Main Function                                                               #
-###############################################################################
-
-def main():
-    pearl = Pearl('idu_hisp_female', 1, True)
-    pearl.run_simulation(end=2030)
-
-print(__name__)
 if (__name__ == '__main__'):
-    main()
+    # Define directories
+    cwd = getcwd()
+    proc_dir = cwd + '/../../data/processed'
+    out_dir = cwd + '/../../out/py'
+
+    # Load everything
+    with pd.HDFStore(proc_dir + '/converted.h5') as store:
+        on_art_2009 = store['on_art_2009']
+        mixture_2009_coeff = store['mixture_2009_coeff']
+        naaccord_prop_2009 = store['naaccord_prop_2009']
+        init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
+        new_dx = store['new_dx']
+        new_dx_interval = store['new_dx_interval']
+        mixture_h1yy_coeff= store['mixture_h1yy_coeff']
+        init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
+        cd4_increase_coeff = store['cd4_increase_coeff']
+        cd4_decrease_coeff = store['cd4_decrease_coeff']
+        ltfu_coeff = store['ltfu_coeff']
+        mortality_in_care_coeff = store['mortality_in_care_coeff']
+        mortality_out_care_coeff = store['mortality_out_care_coeff']
+        prob_reengage = store['prob_reengage']
+
+    pearl = Pearl('idu_hisp_female', 1)
