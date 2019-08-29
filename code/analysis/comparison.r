@@ -105,6 +105,7 @@ plot_init <- function(group_name, df, title_str, path_str) {
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male', 'idu_hisp_male',
                 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male', 'het_black_male', 'het_hisp_male',
                 'het_white_female', 'het_black_female', 'het_hisp_female')
+group_names = c('idu_hisp_female')
 file_names = paste0(group_names, 's.rda')
 plot_names = c('in_care', 'out_care', 'dead_in_care', 'dead_out_care', 'new_in_care', 'new_out_care')
 
