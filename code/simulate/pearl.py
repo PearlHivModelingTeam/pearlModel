@@ -329,10 +329,29 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     return population
 
 ###############################################################################
-# Output Classes and Functions                                                #
+# Parameter and Statistics Classes                                            #
 ###############################################################################
 
-class StatsContainer:
+class Parameters:
+    def __init__(self, proc_dir, group_name):
+        with pd.HDFStore(proc_dir + '/converted.h5') as store:
+            self.new_dx                   = store['new_dx'].loc[group_name]
+            self.new_dx_interval          = store['new_dx_interval'].loc[group_name]
+            self.on_art_2009              = store['on_art_2009'].loc[group_name]
+            self.mixture_2009_coeff       = store['mixture_2009_coeff'].loc[group_name]
+            self.naaccord_prop_2009       = store['naaccord_prop_2009']
+            self.init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009'].loc[group_name]
+            self.mixture_h1yy_coeff       = store['mixture_h1yy_coeff'].loc[group_name]
+            self.init_sqrtcd4n_coeff      = store['init_sqrtcd4n_coeff'].loc[group_name]
+            self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
+            self.cd4_decrease_coeff       = store['cd4_decrease_coeff'].iloc[0]
+            self.ltfu_coeff               = store['ltfu_coeff'].loc[group_name]
+            self.prob_reengage            = store['prob_reengage'].loc[group_name]
+            self.mortality_in_care_coeff  = store['mortality_in_care_coeff'].loc[group_name]
+            self.mortality_out_care_coeff = store['mortality_out_care_coeff'].loc[group_name]
+
+
+class Statistics:
     def __init__(self):
         self.n_times_lost        = pd.DataFrame() 
         self.dead_in_care_count  = pd.DataFrame()
@@ -359,30 +378,30 @@ def output_reindex(df):
 ###############################################################################
 
 class Pearl:
-    def __init__(self, group_name, replication, verbose = False):
+    def __init__(self, parameters, group_name, replication, verbose = False):
+        self.out_dir = getcwd() + '/../../out/py'
         self.group_name = group_name
         self.replication = replication
         self.verbose = verbose
         self.year = 2009
-        self.prob_reengage = prob_reengage.loc[self.group_name]
+        self.parameters = parameters
         
         # Simulate number of new art initiators
-        art_init_sim = simulate_new_dx(new_dx.loc[group_name].copy(), new_dx_interval.loc[group_name].copy())
+        art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
         
         # Create 2009 population
-        self.population = make_pop_2009(on_art_2009.loc[group_name], mixture_2009_coeff.loc[group_name].copy(), naaccord_prop_2009.copy(), init_sqrtcd4n_coeff_2009.loc[group_name],
-                                        cd4_increase_coeff.loc[group_name], group_name)
+        self.population = make_pop_2009(parameters.on_art_2009, parameters.mixture_2009_coeff.copy(), parameters.naaccord_prop_2009, parameters.init_sqrtcd4n_coeff_2009,
+                                        parameters.cd4_increase_coeff, group_name)
 
         # Create population of new art initiators
-        self.population = self.population.append(make_new_population(art_init_sim.copy(), mixture_h1yy_coeff.loc[group_name].copy(), init_sqrtcd4n_coeff.loc[group_name], 
-                                                 cd4_increase_coeff.loc[group_name], self.population.shape[0]))
-        
+        self.population = self.population.append(make_new_population(art_init_sim, parameters.mixture_h1yy_coeff, parameters.init_sqrtcd4n_coeff, 
+                                                 parameters.cd4_increase_coeff, len(self.population.index)))
     
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
         
         # Initiate output class
-        self.stats = StatsContainer()
+        self.stats = Statistics()
 
         # First recording of stats
         self.record_stats()
@@ -433,12 +452,12 @@ class Pearl:
     def increase_cd4_count(self):
         in_care = self.population['status'] == 1
         self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_in_care_cd4n(self.population.loc[in_care].copy(), 
-                                                                                       cd4_increase_coeff.loc[self.group_name], self.year)
+                                                                                       self.parameters.cd4_increase_coeff, self.year)
 
     def decrease_cd4_count(self):
         out_care = self.population['status'] == 2
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_out_care_cd4n(self.population.loc[out_care].copy(), 
-                                                                                         cd4_decrease_coeff.iloc[0], self.year)
+                                                                                         self.parameters.cd4_decrease_coeff, self.year)
 
     def add_new_dx(self):
         new_dx = (self.population['status']==0) & (self.population['h1yy']==self.year)
@@ -446,21 +465,21 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == 1
-        death_prob = calculate_death_in_care_prob(self.population.copy(), mortality_in_care_coeff.loc[self.group_name], self.year)
+        death_prob = calculate_death_in_care_prob(self.population.copy(), self.parameters.mortality_in_care_coeff, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = 5
         self.population.loc[died, 'year_died'] = self.year
 
     def kill_out_care(self):
         out_care = self.population['status'] == 2
-        death_prob = calculate_death_out_care_prob(self.population.copy(), mortality_out_care_coeff.loc[self.group_name], self.year)
+        death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care_coeff, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = 6
         self.population.loc[died, 'year_died'] = self.year
     
     def lose_to_follow_up(self):
         in_care = self.population['status'] == 1
-        ltfu_prob = calculate_ltfu_prob(self.population.copy(), ltfu_coeff.loc[self.group_name], self.year)
+        ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.ltfu_coeff, self.year)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         self.population.loc[lost, 'status'] = 4
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n'] 
@@ -469,7 +488,7 @@ class Pearl:
 
     def reengage(self):
         out_care = self.population['status'] == 2
-        reengaged = (np.random.rand(len(self.population.index)) < np.full(len(self.population.index), self.prob_reengage)) & out_care
+        reengaged = (np.random.rand(len(self.population.index)) < np.full(len(self.population.index), self.parameters.prob_reengage)) & out_care
         self.population.loc[reengaged, 'status'] = 3
 
         # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
@@ -573,7 +592,7 @@ class Pearl:
                                 .assign(replication=self.replication, group=self.group_name))
 
 
-        with pd.HDFStore(out_dir + '/' + self.group_name + '_' + str(self.replication) + '.h5') as store:
+        with pd.HDFStore(self.out_dir + '/' + self.group_name + '_' + str(self.replication) + '.h5') as store:
             store['n_times_lost']        = self.stats.n_times_lost
             store['dead_in_care_count']  = self.stats.dead_in_care_count
             store['dead_out_care_count'] = self.stats.dead_out_care_count
@@ -626,26 +645,8 @@ class Pearl:
 
 
 if (__name__ == '__main__'):
-    # Define directories
-    cwd = getcwd()
-    proc_dir = cwd + '/../../data/processed'
-    out_dir = cwd + '/../../out/py'
-
-    # Load everything
-    with pd.HDFStore(proc_dir + '/converted.h5') as store:
-        on_art_2009 = store['on_art_2009']
-        mixture_2009_coeff = store['mixture_2009_coeff']
-        naaccord_prop_2009 = store['naaccord_prop_2009']
-        init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009']
-        new_dx = store['new_dx']
-        new_dx_interval = store['new_dx_interval']
-        mixture_h1yy_coeff= store['mixture_h1yy_coeff']
-        init_sqrtcd4n_coeff = store['init_sqrtcd4n_coeff']
-        cd4_increase_coeff = store['cd4_increase_coeff']
-        cd4_decrease_coeff = store['cd4_decrease_coeff']
-        ltfu_coeff = store['ltfu_coeff']
-        mortality_in_care_coeff = store['mortality_in_care_coeff']
-        mortality_out_care_coeff = store['mortality_out_care_coeff']
-        prob_reengage = store['prob_reengage']
-
-    pearl = Pearl('idu_hisp_female', 1)
+    proc_dir = getcwd() + '/../../data/processed'
+    group_name = 'idu_hisp_female'
+    replication = 1
+    parameters = Parameters(proc_dir, group_name)
+    pearl = Pearl(parameters, group_name, replication, False)
