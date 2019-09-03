@@ -17,11 +17,6 @@ DEAD_OUT_CARE = 6
 # Functions                                                                   #
 ###############################################################################
 
-def filter_group(df, group_name):
-    """Filter to a single group"""
-    df = df.loc[df['group'] == group_name]
-    return df
-
 def draw_from_trunc_norm(a, b, mu, sigma, n):
     """ Draws n values from a truncated normal with the given parameters """
     a_mod = (a - mu) / sigma
