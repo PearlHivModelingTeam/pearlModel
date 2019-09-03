@@ -4,6 +4,15 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 
+# Status Constants
+UNINITIATED = 0
+IN_CARE = 1
+OUT_CARE = 2
+NEW_IN_CARE = 3
+NEW_OUT_CARE = 4
+DEAD_IN_CARE = 5
+DEAD_OUT_CARE = 6
+
 ###############################################################################
 # Functions                                                                   #
 ###############################################################################
@@ -350,7 +359,6 @@ class Parameters:
             self.mortality_in_care_coeff  = store['mortality_in_care_coeff'].loc[group_name]
             self.mortality_out_care_coeff = store['mortality_out_care_coeff'].loc[group_name]
 
-
 class Statistics:
     def __init__(self):
         self.n_times_lost        = pd.DataFrame() 
@@ -419,11 +427,11 @@ class Pearl:
        
     def __str__(self):
         total = len(self.population.index)
-        in_care = len(self.population.loc[self.population['status']==1])
-        out_care = len(self.population.loc[self.population['status']==2])
-        dead_in_care = len(self.population.loc[self.population['status']==5])
-        dead_out_care = len(self.population.loc[self.population['status']==6])
-        uninitiated = len(self.population.loc[self.population['status']==0])
+        in_care = len(self.population.loc[self.population['status']==IN_CARE])
+        out_care = len(self.population.loc[self.population['status']==OUT_CARE])
+        dead_in_care = len(self.population.loc[self.population['status']==DEAD_IN_CARE])
+        dead_out_care = len(self.population.loc[self.population['status']==DEAD_OUT_CARE])
+        uninitiated = len(self.population.loc[self.population['status']==UNINITIATED])
 
         string = 'Year End: ' + str(self.year) + '\n'
         string += 'Total Population Size: ' + str(total) + '\n'
@@ -439,75 +447,75 @@ class Pearl:
 
     def increment_age(self):
         """ Increment age for those alive in the model """
-        alive_and_initiated = self.population['status'].isin([1,2])
+        alive_and_initiated = self.population['status'].isin([IN_CARE,OUT_CARE])
         self.population.loc[alive_and_initiated, 'age'] += 1
         self.population['age_cat'] = np.floor(self.population['age'] / 10)
         self.population.loc[self.population['age_cat'] < 2, 'age_cat'] = 2
         self.population.loc[self.population['age_cat'] > 7, 'age_cat'] = 7
         
         # Increment number of years out
-        out_care = self.population['status'] == 2
+        out_care = self.population['status'] == OUT_CARE
         self.population.loc[out_care, 'years_out'] += 1
 
     def increase_cd4_count(self):
-        in_care = self.population['status'] == 1
+        in_care = self.population['status'] == IN_CARE
         self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_in_care_cd4n(self.population.loc[in_care].copy(), 
                                                                                        self.parameters.cd4_increase_coeff, self.year)
 
     def decrease_cd4_count(self):
-        out_care = self.population['status'] == 2
+        out_care = self.population['status'] == OUT_CARE
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_out_care_cd4n(self.population.loc[out_care].copy(), 
                                                                                          self.parameters.cd4_decrease_coeff, self.year)
 
     def add_new_dx(self):
-        new_dx = (self.population['status']==0) & (self.population['h1yy']==self.year)
-        self.population.loc[new_dx, 'status'] = 1
+        new_dx = (self.population['status']==UNINITIATED) & (self.population['h1yy']==self.year)
+        self.population.loc[new_dx, 'status'] = IN_CARE
 
     def kill_in_care(self):
-        in_care = self.population['status'] == 1
+        in_care = self.population['status'] == IN_CARE
         death_prob = calculate_death_in_care_prob(self.population.copy(), self.parameters.mortality_in_care_coeff, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
-        self.population.loc[died, 'status'] = 5
+        self.population.loc[died, 'status'] = DEAD_IN_CARE
         self.population.loc[died, 'year_died'] = self.year
 
     def kill_out_care(self):
-        out_care = self.population['status'] == 2
+        out_care = self.population['status'] == OUT_CARE
         death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care_coeff, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
-        self.population.loc[died, 'status'] = 6
+        self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year
     
     def lose_to_follow_up(self):
-        in_care = self.population['status'] == 1
+        in_care = self.population['status'] == IN_CARE
         ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.ltfu_coeff, self.year)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
-        self.population.loc[lost, 'status'] = 4
+        self.population.loc[lost, 'status'] = NEW_OUT_CARE
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n'] 
         self.population.loc[lost, 'ltfu_year'] = self.year
         self.population.loc[lost, 'n_lost'] += 1
 
     def reengage(self):
-        out_care = self.population['status'] == 2
+        out_care = self.population['status'] == OUT_CARE
         reengaged = (np.random.rand(len(self.population.index)) < np.full(len(self.population.index), self.parameters.prob_reengage)) & out_care
-        self.population.loc[reengaged, 'status'] = 3
+        self.population.loc[reengaged, 'status'] = NEW_IN_CARE
 
         # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
         self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
         self.population.loc[reengaged, 'h1yy'] = self.year
 
     def append_new(self):
-        new_in_care = self.population['status'] == 3
-        new_out_care = self.population['status'] == 4
+        new_in_care = self.population['status'] == NEW_IN_CARE
+        new_out_care = self.population['status'] == NEW_OUT_CARE
 
-        self.population.loc[new_in_care, 'status'] = 1
-        self.population.loc[new_out_care, 'status'] = 2
+        self.population.loc[new_in_care, 'status'] = IN_CARE
+        self.population.loc[new_out_care, 'status'] = OUT_CARE
         
     def record_stats(self):
-        uninitiated   = self.population['status'] == 0
-        in_care       = self.population['status'] == 1
-        out_care      = self.population['status'] == 2
-        new_in_care   = self.population['status'] == 3
-        new_out_care  = self.population['status'] == 4
+        uninitiated   = self.population['status'] == UNINITIATED
+        in_care       = self.population['status'] == IN_CARE
+        out_care      = self.population['status'] == OUT_CARE
+        new_in_care   = self.population['status'] == NEW_IN_CARE
+        new_out_care  = self.population['status'] == NEW_OUT_CARE
         
         # Count of new initiators by year
         if (self.year == 2009):
@@ -559,8 +567,8 @@ class Pearl:
         self.stats.new_out_care_age = self.stats.new_out_care_age.append(new_out_care_age)
         
     def record_final_stats(self):
-        dead_in_care  = self.population['status'] == 5
-        dead_out_care = self.population['status'] == 6
+        dead_in_care  = self.population['status'] == DEAD_IN_CARE
+        dead_out_care = self.population['status'] == DEAD_OUT_CARE
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
@@ -642,7 +650,6 @@ class Pearl:
 ###############################################################################
 # Test Function                                                               #
 ###############################################################################
-
 
 if (__name__ == '__main__'):
     proc_dir = getcwd() + '/../../data/processed'

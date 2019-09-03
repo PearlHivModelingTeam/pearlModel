@@ -1,9 +1,7 @@
 # Imports
 from os import getcwd 
-import numpy as np
 import pandas as pd
 import ray
-import scipy.stats as stats
 from pearl import Pearl, Parameters
 
 ###############################################################################
@@ -16,7 +14,7 @@ def run(parameters, group_name, replication):
 
 ray.init()
 proc_dir = getcwd() + '/../../data/processed'
-replications = 3
+replications = 100
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
