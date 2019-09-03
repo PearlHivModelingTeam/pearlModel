@@ -8,11 +8,11 @@ suppressMessages(library(openxlsx))
 suppressMessages(library(feather))
 
 cwd = getwd()
-r_dir = paste0(cwd, '/../../out')
-py_dir = paste0(cwd, '/../../out')
-
+out_dir = paste0(cwd, '/../../out')
+r_dir = paste0(out_dir, '/r')
+feather_dir = paste0(out_dir, '/feather')
 input_dir <- paste0(cwd, '/../../data/input')
-fig_dir = paste0(py_dir, '/fig')
+fig_dir = paste0(out_dir, '/fig')
 
 load_r_data <- function(file, r_dir){
   setwd(r_dir)
@@ -24,6 +24,7 @@ load_r_data <- function(file, r_dir){
 }
 
 format_r_data <- function(data, category_str){
+  print(category_str)
   df_r <- data[names(data)==category_str]
 
   names(df_r) = seq(0,99)
@@ -105,17 +106,22 @@ plot_init <- function(group_name, df, title_str, path_str) {
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male', 'idu_hisp_male',
                 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male', 'het_black_male', 'het_hisp_male',
                 'het_white_female', 'het_black_female', 'het_hisp_female')
-group_names = c('idu_hisp_female')
+#group_names = c('idu_hisp_female')
 file_names = paste0(group_names, 's.rda')
 plot_names = c('in_care', 'out_care', 'dead_in_care', 'dead_out_care', 'new_in_care', 'new_out_care')
+r_names = c('in_care', 'out_care', 'dead_care', 'dead_out_care', 'newly_reengage', 'newly_lost')
+
 
 r_data <- lapply(file_names, load_r_data, r_dir)
 
-for (plot_str in plot_names){
-  df_r <- lapply(r_data, format_r_data, plot_str)
+for (index in seq_along(plot_names)){
+  plot_str = plot_names[index]
+  r_name = r_names[index]
+  print(plot_str)
+  df_r <- lapply(r_data, format_r_data, r_name)
   df_r <- bind_rows(df_r)
   
-  df_py <- read_feather(paste0(py_dir, '/feather/', plot_str, '_count.feather'))
+  df_py <- read_feather(paste0(feather_dir, '/', plot_str, '_count.feather'))
   df_py <- df_py %>% select(group, replication, year, age_cat, n) %>% filter(group %in% group_names)
 
   
@@ -132,10 +138,10 @@ for (plot_str in plot_names){
   lapply(group_names, plot, df, plot_str, paste0('/', plot_str))
 }
 
-df_r <- lapply(r_data, format_r_data, 'new_init_count')
+df_r <- lapply(r_data, format_r_data, 'ini')
 df_r <- bind_rows(df_r)
   
-df_py <- read_feather(paste0(py_dir, '/feather/new_init_count.feather'))
+df_py <- read_feather(paste0(feather_dir, '/new_init_count.feather'))
 df_py <- df_py %>% select(group, replication, h1yy, n) %>% filter(group %in% group_names)
 
 df_r <- summarize_init_count(df_r) %>% mutate(Algorithm = 'R')
@@ -145,11 +151,3 @@ df <- bind_rows(df_r, df_py)
 
 print(group_names)
 lapply(group_names, plot_init, df, 'new_init', paste0('/','new_init'))
-
-
-#r_data <-  bind_rows(
-#  format_count(msm_white_male),
-#  format_count(msm_black_male))
-#
-#
-#apply(groups, 1, plot_init, new_init_sum, 'Number of HAART Initiators', '/new_init_count')

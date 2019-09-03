@@ -537,13 +537,13 @@ class Pearl:
         # Count of those reengaging in care by age_cat and year
         new_in_care_count = (self.population.loc[new_in_care].groupby(['age_cat']).size()
                              .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
-                             .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+                             .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.new_in_care_count = self.stats.new_in_care_count.append(new_in_care_count)
         
         # Count of those lost to care by age_cat and year
         new_out_care_count = (self.population.loc[new_out_care].groupby(['age_cat']).size()
                               .reindex(index=np.arange(2.0,8.0), fill_value=0).reset_index(name='n')
-                              .assign(year=(self.year+1), replication=self.replication, group=self.group_name))
+                              .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.new_out_care_count = self.stats.new_out_care_count.append(new_out_care_count)
         
         # Count of those in care by age and year
