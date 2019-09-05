@@ -525,12 +525,12 @@ wrapper <- function(rep, groupname, sexvalue, prob_reengage, linelist) {
       select(group, sex, pct)
     
     # Proportion of those out of care who died
-    a <- dead_out_care_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
-    b <- dead_care_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
-    c <- newly_lost_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
-    d <- newly_reengage_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
-    e <- in_care_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
-    f <- out_care_r %>% group_by(group, sex, calyy, agecat, status) %>% tally
+    a <- dead_out_care_r %>% group_by(group, sex, calyy, agecat) %>% tally
+    b <- dead_care_r %>% group_by(group, sex, calyy, agecat) %>% tally
+    c <- newly_lost_r %>% group_by(group, sex, calyy, agecat) %>% tally
+    d <- newly_reengage_r %>% group_by(group, sex, calyy, agecat) %>% tally
+    e <- in_care_r %>% group_by(group, sex, calyy, agecat) %>% tally
+    f <- out_care_r %>% group_by(group, sex, calyy, agecat) %>% tally
     
     # single year age tally'ing
     aa <- dead_out_care_r %>% group_by(group, sex, calyy, age) %>% tally %>% ungroup
