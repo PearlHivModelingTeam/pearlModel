@@ -16,8 +16,8 @@ feather_dir = cwd + '/../../out/feather/py_no_reset'
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-group_names = ['idu_white_female']
-replications = 100 
+#group_names = ['idu_white_female']
+replications = 1000
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
@@ -45,11 +45,11 @@ for group_name in group_names:
             out_care_count = out_care_count.append(store['out_care_count'])
             out_care_age = out_care_age.append(store['out_care_age'])
 
-            reengaged_count = reengaged_count.append(store['new_in_care_count'])
-            reengaged_age = reengaged_age.append(store['new_in_care_age'])
+            reengaged_count = reengaged_count.append(store['reengaged_count'])
+            reengaged_age = reengaged_age.append(store['reengaged_age'])
 
-            ltfu_count = ltfu_count.append(store['new_out_care_count'])
-            ltfu_age = ltfu_age.append(store['new_out_care_age'])
+            ltfu_count = ltfu_count.append(store['ltfu_count'])
+            ltfu_age = ltfu_age.append(store['ltfu_age'])
 
             dead_in_care_count = dead_in_care_count.append(store['dead_in_care_count'])
             dead_in_care_age = dead_in_care_age.append(store['dead_in_care_age'])
@@ -85,7 +85,6 @@ for group_name in group_names:
     feather.write_dataframe(new_init_count, f'{feather_dir}/{group_name}_new_init_count.feather')
     feather.write_dataframe(new_init_age, f'{feather_dir}/{group_name}_new_init_age.feather')
 
-print(new_init_age)
     
 
 

@@ -17,7 +17,7 @@ load_r_data <- function(file, r_dir){
 
 format_count_data <- function(data, table_name_1, table_name_2){
   df <- data[names(data)==table_name_1]
-  names(df) = seq(0,99)
+  names(df) = seq(0,999)
   df <- bind_rows(df, .id='replication') %>% ungroup
   df <- df %>% 
     mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -36,7 +36,7 @@ format_count_data <- function(data, table_name_1, table_name_2){
   # Add missing data for new in and out of care
   if(!missing(table_name_2)){
     df2 <- data[names(data)==table_name_2]
-    names(df2) <- seq(0,99)
+    names(df2) <- seq(0,999)
     df2 <- bind_rows(df2, .id='replication') %>% ungroup
     df2 <- df2 %>%
       mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -54,7 +54,7 @@ format_count_data <- function(data, table_name_1, table_name_2){
 
 format_age_data <- function(data, table_name_1, table_name_2){
   df <- data[names(data)==table_name_1]
-  names(df) = seq(0,99)
+  names(df) = seq(0,999)
   df <-bind_rows(df, .id='replication') %>% ungroup
   df <- df %>% 
     mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -76,7 +76,7 @@ format_age_data <- function(data, table_name_1, table_name_2){
   # Add missing data for new in and out of care
   if(!missing(table_name_2)){
     df2 <- data[names(data)==table_name_2]
-    names(df2) <- seq(0,99)
+    names(df2) <- seq(0,999)
     df2 <- bind_rows(df2, .id='replication') %>% ungroup
     df2 <- df2 %>%
       mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -94,7 +94,7 @@ format_age_data <- function(data, table_name_1, table_name_2){
 
 format_init_count <- function(data){
   df <- data[names(data)=='new_init']
-  names(df) = seq(0,99)
+  names(df) = seq(0,999)
   df <- bind_rows(df, .id='replication') %>% ungroup
   df <- df %>% 
     mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -106,7 +106,7 @@ format_init_count <- function(data){
 
 format_init_age <- function(data){
   df <- data[names(data)=='newart_age']
-  names(df) = seq(0,99)
+  names(df) = seq(0,999)
   df <- bind_rows(df, .id='replication') %>% ungroup
   df <- df %>% 
     mutate(sex = replace(sex, sex=='Males', 'male'),
@@ -119,7 +119,7 @@ format_init_age <- function(data){
 group_names <- c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male', 'idu_hisp_male',
                 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male', 'het_black_male', 'het_hisp_male',
                 'het_white_female', 'het_black_female', 'het_hisp_female')
-group_names <- c('idu_white_female')
+#group_names <- c('idu_white_female')
 
 file_names <- paste0(group_names, 's.rda')
 

@@ -3,7 +3,7 @@ from os import getcwd
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-
+pd.options.display.max_rows = 999
 # Status Constants
 UNINITIATED = 0
 IN_CARE = 1
@@ -271,9 +271,9 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     sim_coeff = pd.concat([observed_coeff, sim_coeff])
 
     # Lambdas should add to 1.0
-    sim_coeff['lambda2'] = 1.0 - sim_coeff['lambda1']
-    sim_coeff.loc[sim_coeff['lambda2'] < 0, 'lambda1'] = 1.0
     sim_coeff.loc[sim_coeff['lambda2'] < 0, 'lambda2'] = 0
+    sim_coeff.loc[sim_coeff['lambda2'] > 1, 'lambda2'] = 1
+    sim_coeff['lambda1'] = 1.0 - sim_coeff['lambda2']
 
     # Dont simulate new dxs in 2009
     sim_coeff = sim_coeff.drop(2009)
@@ -301,8 +301,9 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
     population = population.set_index('h1yy')
     for h1yy, group in population.groupby(level=0):
-        mu = mean_intercept + (h1yy * mean_slope)
-        sigma = std_intercept + (h1yy * std_slope)
+        h1yy_mod = np.where(h1yy >= 2020, 2020, h1yy) # Pin coefficients at 2020
+        mu = mean_intercept + (h1yy_mod * mean_slope)
+        sigma = std_intercept + (h1yy_mod * std_slope)
         size = group.shape[0]
         sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
         population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n

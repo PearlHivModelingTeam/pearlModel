@@ -31,7 +31,7 @@ load(file)
 
 source(paste0(cwd, "/fx.r"))
 rep <- 1
-
+options(tibble.print_max=1000000)
 set.seed(as.numeric(Sys.time()))
 
 ######################################################################################
@@ -610,13 +610,18 @@ groups <- filterfx(groups, filtergroup)
 print(groups)
 setwd(outwd)
 
+
 par_replicate <- function(group_row, nreps) { 
   gr=group_row['group']
   s =group_row['sex'] 
-  outfile = paste0(outwd,'/',gr,'_',tolower(s),'.rda')     
-  out <- parSapply(cl, 1:nreps, wrapper, groupname=gr, sexvalue=s, prob_reengage=group_row['prob'],  
-                   linelist=0, simplify=F) 
-  save(out, file=outfile) }
+  if((gr=='idu_white') & (s=='Females') | TRUE) {
+    s =group_row['sex'] 
+    outfile = paste0(outwd,'/',gr,'_',tolower(s),'.rda')     
+    out <- parSapply(cl, 1:nreps, wrapper, groupname=gr, sexvalue=s, prob_reengage=group_row['prob'],  
+                     linelist=0, simplify=F) 
+    save(out, file=outfile) 
+  }
+}
 
 serial_replicate <- function(group_row, nreps) { 
   gr=group_row['group']

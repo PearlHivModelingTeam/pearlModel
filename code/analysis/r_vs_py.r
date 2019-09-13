@@ -68,7 +68,7 @@ plot_count <- function(group_name, df, title_str) {
          y = 'Mean Count') +
     scale_colour_manual(values=cbPalette)      
 
-  ggsave(glue('{title_str}.png'), path=glue('{fig_dir}/{group_name}'), height=8, width=13)
+  ggsave(glue('{group_name}.png'), path=glue('{fig_dir}/by_type/{title_str}'), height=8, width=13)
 }
 
 plot_age <- function(group_name, df, title_str) {
@@ -84,7 +84,7 @@ plot_age <- function(group_name, df, title_str) {
          y = 'Mean Count') +
     scale_colour_manual(values = cbPalette)
 
-  ggsave(glue('{title_str}.png'), path=glue('{fig_dir}/{group_name}'), height=8, width=13)
+  ggsave(glue('{group_name}.png'), path=glue('{fig_dir}/by_type/{title_str}'), height=8, width=13)
 }
 
 plot_init_count <- function(group_name, df, title_str) {
@@ -99,7 +99,7 @@ plot_init_count <- function(group_name, df, title_str) {
          y = 'Mean Count') +
     scale_colour_manual(values=cbPalette)      
 
-  ggsave(glue('{title_str}.png'), path=glue('{fig_dir}/{group_name}'), height=8, width=13)
+  ggsave(glue('{group_name}.png'), path=glue('{fig_dir}/by_type/{title_str}'), height=8, width=13)
 }
 
 plot_init_age <- function(group_name, df, title_str) {
@@ -115,13 +115,13 @@ plot_init_age <- function(group_name, df, title_str) {
          y = 'Mean Count') +
     scale_colour_manual(values=cbPalette)      
 
-  ggsave(glue('{title_str}.png'), path=glue('{fig_dir}/{group_name}'), height=8, width=13)
+  ggsave(glue('{group_name}.png'), path=glue('{fig_dir}/by_type/{title_str}'), height=8, width=13)
 }
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male', 'idu_hisp_male',
                 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male', 'het_black_male', 'het_hisp_male',
                 'het_white_female', 'het_black_female', 'het_hisp_female')
-group_names = c('idu_white_female')
+#group_names = c('idu_white_female')
 
 plot_names = c('in_care_count', 'out_care_count', 'dead_in_care_count', 'dead_out_care_count', 'reengaged_count', 'ltfu_count')
 plot_names_2 = c('in_care_age', 'out_care_age', 'dead_in_care_age', 'dead_out_care_age', 'reengaged_age', 'ltfu_age')
