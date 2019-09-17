@@ -2,16 +2,8 @@
 # Load packages
 ######################################################################################
 
-#suppressPackageStartupMessages(library(MASS))
 suppressPackageStartupMessages(library(haven))
 suppressPackageStartupMessages(library(lubridate))
-#suppressPackageStartupMessages(library(broom))
-#suppressPackageStartupMessages(library(geepack))
-#suppressPackageStartupMessages(library(mixtools))
-#suppressPackageStartupMessages(library(RGeode))
-#suppressPackageStartupMessages(library(triangle))
-#suppressPackageStartupMessages(library(gamlss))
-#suppressPackageStartupMessages(library(binom))
 suppressPackageStartupMessages(library(tidyverse))
 
 wd <- getwd()
@@ -23,8 +15,7 @@ procwd <- paste0(wd, "/../../data/processed")
 ######################################################################################
 # Call function source file and define functions
 ######################################################################################
-source(paste0(wd,"/fx.r"))
-options(dplyr.print_max = 100)
+source(paste0(wd,"/scripts/fx.r"))
 
 ini_cd4_fx2 <- function(NAACCORD, GROUP, SEX) {
   # Go back to NA-ACCORD population & get sqrt cd4n @ HAART initiation

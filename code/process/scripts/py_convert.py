@@ -41,7 +41,7 @@ def clean_coeff(df):
     return(df)
 
 
-robjects.r.source('r_convert.r')
+robjects.r.source(cwd + '/scripts/r_convert.r')
 
 # Number of people on art in 2009: on_art_2009
 on_art_2009 = (robjects.r['on_art']).set_index('group')

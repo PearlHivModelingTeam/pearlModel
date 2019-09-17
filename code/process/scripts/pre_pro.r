@@ -31,7 +31,7 @@ today <- format(Sys.Date(), format="%y%m%d")
 ######################################################################################
 # Call function source file
 ######################################################################################
-source(paste0(cwd, "/fx.r"))
+source(paste0(cwd, "/scripts/fx.r"))
 
 ######################################################################################
 # Read in model coefficients from SAS for time-varying processes
