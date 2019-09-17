@@ -3,7 +3,7 @@ from os import getcwd
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-
+pd.options.display.max_rows = 999
 # Status Constants
 UNINITIATED = 0
 IN_CARE = 1
@@ -100,10 +100,11 @@ def calculate_out_care_cd4n(pop, coeffs, year):
     
     return time_varying_sqrtcd4n
 
-def calculate_ltfu_prob(h1yy, init_sqrtcd4n, age, coeffs, year):
+def calculate_ltfu_prob(pop, coeffs, year):
     """ Calculate the probability of loss to follow up """
 
     # Calculate spline variables
+    age    = pop['age'].values
     age_   = (np.maximum(0, age - coeffs['p5'])**2 - 
               np.maximum(0, age - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
     age__  = (np.maximum(0, age - coeffs['p35'])**2 - 
@@ -112,7 +113,7 @@ def calculate_ltfu_prob(h1yy, init_sqrtcd4n, age, coeffs, year):
               np.maximum(0, age - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
     
     # Create haart_period variable
-    haart_period = (h1yy > 2010).astype(int)
+    haart_period = (pop['h1yy'].values > 2010).astype(int)
     
     # Calculate log odds
     odds = (coeffs['intercept_c'] + 
@@ -121,7 +122,7 @@ def calculate_ltfu_prob(h1yy, init_sqrtcd4n, age, coeffs, year):
            (coeffs['__age_c'] * age__) + 
            (coeffs['___age_c'] * age___) + 
            (coeffs['year_c'] * year ) +
-           (coeffs['sqrtcd4n_c'] * init_sqrtcd4n) +
+           (coeffs['sqrtcd4n_c'] * pop['init_sqrtcd4n']) +
            (coeffs['haart_period_c'] * haart_period))
 
     # Convert to probability
@@ -358,10 +359,10 @@ class Statistics:
         self.in_care_age         = pd.DataFrame() 
         self.out_care_count      = pd.DataFrame() 
         self.out_care_age        = pd.DataFrame() 
-        self.reengaged_count     = pd.DataFrame()
-        self.reengaged_age       = pd.DataFrame()
-        self.ltfu_count          = pd.DataFrame() 
-        self.ltfu_age            = pd.DataFrame() 
+        self.reengaged_count  = pd.DataFrame()
+        self.reengaged_age    = pd.DataFrame()
+        self.ltfu_count      = pd.DataFrame() 
+        self.ltfu_age        = pd.DataFrame() 
         self.died_in_care_count  = pd.DataFrame()
         self.died_in_care_age    = pd.DataFrame()
         self.died_out_care_count = pd.DataFrame() 
@@ -370,6 +371,10 @@ class Statistics:
         self.new_init_age        = pd.DataFrame()
         self.years_out           = pd.DataFrame() 
         self.n_times_lost        = pd.DataFrame() 
+
+def output_reindex(df):
+    """ Helper function for reindexing output tables """
+    return df.reindex( pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']), fill_value=0)
 
 ###############################################################################
 # Pearl Class                                                                 #
@@ -395,7 +400,7 @@ class Pearl:
         # Create population of new art initiators
         self.population = self.population.append(make_new_population(art_init_sim, parameters.mixture_h1yy_coeff, parameters.init_sqrtcd4n_coeff, 
                                                  parameters.cd4_increase_coeff, len(self.population.index)))
-
+    
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
         
@@ -475,8 +480,7 @@ class Pearl:
     
     def lose_to_follow_up(self):
         in_care = self.population['status'] == IN_CARE
-        ltfu_prob = calculate_ltfu_prob(self.population['init_sqrtcd4n'].values, self.population['h1yy'].values, 
-                                        self.population['age'].values, self.parameters.ltfu_coeff, self.year)
+        ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.ltfu_coeff, self.year)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         self.population.loc[lost, 'status'] = LTFU
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n'] 
@@ -593,12 +597,12 @@ class Pearl:
                                    .assign(replication = self.replication, group = self.group_name))
     
         # Count of those that died in care by age_cat and year
-        self.stats.dead_in_care_count = (self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size()
+        self.stats.dead_in_care_count = (output_reindex(self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size())
                                          .reset_index(name='n').rename(columns={'year_died': 'year'})
                                          .assign(replication=self.replication, group=self.group_name))
 
         # Count of those that died in care by age_cat and year
-        self.stats.dead_out_care_count = (self.population.loc[dead_out_care].groupby(['year_died', 'age_cat']).size()
+        self.stats.dead_out_care_count = (output_reindex(self.population.loc[dead_out_care].groupby(['year_died', 'age_cat']).size())
                                          .reset_index(name='n').rename(columns={'year_died': 'year'})
                                          .assign(replication=self.replication, group=self.group_name))
         
@@ -670,8 +674,8 @@ class Pearl:
 
 if (__name__ == '__main__'):
     proc_dir = getcwd() + '/../../data/processed'
-    group_name = 'msm_white_male'
+    group_name = 'idu_hisp_female'
     parameters = Parameters(proc_dir, group_name)
-    for replication in range(1):
+    for replication in range(100):
         print(replication)
         pearl = Pearl(parameters, group_name, replication, verbose=False, cd4_reset=True)

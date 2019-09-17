@@ -40,6 +40,12 @@ def clean_coeff(df):
     df = df.set_index('group')
     return(df)
 
+def clean_coeff_2(df):
+    """ Format some other tables """
+    df = df.sort_values(by='group')
+    df = df.set_index('group')
+    return(df)
+
 
 robjects.r.source(cwd + '/scripts/r_convert.r')
 
@@ -94,7 +100,11 @@ mortality_out_care_coeff.columns = map(str.lower, mortality_out_care_coeff.colum
 mortality_out_care_coeff = clean_coeff(mortality_out_care_coeff)
 
 # Probability to reengage in care for each group
-prob_reengage = clean_coeff(pd.read_csv(param_dir + '/prob_reengage.csv'))
+prob_reengage = clean_coeff(pd.read_csv(f'{param_dir}/prob_reengage.csv'))
+
+# Prevalence of Stage 0 factors in 2009 art users
+stage0_prev_2009 = clean_coeff_2(pd.read_csv(f'{param_dir}/stage0_prev_2009.csv'))
+stage0_prev_2009[stage0_prev_2009.select_dtypes(include=['number']).columns] *= 0.01 
 
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
@@ -112,4 +122,5 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
     store['prob_reengage'] = prob_reengage
+    store['stage0_prev_2009'] = stage0_prev_2009
 
