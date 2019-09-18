@@ -9,7 +9,7 @@ import pearl
 ###############################################################################
 @ray.remote
 def run(parameters, group_name, replication):
-    pearl.Pearl(parameters, group_name, replication, False)
+    pearl.Pearl(parameters, group_name, replication, False, False)
     return True
 
 ray.init(num_cpus=7)

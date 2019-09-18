@@ -3,7 +3,9 @@ from os import getcwd
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-pd.options.display.max_rows = 999
+import argparse 
+
+
 # Status Constants
 UNINITIATED = 0
 IN_CARE = 1
@@ -674,8 +676,11 @@ class Pearl:
 
 if (__name__ == '__main__'):
     proc_dir = getcwd() + '/../../data/processed'
-    group_name = 'idu_hisp_female'
-    parameters = Parameters(proc_dir, group_name)
-    for replication in range(100):
-        print(replication)
-        pearl = Pearl(parameters, group_name, replication, verbose=False, cd4_reset=True)
+
+    parser = argparse.ArgumentParser(description='Run the PEARL model for a given group and replication')
+    parser.add_argument('group')
+    parser.add_argument('replication')
+    args = parser.parse_args()
+
+    parameters = Parameters(proc_dir, args.group)
+    pearl = Pearl(parameters, args.group, args.replication, verbose=False, cd4_reset=True)
