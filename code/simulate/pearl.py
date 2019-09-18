@@ -1,5 +1,5 @@
 # Imports
-from os import getcwd
+import os
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -338,8 +338,8 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
 ###############################################################################
 
 class Parameters:
-    def __init__(self, proc_dir, group_name):
-        with pd.HDFStore(proc_dir + '/converted.h5') as store:
+    def __init__(self, path, group_name):
+        with pd.HDFStore(path) as store:
             self.new_dx                   = store['new_dx'].loc[group_name]
             self.new_dx_interval          = store['new_dx_interval'].loc[group_name]
             self.on_art_2009              = store['on_art_2009'].loc[group_name]
@@ -384,7 +384,7 @@ def output_reindex(df):
 
 class Pearl:
     def __init__(self, parameters, group_name, replication, verbose = False, cd4_reset = False):
-        self.out_dir = getcwd() + '/../../out/py'
+        self.out_dir = os.path.realpath(f'{os.getcwd()}/out')
         self.group_name = group_name
         self.replication = replication
         self.cd4_reset = cd4_reset
@@ -620,9 +620,12 @@ class Pearl:
         self.stats.years_out = (pd.DataFrame(self.population['years_out'].value_counts()).reset_index()
                                 .rename(columns={'years_out':'n', 'index':'years_out'})
                                 .assign(replication=self.replication, group=self.group_name))
+        
+        # Make output directory if it doesn't exist
+        os.makedirs(self.out_dir, exist_ok=True)
 
-
-        with pd.HDFStore(self.out_dir + '/' + self.group_name + '_' + str(self.replication) + '.h5') as store:
+        # Save it all
+        with pd.HDFStore(f'{self.out_dir}/{self.group_name}_{str(self.replication)}.h5') as store:
             store['in_care_count']       = self.stats.in_care_count
             store['in_care_age']         = self.stats.in_care_age
             store['out_care_count']      = self.stats.out_care_count
@@ -671,16 +674,18 @@ class Pearl:
         self.record_final_stats()
 
 ###############################################################################
-# Test Function                                                               #
+# Main Function                                                               #
 ###############################################################################
 
 if (__name__ == '__main__'):
-    proc_dir = getcwd() + '/../../data/processed'
-
+    # Add argument parsing 
     parser = argparse.ArgumentParser(description='Run the PEARL model for a given group and replication')
-    parser.add_argument('group')
-    parser.add_argument('replication')
+    parser.add_argument('param_file', help='Relative path to parameter file')
+    parser.add_argument('group', help='Risk group, e.g. msm_white_male')
+    parser.add_argument('replication', help='Replication number')
     args = parser.parse_args()
 
-    parameters = Parameters(proc_dir, args.group)
+    param_file_path = os.path.realpath(f'{os.getcwd()}/{args.param_file}')
+
+    parameters = Parameters(param_file_path, args.group)
     pearl = Pearl(parameters, args.group, args.replication, verbose=False, cd4_reset=True)
