@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
+import feather
 
 # R to python interface
 import rpy2.robjects as robjects
@@ -16,6 +17,7 @@ pandas2ri.activate()
 cwd = os.getcwd()
 in_dir = cwd + '/../../data/input'
 param_dir = cwd + '/../../data/param'
+param_dir_new = cwd + '/../../data/parameters'
 proc_dir = cwd + '/../../data/processed'
 
 def clean_coeff(df):
@@ -46,22 +48,31 @@ def clean_coeff_2(df):
     df = df.set_index('group')
     return(df)
 
+def gather(df, key, value, cols):
+    id_vars = [ col for col in df.columns if col not in cols ]
+    id_values = cols
+    var_name = key
+    value_name = value
+    return pd.melt( df, id_vars, id_values, var_name, value_name )
 
 robjects.r.source(cwd + '/scripts/r_convert.r')
 
 # Number of people on art in 2009: on_art_2009
-on_art_2009 = (robjects.r['on_art']).set_index('group')
+on_art_2009 = feather.read_dataframe(f'{param_dir_new}/on_art_2009.feather').set_index(['group']).sort_index()
 
-# Proportion of people with certain h1yy given age, risk, sex: naaccord_prop_2009
-naaccord_prop_2009 = robjects.r['naaccord_prop_2009']
-naaccord_prop_2009.columns = map(str.lower, naaccord_prop_2009.columns)
-naaccord_prop_2009 = naaccord_prop_2009.set_index(['group', 'age2009cat', 'h1yy'])
+# Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
+h1yy_by_age_2009 = feather.read_dataframe(f'{param_dir_new}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
 
-# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: init_sqrtcd4n_coeff_2009
-init_sqrtcd4n_coeff_2009 = (robjects.r['init_sqrtcd4n_coeff_2009']).set_index('group')
+# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
+cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir_new}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
 
 # Mixed gaussian coefficients for age of patients alive in 2009: mixture_2009
-mixture_2009_coeff = (robjects.r['mixture_2009_coeff']).set_index('group')
+mixture_2009_coeff = (robjects.r['mixture_2009_coeff'])
+mixture_2009_coeff = gather(mixture_2009_coeff, key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2'])
+mixture_2009_coeff = mixture_2009_coeff.set_index(['group', 'term']).sort_index()
+print(mixture_2009_coeff)
+#age_in_2009 = feather.read_dataframe(f'{param_dir_new}/age_in_2009.feather').set_index(['group', 'term'])
+#print(age_in_2009)
 
 # New dx and dx prediction intervals
 new_dx = (robjects.r['new_dx']).set_index(['group', 'year'])
@@ -103,14 +114,14 @@ mortality_out_care_coeff = clean_coeff(mortality_out_care_coeff)
 prob_reengage = clean_coeff(pd.read_csv(f'{param_dir}/prob_reengage.csv'))
 
 # Prevalence of Stage 0 factors in 2009 art users
-stage0_prev_2009 = clean_coeff_2(pd.read_csv(f'{param_dir}/stage0_prev_2009.csv'))
-stage0_prev_2009[stage0_prev_2009.select_dtypes(include=['number']).columns] *= 0.01 
+#stage0_prev_2009 = clean_coeff_2(pd.read_csv(f'{param_dir}/stage0_prev_2009.csv'))
+#stage0_prev_2009[stage0_prev_2009.select_dtypes(include=['number']).columns] *= 0.01 
 
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['on_art_2009'] = on_art_2009
-    store['naaccord_prop_2009'] = naaccord_prop_2009 
-    store['init_sqrtcd4n_coeff_2009'] = init_sqrtcd4n_coeff_2009
+    store['h1yy_by_age_2009'] = h1yy_by_age_2009 
+    store['cd4n_by_h1yy_2009'] = cd4n_by_h1yy_2009
     store['mixture_2009_coeff'] = mixture_2009_coeff
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
@@ -122,5 +133,5 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
     store['prob_reengage'] = prob_reengage
-    store['stage0_prev_2009'] = stage0_prev_2009
+    #store['stage0_prev_2009'] = stage0_prev_2009
 

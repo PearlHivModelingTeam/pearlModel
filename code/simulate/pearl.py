@@ -5,7 +5,7 @@ import pandas as pd
 import scipy.stats as stats
 import argparse 
 
-
+pd.set_option("display.max_rows", 1001)
 # Status Constants
 UNINITIATED = 0
 IN_CARE = 1
@@ -18,6 +18,13 @@ DEAD_OUT_CARE = 6
 ###############################################################################
 # Functions                                                                   #
 ###############################################################################
+def gather(df, key, value, cols):
+    """ Implimentation of gather from the tidyverse """
+    id_vars = [ col for col in df.columns if col not in cols ]
+    id_values = cols
+    var_name = key
+    value_name = value
+    return pd.melt( df, id_vars, id_values, var_name, value_name )
 
 def draw_from_trunc_norm(a, b, mu, sigma, n):
     """ Draws n values from a truncated normal with the given parameters """
@@ -28,18 +35,18 @@ def draw_from_trunc_norm(a, b, mu, sigma, n):
 def sim_pop(coeffs, pop_size):
     """ Draw ages from a mixed or single gaussian truncated at 18 and 85 given the coefficients and population size."""
     
-    components = np.random.choice([1,2], size=pop_size, p=[coeffs['lambda1'], coeffs['lambda2']], replace=True)
+    components = np.random.choice([1,2], size=pop_size, p=[coeffs.loc['lambda1', 'estimate'], coeffs.loc['lambda2', 'estimate']], replace=True)
     pop_size_1 = (components == 1).sum()
     pop_size_2 = (components == 2).sum()
 
     # Draw age from each respective truncated normal
     if(pop_size_1 == 0):
-        population = draw_from_trunc_norm(18, 85, coeffs['mu2'], coeffs['sigma2'], pop_size_2)
+        population = draw_from_trunc_norm(18, 85, coeffs.loc['mu2', 'estimate'], coeffs.loc['sigma2', 'estimate'], pop_size_2)
     elif(pop_size_2 == 0):
-        population = draw_from_trunc_norm(18, 85, coeffs['mu1'], coeffs['sigma1'], pop_size_1)
+        population = draw_from_trunc_norm(18, 85, coeffs.loc['mu1', 'estimate'], coeffs.loc['sigma1', 'estimate'], pop_size_1)
     else:
-        pop1 = draw_from_trunc_norm(18, 85, coeffs['mu1'], coeffs['sigma1'], pop_size_1)
-        pop2 = draw_from_trunc_norm(18, 85, coeffs['mu2'], coeffs['sigma2'], pop_size_2)
+        pop1 = draw_from_trunc_norm(18, 85, coeffs.loc['mu1', 'estimate'], coeffs.loc['sigma1', 'estimate'], pop_size_1)
+        pop2 = draw_from_trunc_norm(18, 85, coeffs.loc['mu2', 'estimate'], coeffs.loc['sigma2', 'estimate'], pop_size_2)
         population = np.concatenate((pop1, pop2))
 
     # Create DataFrame
@@ -154,12 +161,12 @@ def calculate_death_out_care_prob(pop, coeffs, year):
     prob = np.exp(odds) / (1.0 + np.exp(odds))
     return prob
 
-def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrtcd4n_coeff_2009, cd4_increase_coeff, group_name):
+def make_pop_2009(on_art_2009, mixture_2009_coeff, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase_coeff, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
     # Draw ages from the truncated mixed gaussian
-    mixture_2009_coeff['lambda2'] = 1.0 - mixture_2009_coeff['lambda1']
+    mixture_2009_coeff.loc['lambda2', 'estimate'] = 1.0 - mixture_2009_coeff.loc['lambda1', 'estimate']
     pop_size = on_art_2009[0].astype('int')
     population = sim_pop(mixture_2009_coeff, pop_size)
 
@@ -171,19 +178,19 @@ def make_pop_2009(on_art_2009, mixture_2009_coeff, naaccord_prop_2009, init_sqrt
     population = population.sort_values('age')
     population = population.set_index(['age_cat', 'id'])
 
-    # Assign H1YY to match naaccord distribution from naaccord_prop_2009
+    # Assign H1YY to match naaccord distribution from h1yy_by_age_2009
     for age_cat, grouped in population.groupby('age_cat'):
-        if (naaccord_prop_2009.index.isin([(group_name, age_cat, 2000.0)]).any() ): 
-            h1yy_data = naaccord_prop_2009.loc[(group_name, age_cat)]
+        if (h1yy_by_age_2009.index.isin([(group_name, age_cat, 2000.0)]).any() ): 
+            h1yy_data = h1yy_by_age_2009.loc[(group_name, age_cat)]
         else: # replace missing data
-            h1yy_data = naaccord_prop_2009.loc[('msm_white_male', age_cat)]
+            h1yy_data = h1yy_by_age_2009.loc[('msm_white_male', age_cat)]
         population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data.index.values, size=grouped.shape[0], p=h1yy_data.pct.values)
 
     # Pull cd4 count coefficients
-    mean_intercept = init_sqrtcd4n_coeff_2009['meanint']
-    mean_slope = init_sqrtcd4n_coeff_2009['meanslp']
-    std_intercept = init_sqrtcd4n_coeff_2009['stdint']
-    std_slope = init_sqrtcd4n_coeff_2009['stdslp']
+    mean_intercept = cd4n_by_h1yy_2009['meanint']
+    mean_slope = cd4n_by_h1yy_2009['meanslp']
+    std_intercept = cd4n_by_h1yy_2009['stdint']
+    std_slope = cd4n_by_h1yy_2009['stdslp']
 
     # Reindex for group operation
     population['h1yy'] = population['h1yy'].astype(int)
@@ -254,8 +261,8 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
    
     # Split into before and after 2018
     sim_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') >= 2018].copy()
-    observed_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'sim'})
-    observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='sim', index='h1yy', columns='param').rename_axis(None, axis=1)
+    observed_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'estimate'})
+    observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='estimate', index='h1yy', columns='param').rename_axis(None, axis=1)
     
     # Pull coefficients in 2018
     sim_coeff['pred18'] = np.nan
@@ -266,10 +273,10 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     sim_coeff['rand'] = np.random.rand(len(sim_coeff.index))
     sim_coeff['min'] = np.minimum(sim_coeff['pred'], sim_coeff['pred18'])
     sim_coeff['max'] = np.maximum(sim_coeff['pred'], sim_coeff['pred18'])
-    sim_coeff['sim'] = sim_coeff['min'] + sim_coeff['rand'] * (sim_coeff['max'] - sim_coeff['min'])
+    sim_coeff['estimate'] = sim_coeff['min'] + sim_coeff['rand'] * (sim_coeff['max'] - sim_coeff['min'])
 
     # Reorganize table and glue them back together
-    sim_coeff = pd.pivot_table(sim_coeff.reset_index(), values='sim', index='h1yy', columns='param').rename_axis(None, axis=1)
+    sim_coeff = pd.pivot_table(sim_coeff.reset_index(), values='estimate', index='h1yy', columns='param').rename_axis(None, axis=1)
     sim_coeff = pd.concat([observed_coeff, sim_coeff])
 
     # Lambdas should add to 1.0
@@ -280,9 +287,12 @@ def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, c
     # Dont simulate new dxs in 2009
     sim_coeff = sim_coeff.drop(2009)
 
+    # Convert to long data set
+    sim_coeff = gather(sim_coeff.reset_index(), key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2']).set_index(['h1yy', 'term'])
+
     population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
-        grouped_pop = sim_pop(coeffs.iloc[0], art_init_sim.loc[h1yy, 'n_art_init'])
+        grouped_pop = sim_pop(sim_coeff.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
         grouped_pop['h1yy'] = h1yy
         population = pd.concat([population, grouped_pop])
 
@@ -344,8 +354,8 @@ class Parameters:
             self.new_dx_interval          = store['new_dx_interval'].loc[group_name]
             self.on_art_2009              = store['on_art_2009'].loc[group_name]
             self.mixture_2009_coeff       = store['mixture_2009_coeff'].loc[group_name]
-            self.naaccord_prop_2009       = store['naaccord_prop_2009']
-            self.init_sqrtcd4n_coeff_2009 = store['init_sqrtcd4n_coeff_2009'].loc[group_name]
+            self.h1yy_by_age_2009         = store['h1yy_by_age_2009']
+            self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.mixture_h1yy_coeff       = store['mixture_h1yy_coeff'].loc[group_name]
             self.init_sqrtcd4n_coeff      = store['init_sqrtcd4n_coeff'].loc[group_name]
             self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
@@ -396,7 +406,7 @@ class Pearl:
         art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
         
         # Create 2009 population
-        self.population = make_pop_2009(parameters.on_art_2009, parameters.mixture_2009_coeff.copy(), parameters.naaccord_prop_2009, parameters.init_sqrtcd4n_coeff_2009,
+        self.population = make_pop_2009(parameters.on_art_2009, parameters.mixture_2009_coeff.copy(), parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
                                         parameters.cd4_increase_coeff, group_name)
 
         # Create population of new art initiators
