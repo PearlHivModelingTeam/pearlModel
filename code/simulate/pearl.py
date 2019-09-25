@@ -253,7 +253,7 @@ def simulate_new_dx(new_dx, dx_interval):
 
     return new_dx.filter(items=['n_art_init'])
 
-def make_new_population(art_init_sim, age_by_h1yy, init_sqrtcd4n_coeff, cd4_increase_coeff, pop_size_2009):
+def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, cd4_increase_coeff, pop_size_2009):
     """ Draw ages for new art initiators """ 
 
     # Replace negative values with 0
@@ -305,10 +305,10 @@ def make_new_population(art_init_sim, age_by_h1yy, init_sqrtcd4n_coeff, cd4_incr
     population['id'] = np.arange(pop_size_2009, (pop_size_2009 + population.index.size))
 
     # Pull cd4 count coefficients
-    mean_intercept = init_sqrtcd4n_coeff['meanint']
-    mean_slope = init_sqrtcd4n_coeff['meanslp']
-    std_intercept = init_sqrtcd4n_coeff['stdint']
-    std_slope = init_sqrtcd4n_coeff['stdslp']
+    mean_intercept = cd4n_by_h1yy['meanint']
+    mean_slope = cd4n_by_h1yy['meanslp']
+    std_intercept = cd4n_by_h1yy['stdint']
+    std_slope = cd4n_by_h1yy['stdslp']
 
     # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
     population = population.set_index('h1yy')
@@ -357,7 +357,8 @@ class Parameters:
             self.h1yy_by_age_2009         = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.age_by_h1yy              = store['age_by_h1yy'].loc[group_name]
-            self.init_sqrtcd4n_coeff      = store['init_sqrtcd4n_coeff'].loc[group_name]
+            self.cd4n_by_h1yy             = store['cd4n_by_h1yy'].loc[group_name]
+
             self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
             self.cd4_decrease_coeff       = store['cd4_decrease_coeff'].iloc[0]
             self.ltfu_coeff               = store['ltfu_coeff'].loc[group_name]
@@ -410,7 +411,7 @@ class Pearl:
                                         parameters.cd4_increase_coeff, group_name)
 
         # Create population of new art initiators
-        self.population = self.population.append(make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.init_sqrtcd4n_coeff, 
+        self.population = self.population.append(make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.cd4n_by_h1yy, 
                                                  parameters.cd4_increase_coeff, len(self.population.index)))
     
         # Allow loss to follow up to occur in initial year
