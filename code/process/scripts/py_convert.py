@@ -66,22 +66,22 @@ h1yy_by_age_2009 = feather.read_dataframe(f'{param_dir_new}/h1yy_by_age_2009.fea
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
 cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir_new}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
 
-# Mixed gaussian coefficients for age of patients alive in 2009: mixture_2009
-mixture_2009_coeff = (robjects.r['mixture_2009_coeff'])
-mixture_2009_coeff = gather(mixture_2009_coeff, key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2'])
-mixture_2009_coeff = mixture_2009_coeff.set_index(['group', 'term']).sort_index()
-print(mixture_2009_coeff)
+# Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
+age_in_2009 = (robjects.r['mixture_2009_coeff'])
+age_in_2009 = gather(age_in_2009, key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2'])
+age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index()
 #age_in_2009 = feather.read_dataframe(f'{param_dir_new}/age_in_2009.feather').set_index(['group', 'term'])
 #print(age_in_2009)
 
 # New dx and dx prediction intervals
-new_dx = (robjects.r['new_dx']).set_index(['group', 'year'])
-new_dx_interval = (robjects.r['new_dx_interval']).set_index(['group', 'year'])
+new_dx = feather.read_dataframe(f'{param_dir_new}/new_dx.feather').set_index(['group', 'year'])
+new_dx_interval = feather.read_dataframe(f'{param_dir_new}/new_dx_interval.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
 mixture_h1yy_coeff = robjects.r['mixture_h1yy_coeff']
 mixture_h1yy_coeff.columns = map(str.lower, mixture_h1yy_coeff.columns) 
 mixture_h1yy_coeff = mixture_h1yy_coeff.set_index(['group', 'param', 'h1yy'])
+print(mixture_h1yy_coeff)
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: init_sqrtcd4n_coeff_2009
 init_sqrtcd4n_coeff = (robjects.r['init_sqrtcd4n_coeff']).set_index('group')
@@ -122,9 +122,10 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['on_art_2009'] = on_art_2009
     store['h1yy_by_age_2009'] = h1yy_by_age_2009 
     store['cd4n_by_h1yy_2009'] = cd4n_by_h1yy_2009
-    store['mixture_2009_coeff'] = mixture_2009_coeff
+    store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
+
     store['mixture_h1yy_coeff'] = mixture_h1yy_coeff
     store['init_sqrtcd4n_coeff'] = init_sqrtcd4n_coeff
     store['cd4_increase_coeff'] = cd4_increase_coeff
