@@ -161,14 +161,14 @@ def calculate_death_out_care_prob(pop, coeffs, year):
     prob = np.exp(odds) / (1.0 + np.exp(odds))
     return prob
 
-def make_pop_2009(on_art_2009, mixture_2009_coeff, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase_coeff, group_name):
+def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase_coeff, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
     # Draw ages from the truncated mixed gaussian
-    mixture_2009_coeff.loc['lambda2', 'estimate'] = 1.0 - mixture_2009_coeff.loc['lambda1', 'estimate']
+    age_in_2009.loc['lambda2', 'estimate'] = 1.0 - age_in_2009.loc['lambda1', 'estimate']
     pop_size = on_art_2009[0].astype('int')
-    population = sim_pop(mixture_2009_coeff, pop_size)
+    population = sim_pop(age_in_2009, pop_size)
 
     # Create age categories
     population['age'] = np.floor(population['age'])
@@ -353,7 +353,7 @@ class Parameters:
             self.new_dx                   = store['new_dx'].loc[group_name]
             self.new_dx_interval          = store['new_dx_interval'].loc[group_name]
             self.on_art_2009              = store['on_art_2009'].loc[group_name]
-            self.mixture_2009_coeff       = store['mixture_2009_coeff'].loc[group_name]
+            self.age_in_2009              = store['age_in_2009'].loc[group_name]
             self.h1yy_by_age_2009         = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.mixture_h1yy_coeff       = store['mixture_h1yy_coeff'].loc[group_name]
@@ -406,7 +406,7 @@ class Pearl:
         art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
         
         # Create 2009 population
-        self.population = make_pop_2009(parameters.on_art_2009, parameters.mixture_2009_coeff.copy(), parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
+        self.population = make_pop_2009(parameters.on_art_2009, parameters.age_in_2009.copy(), parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
                                         parameters.cd4_increase_coeff, group_name)
 
         # Create population of new art initiators
