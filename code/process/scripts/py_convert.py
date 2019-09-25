@@ -78,10 +78,7 @@ new_dx = feather.read_dataframe(f'{param_dir_new}/new_dx.feather').set_index(['g
 new_dx_interval = feather.read_dataframe(f'{param_dir_new}/new_dx_interval.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
-mixture_h1yy_coeff = robjects.r['mixture_h1yy_coeff']
-mixture_h1yy_coeff.columns = map(str.lower, mixture_h1yy_coeff.columns) 
-mixture_h1yy_coeff = mixture_h1yy_coeff.set_index(['group', 'param', 'h1yy'])
-print(mixture_h1yy_coeff)
+age_by_h1yy = feather.read_dataframe(f'{param_dir_new}/age_by_h1yy.feather').set_index(['group', 'param', 'h1yy']).sort_index()
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: init_sqrtcd4n_coeff_2009
 init_sqrtcd4n_coeff = (robjects.r['init_sqrtcd4n_coeff']).set_index('group')
@@ -126,7 +123,7 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
 
-    store['mixture_h1yy_coeff'] = mixture_h1yy_coeff
+    store['age_by_h1yy'] = age_by_h1yy
     store['init_sqrtcd4n_coeff'] = init_sqrtcd4n_coeff
     store['cd4_increase_coeff'] = cd4_increase_coeff
     store['ltfu_coeff'] = ltfu_coeff

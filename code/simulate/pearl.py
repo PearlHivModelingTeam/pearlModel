@@ -253,15 +253,15 @@ def simulate_new_dx(new_dx, dx_interval):
 
     return new_dx.filter(items=['n_art_init'])
 
-def make_new_population(art_init_sim, mixture_h1yy_coeff, init_sqrtcd4n_coeff, cd4_increase_coeff, pop_size_2009):
+def make_new_population(art_init_sim, age_by_h1yy, init_sqrtcd4n_coeff, cd4_increase_coeff, pop_size_2009):
     """ Draw ages for new art initiators """ 
 
     # Replace negative values with 0
-    mixture_h1yy_coeff[mixture_h1yy_coeff < 0] = 0
+    age_by_h1yy[age_by_h1yy < 0] = 0
    
     # Split into before and after 2018
-    sim_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') >= 2018].copy()
-    observed_coeff = mixture_h1yy_coeff.loc[mixture_h1yy_coeff.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'estimate'})
+    sim_coeff = age_by_h1yy.loc[age_by_h1yy.index.get_level_values('h1yy') >= 2018].copy()
+    observed_coeff = age_by_h1yy.loc[age_by_h1yy.index.get_level_values('h1yy') < 2018].copy().rename(columns = {'pred': 'estimate'})
     observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='estimate', index='h1yy', columns='param').rename_axis(None, axis=1)
     
     # Pull coefficients in 2018
@@ -356,7 +356,7 @@ class Parameters:
             self.age_in_2009              = store['age_in_2009'].loc[group_name]
             self.h1yy_by_age_2009         = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
-            self.mixture_h1yy_coeff       = store['mixture_h1yy_coeff'].loc[group_name]
+            self.age_by_h1yy              = store['age_by_h1yy'].loc[group_name]
             self.init_sqrtcd4n_coeff      = store['init_sqrtcd4n_coeff'].loc[group_name]
             self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
             self.cd4_decrease_coeff       = store['cd4_decrease_coeff'].iloc[0]
@@ -394,7 +394,7 @@ def output_reindex(df):
 
 class Pearl:
     def __init__(self, parameters, group_name, replication, verbose = False, cd4_reset = False):
-        self.out_dir = os.path.realpath(f'{os.getcwd()}/out')
+        self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/py')
         self.group_name = group_name
         self.replication = replication
         self.cd4_reset = cd4_reset
@@ -410,7 +410,7 @@ class Pearl:
                                         parameters.cd4_increase_coeff, group_name)
 
         # Create population of new art initiators
-        self.population = self.population.append(make_new_population(art_init_sim, parameters.mixture_h1yy_coeff, parameters.init_sqrtcd4n_coeff, 
+        self.population = self.population.append(make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.init_sqrtcd4n_coeff, 
                                                  parameters.cd4_increase_coeff, len(self.population.index)))
     
         # Allow loss to follow up to occur in initial year
