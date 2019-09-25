@@ -100,7 +100,9 @@ ltfu_pctls = clean_coeff(pd.read_sas(param_dir + '/pctls_ltfu_190508.sas7bdat'))
 ltfu_coeff = pd.concat([ltfu_coeff, ltfu_pctls], axis=1)
 
 # Coefficients for mortality in care
-mortality_in_care_coeff = (robjects.r['mortality_in_care_coeff']).set_index('group')
+mortality_in_care = (robjects.r['mortality_in_care_coeff'])
+mortality_in_care = gather(mortality_in_care, key='term', value='estimate', 
+                           cols = ['intercept_est', 'ageby10_est', 'sqrtcd4n_est', 'year_est', 'h1yy_est']).set_index(['group', 'term']).sort_index()
 
 # Coefficients for mortality out of care
 mortality_out_care_coeff = pd.read_sas(param_dir + '/coeff_mortality_out_care_190508.sas7bdat')
@@ -120,10 +122,10 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['new_dx_interval'] = new_dx_interval
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy
+    store['mortality_in_care'] = mortality_in_care
 
+    store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_increase_coeff'] = cd4_increase_coeff
     store['ltfu_coeff'] = ltfu_coeff
-    store['mortality_in_care_coeff'] = mortality_in_care_coeff
-    store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
     store['prob_reengage'] = prob_reengage
