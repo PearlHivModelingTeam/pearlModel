@@ -80,8 +80,8 @@ new_dx_interval = feather.read_dataframe(f'{param_dir_new}/new_dx_interval.feath
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{param_dir_new}/age_by_h1yy.feather').set_index(['group', 'param', 'h1yy']).sort_index()
 
-# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: init_sqrtcd4n_coeff_2009
-init_sqrtcd4n_coeff = (robjects.r['init_sqrtcd4n_coeff']).set_index('group')
+# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy
+cd4n_by_h1yy = feather.read_dataframe(f'{param_dir_new}/cd4n_by_h1yy.feather').set_index('group').sort_index()
 
 # Coefficients of cd4 increase over time
 cd4_increase_coeff = clean_coeff(pd.read_sas(param_dir + '/cd4_increase_coeff_190508.sas7bdat'))
@@ -110,10 +110,6 @@ mortality_out_care_coeff = clean_coeff(mortality_out_care_coeff)
 # Probability to reengage in care for each group
 prob_reengage = clean_coeff(pd.read_csv(f'{param_dir}/prob_reengage.csv'))
 
-# Prevalence of Stage 0 factors in 2009 art users
-#stage0_prev_2009 = clean_coeff_2(pd.read_csv(f'{param_dir}/stage0_prev_2009.csv'))
-#stage0_prev_2009[stage0_prev_2009.select_dtypes(include=['number']).columns] *= 0.01 
-
 # Save everything
 with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['on_art_2009'] = on_art_2009
@@ -122,14 +118,12 @@ with pd.HDFStore(proc_dir + '/converted.h5') as store:
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
-
     store['age_by_h1yy'] = age_by_h1yy
-    store['init_sqrtcd4n_coeff'] = init_sqrtcd4n_coeff
+    store['cd4n_by_h1yy'] = cd4n_by_h1yy
+
     store['cd4_increase_coeff'] = cd4_increase_coeff
     store['ltfu_coeff'] = ltfu_coeff
     store['mortality_in_care_coeff'] = mortality_in_care_coeff
     store['mortality_out_care_coeff'] = mortality_out_care_coeff
     store['cd4_decrease_coeff'] = cd4_decrease_coeff
     store['prob_reengage'] = prob_reengage
-    #store['stage0_prev_2009'] = stage0_prev_2009
-
