@@ -140,11 +140,11 @@ def calculate_ltfu_prob(pop, coeffs, year):
 
 def calculate_death_in_care_prob(pop, coeffs, year):
     """ Calculate the individual probability of dying in care """
-    odds = (coeffs['intercept_est'] + 
-           (coeffs['ageby10_est'] * pop['age_cat']) +
-           (coeffs['sqrtcd4n_est'] * pop['init_sqrtcd4n']) +
-           (coeffs['year_est'] * year) +
-           (coeffs['h1yy_est'] * pop['h1yy']))
+    odds = (coeffs.loc['intercept_est', 'estimate'] + 
+           (coeffs.loc['ageby10_est', 'estimate' ] * pop['age_cat']) +
+           (coeffs.loc['sqrtcd4n_est', 'estimate'] * pop['init_sqrtcd4n']) +
+           (coeffs.loc['year_est', 'estimate'] * year) +
+           (coeffs.loc['h1yy_est', 'estimate'] * pop['h1yy']))
 
     # Convert to probability
     prob = np.exp(odds) / (1.0 + np.exp(odds))
@@ -358,12 +358,15 @@ class Parameters:
             self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.age_by_h1yy              = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy             = store['cd4n_by_h1yy'].loc[group_name]
+            self.mortality_in_care_coeff  = store['mortality_in_care_coeff'].loc[group_name]
+            self.mortality_in_care        = store['mortality_in_care'].loc[group_name]
+            print(self.mortality_in_care_coeff)
+            print(self.mortality_in_care)
 
             self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
             self.cd4_decrease_coeff       = store['cd4_decrease_coeff'].iloc[0]
             self.ltfu_coeff               = store['ltfu_coeff'].loc[group_name]
             self.prob_reengage            = store['prob_reengage'].loc[group_name]
-            self.mortality_in_care_coeff  = store['mortality_in_care_coeff'].loc[group_name]
             self.mortality_out_care_coeff = store['mortality_out_care_coeff'].loc[group_name]
 
 class Statistics:
@@ -479,7 +482,7 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == IN_CARE
-        death_prob = calculate_death_in_care_prob(self.population.copy(), self.parameters.mortality_in_care_coeff, self.year)
+        death_prob = calculate_death_in_care_prob(self.population.copy(), self.parameters.mortality_in_care, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_IN_CARE
         self.population.loc[died, 'year_died'] = self.year
