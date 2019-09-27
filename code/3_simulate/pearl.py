@@ -365,8 +365,6 @@ class Parameters:
             self.cd4_decrease             = store['cd4_decrease'].loc[group_name]
             self.cd4_increase             = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots       = store['cd4_increase_knots'].loc[group_name]
-
-
             self.prob_reengage            = store['prob_reengage'].loc[group_name]
 
 class Statistics:
