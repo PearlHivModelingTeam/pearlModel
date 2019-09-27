@@ -4,6 +4,14 @@ import numpy as np
 import pandas as pd
 import feather
 
+# R to python interface
+import rpy2.robjects as robjects
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.packages import importr
+
+# Activate R interface
+base = importr('base')
+pandas2ri.activate()
 pd.set_option("display.max_rows", 1001)
 
 # Define directories
@@ -36,6 +44,15 @@ def clean_coeff(df):
     df = df.set_index('group')
     return(df)
 
+def gather(df, key, value, cols):
+    id_vars = [ col for col in df.columns if col not in cols ]
+    id_values = cols
+    var_name = key
+    value_name = value
+    return pd.melt( df, id_vars, id_values, var_name, value_name )
+
+robjects.r.source(cwd + '/scripts/r_convert.r')
+
 # Number of people on art in 2009: on_art_2009
 on_art_2009 = feather.read_dataframe(f'{param_dir}/on_art_2009.feather').set_index(['group']).sort_index()
 
@@ -47,6 +64,9 @@ cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy_2009.feath
 
 # Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
 age_in_2009 = feather.read_dataframe(f'{param_dir}/age_in_2009.feather').set_index(['group', 'term'])
+age_in_2009 = (robjects.r['mixture_2009_coeff'])
+age_in_2009 = gather(age_in_2009, key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2'])
+age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index()
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
@@ -60,6 +80,9 @@ cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_i
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather').set_index(['group', 'term']).sort_index()
+mortality_in_care = (robjects.r['mortality_in_care_coeff'])
+mortality_in_care = gather(mortality_in_care, key='term', value='estimate', 
+                           cols = ['intercept_est', 'ageby10_est', 'sqrtcd4n_est', 'year_est', 'h1yy_est']).set_index(['group', 'term']).sort_index()
 
 # Coefficients for mortality out of care
 mortality_out_care = feather.read_dataframe(f'{param_dir}/mortality_out_care.feather').set_index(['group', 'term']).sort_index()
