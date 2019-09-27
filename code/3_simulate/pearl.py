@@ -67,72 +67,72 @@ def set_cd4_cat(pop):
 
     return pop
 
-def calculate_in_care_cd4n(pop, coeffs, year):
+def calculate_in_care_cd4n(pop, coeffs, knots, year):
     """ Calculate time varying cd4n as a linear function of age_cat, cd4_cat, time_from_h1yy and their cross terms """
     
     # Calculate spline variables
     time_from_h1yy    =  year - pop['h1yy'].values
-    time_from_h1yy_   = (np.maximum(0, time_from_h1yy - coeffs['p5' ])**2 -
-                         np.maximum(0, time_from_h1yy - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
-    time_from_h1yy__  = (np.maximum(0, time_from_h1yy - coeffs['p35'])**2 -
-                         np.maximum(0, time_from_h1yy - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
-    time_from_h1yy___ = (np.maximum(0, time_from_h1yy - coeffs['p65'])**2 -
-                         np.maximum(0, time_from_h1yy - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
+    time_from_h1yy_   = (np.maximum(0, time_from_h1yy - knots['p5' ])**2 -
+                         np.maximum(0, time_from_h1yy - knots['p95'])**2) / (knots['p95'] - knots['p5'])
+    time_from_h1yy__  = (np.maximum(0, time_from_h1yy - knots['p35'])**2 -
+                         np.maximum(0, time_from_h1yy - knots['p95'])**2) / (knots['p95'] - knots['p5'])
+    time_from_h1yy___ = (np.maximum(0, time_from_h1yy - knots['p65'])**2 -
+                         np.maximum(0, time_from_h1yy - knots['p95'])**2) / (knots['p95'] - knots['p5'])
 
     # Calculate time varying sqrt cd4n
-    time_varying_sqrtcd4n = (coeffs['intercept_c'] +
-                            (coeffs['agecat_c'] * pop['age_cat']) + 
-                            (coeffs['cd4cat349_c'] * pop['cd4_cat_349']) +
-                            (coeffs['cd4cat499_c'] * pop['cd4_cat_499']) +
-                            (coeffs['cd4cat500_c'] * pop['cd4_cat_500']) +
-                            (coeffs['time_from_h1yy_c'] * time_from_h1yy) +
-                            (coeffs['_time_from_h1yy_c'] * time_from_h1yy_) +
-                            (coeffs['__time_from_h1yy_c'] * time_from_h1yy__) +
-                            (coeffs['___time_from_h1yy_c'] * time_from_h1yy___) +
-                            (coeffs['_time_from_cd4cat349_c'] * time_from_h1yy_ * pop['cd4_cat_349']) +
-                            (coeffs['_time_from_cd4cat499_c'] * time_from_h1yy_ * pop['cd4_cat_499']) +
-                            (coeffs['_time_from_cd4cat500_c'] * time_from_h1yy_ * pop['cd4_cat_500']) +
-                            (coeffs['__time_fro_cd4cat349_c'] * time_from_h1yy__ * pop['cd4_cat_349']) +
-                            (coeffs['__time_fro_cd4cat499_c'] * time_from_h1yy__ * pop['cd4_cat_499']) +
-                            (coeffs['__time_fro_cd4cat500_c'] * time_from_h1yy__ * pop['cd4_cat_500']) +
-                            (coeffs['___time_fr_cd4cat349_c'] * time_from_h1yy___ * pop['cd4_cat_349']) +
-                            (coeffs['___time_fr_cd4cat499_c'] * time_from_h1yy___ * pop['cd4_cat_499']) +
-                            (coeffs['___time_fr_cd4cat500_c'] * time_from_h1yy___ * pop['cd4_cat_500'])).values
+    time_varying_sqrtcd4n = (coeffs.loc['intercept', 'estimate'] +
+                            (coeffs.loc['agecat', 'estimate'] * pop['age_cat']) + 
+                            (coeffs.loc['cd4cat349', 'estimate'] * pop['cd4_cat_349']) +
+                            (coeffs.loc['cd4cat499', 'estimate'] * pop['cd4_cat_499']) +
+                            (coeffs.loc['cd4cat500', 'estimate'] * pop['cd4_cat_500']) +
+                            (coeffs.loc['time_from_h1yy', 'estimate'] * time_from_h1yy) +
+                            (coeffs.loc['_time_from_h1yy', 'estimate'] * time_from_h1yy_) +
+                            (coeffs.loc['__time_from_h1yy', 'estimate'] * time_from_h1yy__) +
+                            (coeffs.loc['___time_from_h1yy', 'estimate'] * time_from_h1yy___) +
+                            (coeffs.loc['_timecd4cat349', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_349']) +
+                            (coeffs.loc['_timecd4cat499', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_499']) +
+                            (coeffs.loc['_timecd4cat500', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_500']) +
+                            (coeffs.loc['__timecd4cat349', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_349']) +
+                            (coeffs.loc['__timecd4cat499', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_499']) +
+                            (coeffs.loc['__timecd4cat500', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_500']) +
+                            (coeffs.loc['___timecd4cat349', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_349']) +
+                            (coeffs.loc['___timecd4cat499', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_499']) +
+                            (coeffs.loc['___timecd4cat500', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_500'])).values
 
     return time_varying_sqrtcd4n
 
 def calculate_out_care_cd4n(pop, coeffs, year):
     """ Calculate new time varying cd4 count for population out of care """
     time_out = year - pop['ltfu_year'].values
-    diff = (coeffs['time_out_of_naaccord_c'] * time_out) + (coeffs['sqrtcd4_exit_c'] * pop['sqrtcd4n_exit'].values) +  coeffs['intercept_c'] 
+    diff = (coeffs.loc['time_out_of_naaccord', 'estimate'] * time_out) + (coeffs.loc['sqrtcd4n_exit', 'estimate'] * pop['sqrtcd4n_exit'].values) +  coeffs.loc['intercept', 'estimate'] 
     time_varying_sqrtcd4n = np.sqrt((pop['sqrtcd4n_exit'].values**2) * np.exp(diff) * 1.5)
     
     return time_varying_sqrtcd4n
 
-def calculate_ltfu_prob(pop, coeffs, year):
+def calculate_ltfu_prob(pop, coeffs, knots, year):
     """ Calculate the probability of loss to follow up """
 
     # Calculate spline variables
     age    = pop['age'].values
-    age_   = (np.maximum(0, age - coeffs['p5'])**2 - 
-              np.maximum(0, age - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
-    age__  = (np.maximum(0, age - coeffs['p35'])**2 - 
-              np.maximum(0, age - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
-    age___ = (np.maximum(0, age - coeffs['p65'])**2 - 
-              np.maximum(0, age - coeffs['p95'])**2) / (coeffs['p95'] - coeffs['p5'])
+    age_   = (np.maximum(0, age - knots['p5'])**2 - 
+              np.maximum(0, age - knots['p95'])**2) / (knots['p95'] - knots['p5'])
+    age__  = (np.maximum(0, age - knots['p35'])**2 - 
+              np.maximum(0, age - knots['p95'])**2) / (knots['p95'] - knots['p5'])
+    age___ = (np.maximum(0, age - knots['p65'])**2 - 
+              np.maximum(0, age - knots['p95'])**2) / (knots['p95'] - knots['p5'])
     
     # Create haart_period variable
     haart_period = (pop['h1yy'].values > 2010).astype(int)
     
     # Calculate log odds
-    odds = (coeffs['intercept_c'] + 
-           (coeffs['age_c'] * age) + 
-           (coeffs['_age_c'] * age_) + 
-           (coeffs['__age_c'] * age__) + 
-           (coeffs['___age_c'] * age___) + 
-           (coeffs['year_c'] * year ) +
-           (coeffs['sqrtcd4n_c'] * pop['init_sqrtcd4n']) +
-           (coeffs['haart_period_c'] * haart_period))
+    odds = (coeffs.loc['intercept', 'estimate'] + 
+           (coeffs.loc['age', 'estimate'] * age) + 
+           (coeffs.loc['_age', 'estimate'] * age_) + 
+           (coeffs.loc['__age', 'estimate'] * age__) + 
+           (coeffs.loc['___age', 'estimate'] * age___) + 
+           (coeffs.loc['year', 'estimate'] * year ) +
+           (coeffs.loc['sqrt_cd4n', 'estimate'] * pop['init_sqrtcd4n']) +
+           (coeffs.loc['haart_period', 'estimate'] * haart_period))
 
     # Convert to probability
     prob = np.exp(odds) / (1.0 + np.exp(odds))
@@ -152,16 +152,16 @@ def calculate_death_in_care_prob(pop, coeffs, year):
 
 def calculate_death_out_care_prob(pop, coeffs, year):
     """ Calculate the individual probability of dying in care """
-    odds = (coeffs['intercept_c'] + 
-           (coeffs['agecat_c'] * pop['age_cat']) +
-           (coeffs['tv_sqrtcd4n_c'] * pop['time_varying_sqrtcd4n']) +
-           (coeffs['year_c'] * year))
+    odds = (coeffs.loc['intercept', 'estimate'] + 
+           (coeffs.loc['age_cat', 'estimate'] * pop['age_cat']) +
+           (coeffs.loc['tv_sqrtcd4n', 'estimate'] * pop['time_varying_sqrtcd4n']) +
+           (coeffs.loc['year', 'estimate'] * year))
 
     # Convert to probability
     prob = np.exp(odds) / (1.0 + np.exp(odds))
     return prob
 
-def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase_coeff, group_name):
+def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase, cd4_increase_knots, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is assigned 
     using proportions from naaccord data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each h1yy"""
 
@@ -213,7 +213,7 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
     population = set_cd4_cat(population)
     population['h1yy_orig'] = population['h1yy']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
-    population['time_varying_sqrtcd4n'] = calculate_in_care_cd4n(population.copy(), cd4_increase_coeff, 2009)
+    population['time_varying_sqrtcd4n'] = calculate_in_care_cd4n(population.copy(), cd4_increase, cd4_increase_knots, 2009)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -253,7 +253,7 @@ def simulate_new_dx(new_dx, dx_interval):
 
     return new_dx.filter(items=['n_art_init'])
 
-def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, cd4_increase_coeff, pop_size_2009):
+def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, cd4_increase, cd4_increase_knots, pop_size_2009):
     """ Draw ages for new art initiators """ 
 
     # Replace negative values with 0
@@ -358,16 +358,16 @@ class Parameters:
             self.cd4n_by_h1yy_2009        = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.age_by_h1yy              = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy             = store['cd4n_by_h1yy'].loc[group_name]
-            self.mortality_in_care_coeff  = store['mortality_in_care_coeff'].loc[group_name]
             self.mortality_in_care        = store['mortality_in_care'].loc[group_name]
-            print(self.mortality_in_care_coeff)
-            print(self.mortality_in_care)
+            self.mortality_out_care       = store['mortality_out_care'].loc[group_name]
+            self.loss_to_follow_up        = store['loss_to_follow_up'].loc[group_name]
+            self.ltfu_knots               = store['ltfu_knots'].loc[group_name]
+            self.cd4_decrease             = store['cd4_decrease'].loc[group_name]
+            self.cd4_increase             = store['cd4_increase'].loc[group_name]
+            self.cd4_increase_knots       = store['cd4_increase_knots'].loc[group_name]
 
-            self.cd4_increase_coeff       = store['cd4_increase_coeff'].loc[group_name]
-            self.cd4_decrease_coeff       = store['cd4_decrease_coeff'].iloc[0]
-            self.ltfu_coeff               = store['ltfu_coeff'].loc[group_name]
+
             self.prob_reengage            = store['prob_reengage'].loc[group_name]
-            self.mortality_out_care_coeff = store['mortality_out_care_coeff'].loc[group_name]
 
 class Statistics:
     def __init__(self):
@@ -375,10 +375,10 @@ class Statistics:
         self.in_care_age         = pd.DataFrame() 
         self.out_care_count      = pd.DataFrame() 
         self.out_care_age        = pd.DataFrame() 
-        self.reengaged_count  = pd.DataFrame()
-        self.reengaged_age    = pd.DataFrame()
-        self.ltfu_count      = pd.DataFrame() 
-        self.ltfu_age        = pd.DataFrame() 
+        self.reengaged_count     = pd.DataFrame()
+        self.reengaged_age       = pd.DataFrame()
+        self.ltfu_count          = pd.DataFrame() 
+        self.ltfu_age            = pd.DataFrame() 
         self.died_in_care_count  = pd.DataFrame()
         self.died_in_care_age    = pd.DataFrame()
         self.died_out_care_count = pd.DataFrame() 
@@ -411,11 +411,11 @@ class Pearl:
         
         # Create 2009 population
         self.population = make_pop_2009(parameters.on_art_2009, parameters.age_in_2009.copy(), parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
-                                        parameters.cd4_increase_coeff, group_name)
+                                        parameters.cd4_increase, parameters.cd4_increase_knots, group_name)
 
         # Create population of new art initiators
         self.population = self.population.append(make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.cd4n_by_h1yy, 
-                                                 parameters.cd4_increase_coeff, len(self.population.index)))
+                                                 parameters.cd4_increase, parameters.cd4_increase_knots, len(self.population.index)))
     
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
@@ -469,12 +469,13 @@ class Pearl:
     def increase_cd4_count(self):
         in_care = self.population['status'] == IN_CARE
         self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_in_care_cd4n(self.population.loc[in_care].copy(), 
-                                                                                       self.parameters.cd4_increase_coeff, self.year)
+                                                                                       self.parameters.cd4_increase,
+                                                                                       self.parameters.cd4_increase_knots, self.year)
 
     def decrease_cd4_count(self):
         out_care = self.population['status'] == OUT_CARE
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_out_care_cd4n(self.population.loc[out_care].copy(), 
-                                                                                         self.parameters.cd4_decrease_coeff, self.year)
+                                                                                         self.parameters.cd4_decrease, self.year)
 
     def add_new_dx(self):
         new_dx = (self.population['status']==UNINITIATED) & (self.population['h1yy_orig']==self.year)
@@ -489,14 +490,14 @@ class Pearl:
 
     def kill_out_care(self):
         out_care = self.population['status'] == OUT_CARE
-        death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care_coeff, self.year)
+        death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care, self.year)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year
     
     def lose_to_follow_up(self):
         in_care = self.population['status'] == IN_CARE
-        ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.ltfu_coeff, self.year)
+        ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.loss_to_follow_up, self.parameters.ltfu_knots, self.year)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         self.population.loc[lost, 'status'] = LTFU
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n'] 
