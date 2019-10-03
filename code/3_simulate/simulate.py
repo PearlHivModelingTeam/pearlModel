@@ -8,7 +8,7 @@ import pearl
 ###############################################################################
 @ray.remote
 def run(parameters, group_name, replication):
-    pearl.Pearl(parameters, group_name, replication, False, False)
+    pearl.Pearl(parameters, group_name, replication, verbose=False, cd4_reset=True)
     return True
 
 

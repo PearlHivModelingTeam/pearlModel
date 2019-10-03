@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import seaborn as sns
 pd.set_option("display.max_rows", 1001)
+
 def mixture(coeffs, x):
     if coeffs.loc['lambda1', 'estimate'] > 0.0:
         rv1 = stats.norm(loc=coeffs.loc['mu1', 'estimate'], scale=coeffs.loc['sigma1', 'estimate'])

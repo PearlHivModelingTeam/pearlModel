@@ -10,7 +10,7 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/py'
-feather_dir = cwd + '/../../out/feather/py_no_reset'
+feather_dir = cwd + '/../../out/feather/py_reset'
 
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',

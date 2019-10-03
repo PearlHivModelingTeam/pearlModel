@@ -135,11 +135,11 @@ for(group_name in group_names){
   # Count plots
   for(plot_name in plot_names){
     print(plot_name)
-    df_r <- summarize_count(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
-    #df_py_reset <- summarize_count(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
+    #df_r <- summarize_count(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
+    df_py_reset <- summarize_count(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
     df_py_no_reset <- summarize_count(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
 
-    df <- bind_rows(df_r, df_py_no_reset)
+    df <- bind_rows(df_py_reset, df_py_no_reset)
     df$age_cat <-factor(df$age_cat,
       levels = c('2', '3', '4', '5', '6', '7'),
       labels = c('18-29', '30-39', '40-49', '50-59', '60-69', '70+'))
@@ -147,28 +147,28 @@ for(group_name in group_names){
     plot_count(group_name, df, plot_name)
   }
   # Age plots
-  for(plot_name in plot_names_2){
-    print(plot_name)
-    df_r <- summarize_age(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
-    df_py_no_reset <-summarize_age(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
-    #df_py_reset <-summarize_age(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
-    df <- bind_rows(df_r, df_py_no_reset)
-    plot_age(group_name, df, plot_name)
-  }
+  #for(plot_name in plot_names_2){
+  #  print(plot_name)
+  #  #df_r <- summarize_age(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
+  #  df_py_no_reset <-summarize_age(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
+  #  df_py_reset <-summarize_age(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
+  #  df <- bind_rows(df_py_reset, df_py_no_reset)
+  #  plot_age(group_name, df, plot_name)
+  #}
 
-  plot_name = 'new_init_count'
-  df_r <- summarize_init_count(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
-  df_py_no_reset <-summarize_init_count(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
+  #plot_name = 'new_init_count'
+  ##df_r <- summarize_init_count(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
+  #df_py_no_reset <-summarize_init_count(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
   #df_py_reset <-summarize_init_count(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
-  df <- bind_rows(df_r, df_py_no_reset)
-  plot_init_count(group_name, df, plot_name)
-  
-  plot_name = 'new_init_age'
-  df_r <- summarize_init_age(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
-  df_py_no_reset <-summarize_init_age(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
+  #df <- bind_rows(df_py_reset, df_py_no_reset)
+  #plot_init_count(group_name, df, plot_name)
+  #
+  #plot_name = 'new_init_age'
+  ##df_r <- summarize_init_age(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
+  #df_py_no_reset <-summarize_init_age(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
   #df_py_reset <-summarize_init_age(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
-  df <- bind_rows(df_r, df_py_no_reset)
-  plot_init_age(group_name, df, plot_name)
+  #df <- bind_rows(df_py_reset, df_py_no_reset)
+  #plot_init_age(group_name, df, plot_name)
 
 
 }
