@@ -63,10 +63,11 @@ h1yy_by_age_2009 = feather.read_dataframe(f'{param_dir}/h1yy_by_age_2009.feather
 cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
 
 # Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
-age_in_2009 = feather.read_dataframe(f'{param_dir}/age_in_2009.feather').set_index(['group', 'term'])
+new_age_in_2009 = feather.read_dataframe(f'{param_dir}/age_in_2009.feather').set_index(['group', 'term']).fillna(value=0.0)
 age_in_2009 = (robjects.r['mixture_2009_coeff'])
 age_in_2009 = gather(age_in_2009, key='term', value='estimate', cols = ['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2'])
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index()
+new_age_in_2009.loc[('idu_hisp_female', 'lambda1')] = [0.0, 0.0, 0.0]
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
@@ -74,14 +75,15 @@ new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather')
 
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather').set_index(['group', 'param', 'h1yy']).sort_index()
+print(age_by_h1yy)
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
 
 # Coefficients for mortality in care
-mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather').set_index(['group', 'term']).sort_index()
+#mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather').set_index(['group', 'term']).sort_index()
 mortality_in_care = (robjects.r['mortality_in_care_coeff'])
-mortality_in_care = gather(mortality_in_care, key='term', value='estimate', 
+mortality_in_care = gather(mortality_in_care, key='term', value='estimate',
                            cols = ['intercept_est', 'ageby10_est', 'sqrtcd4n_est', 'year_est', 'h1yy_est']).set_index(['group', 'term']).sort_index()
 
 # Coefficients for mortality out of care
@@ -107,6 +109,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['h1yy_by_age_2009'] = h1yy_by_age_2009 
     store['cd4n_by_h1yy_2009'] = cd4n_by_h1yy_2009
     store['age_in_2009'] = age_in_2009
+    store['new_age_in_2009'] = new_age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
     store['age_by_h1yy'] = age_by_h1yy

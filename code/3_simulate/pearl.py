@@ -3,9 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-import argparse
+import feather
 
 pd.set_option("display.max_rows", 1001)
+
 # Status Constants
 UNINITIATED = 0
 IN_CARE = 1
@@ -108,8 +109,7 @@ def calculate_in_care_cd4n(pop, coeffs, knots, year):
                              (coeffs.loc['__timecd4cat500', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_500']) +
                              (coeffs.loc['___timecd4cat349', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_349']) +
                              (coeffs.loc['___timecd4cat499', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_499']) +
-                             (coeffs.loc['___timecd4cat500', 'estimate'] * time_from_h1yy___ * pop[
-                                 'cd4_cat_500'])).values
+                             (coeffs.loc['___timecd4cat500', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_500']))
 
     return time_varying_sqrtcd4n
 
@@ -267,7 +267,7 @@ def simulate_new_dx(new_dx, dx_interval):
     new_dx = np.floor(new_dx)
 
     # We assume 75% link to care in the first year and a further 10% link in the next 3 years with equal probability
-    new_dx['lag_step'] = new_dx['n_dx'] * 0.1 * (1. / 3.)
+    new_dx['lag_step'] = new_dx['n_dx'] * 0.1 / 3.0
     new_dx['year0'] = new_dx['n_dx'] * 0.75
     new_dx['year1'] = new_dx['lag_step'].shift(1, fill_value=0)
     new_dx['year2'] = new_dx['lag_step'].shift(2, fill_value=0)
@@ -279,7 +279,7 @@ def simulate_new_dx(new_dx, dx_interval):
     return new_dx.filter(items=['n_art_init'])
 
 
-def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009):
+def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, group_name, replication):
     """ Draw ages for new art initiators """
 
     # Replace negative values with 0
@@ -319,6 +319,10 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009):
     # Convert to long data set
     sim_coeff = gather(sim_coeff.reset_index(), key='term', value='estimate',
                        cols=['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2']).set_index(['h1yy', 'term'])
+
+    # Write out data for plots
+    feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
+    feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
 
     population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
@@ -379,12 +383,13 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name):
+    def __init__(self, path, group_name, sa_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
             self.on_art_2009 = store['on_art_2009'].loc[group_name]
             self.age_in_2009 = store['age_in_2009'].loc[group_name]
+            self.new_age_in_2009 = store['new_age_in_2009'].loc[group_name]
             self.h1yy_by_age_2009 = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009 = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
@@ -397,6 +402,13 @@ class Parameters:
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
             self.prob_reengage = store['prob_reengage'].loc[group_name]
+        if sa_flag:
+            self.sensitivity_analysis()
+
+    def sensitivity_analysis(self):
+        for coefficient in [self.mortality_out_care, self.loss_to_follow_up, self.cd4_increase, self.cd4_decrease]:
+            rand = np.random.rand(len(coefficient.index))
+            coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
 
 
 class Statistics:
@@ -450,7 +462,7 @@ class Pearl:
         # Create population of new art initiators
         self.population = self.population.append(
             make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.cd4n_by_h1yy,
-                                len(self.population.index)))
+                                len(self.population.index), self.group_name, self.replication))
 
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
@@ -742,15 +754,15 @@ class Pearl:
 # Main Function                                                               #
 ###############################################################################
 
-if __name__ == '__main__':
-    # Add argument parsing 
-    parser = argparse.ArgumentParser(description='Run the PEARL model for a given group and replication')
-    parser.add_argument('param_file', help='Relative path to parameter file')
-    parser.add_argument('group', help='Risk group, e.g. msm_white_male')
-    parser.add_argument('replication', help='Replication number')
-    args = parser.parse_args()
-
-    param_file_path = os.path.realpath(f'{os.getcwd()}/{args.param_file}')
-
-    parameters = Parameters(param_file_path, args.group)
-    pearl = Pearl(parameters, args.group, args.replication, verbose=False, cd4_reset=True)
+#if __name__ == '__main__':
+#    # Add argument parsing
+#    parser = argparse.ArgumentParser(description='Run the PEARL model for a given group and replication')
+#    parser.add_argument('param_file', help='Relative path to parameter file')
+#    parser.add_argument('group', help='Risk group, e.g. msm_white_male')
+#    parser.add_argument('replication', help='Replication number')
+#    args = parser.parse_args()
+#
+#    param_file_path = os.path.realpath(f'{os.getcwd()}/{args.param_file}')
+#
+#    parameters = Parameters(param_file_path, args.group)
+#    pearl = Pearl(parameters, args.group, args.replication, verbose=False, cd4_reset=True)
