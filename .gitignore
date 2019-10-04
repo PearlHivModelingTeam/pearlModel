@@ -6,3 +6,6 @@ data/parameters/*
 !data/param/prob_reengage.csv
 *.swp
 code/test/*
+.idea/*
+
+code/3_simulate/__pycache__/
