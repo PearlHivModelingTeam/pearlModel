@@ -59,9 +59,9 @@ plot_count <- function(group_name, df, title_str) {
   ggplot(df, aes(x=year, y=mean_n)) +
     facet_wrap(vars(age_cat)) +
     geom_line(data= df %>% filter(algorithm == 'R'), aes(color=algorithm)) +
-    geom_ribbon(data= df %>% filter(algorithm =='Python, no cd4 reset'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
-    geom_line(data= df %>% filter(algorithm == 'Python, no cd4 reset'), aes(color=algorithm)) +
-    geom_line(data= df %>% filter(algorithm == 'Python, cd4 reset'), aes(color=algorithm)) +
+    geom_ribbon(data= df %>% filter(algorithm =='Python, old'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
+    geom_line(data= df %>% filter(algorithm == 'Python, new'), aes(color=algorithm)) +
+    geom_line(data= df %>% filter(algorithm == 'Python, old'), aes(color=algorithm)) +
     labs(title = title_str,
          subtitle = group_name,
          x = 'Year',
@@ -92,9 +92,9 @@ plot_age <- function(group_name, df, title_str) {
 plot_init_count <- function(group_name, df, title_str) {
   ggplot(df, aes(x=h1yy, y=mean_n)) +
     geom_line(data= df %>% filter(algorithm == 'R'), aes(color=algorithm)) +
-    geom_ribbon(data= df %>% filter(algorithm =='Python, no cd4 reset'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
-    geom_line(data= df %>% filter(algorithm == 'Python, no cd4 reset'), aes(color=algorithm)) +
-    geom_line(data= df %>% filter(algorithm == 'Python, cd4 reset'), aes(color=algorithm)) +
+    geom_ribbon(data= df %>% filter(algorithm =='Python, old'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
+    geom_line(data= df %>% filter(algorithm == 'Python, new'), aes(color=algorithm)) +
+    geom_line(data= df %>% filter(algorithm == 'Python, old'), aes(color=algorithm)) +
     labs(title = title_str,
          subtitle = group_name,
          x = 'Year',
@@ -109,9 +109,9 @@ plot_init_age <- function(group_name, df, title_str) {
   ggplot(df, aes(x=age, y=mean_n)) +
     facet_wrap(vars(h1yy)) +
     geom_line(data= df %>% filter(algorithm == 'R'), aes(color=algorithm)) +
-    geom_ribbon(data= df %>% filter(algorithm =='Python, no cd4 reset'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
-    geom_line(data= df %>% filter(algorithm == 'Python, no cd4 reset'), aes(color=algorithm)) +
-    geom_line(data= df %>% filter(algorithm == 'Python, cd4 reset'), aes(color=algorithm)) +
+    geom_ribbon(data= df %>% filter(algorithm =='Python, new'), aes(ymin=p025_n,ymax=p975_n),alpha=0.3) +
+    geom_line(data= df %>% filter(algorithm == 'Python, new'), aes(color=algorithm)) +
+    geom_line(data= df %>% filter(algorithm == 'Python, old'), aes(color=algorithm)) +
     labs(title = title_str,
          subtitle = group_name,
          x = 'Age',
@@ -136,8 +136,8 @@ for(group_name in group_names){
   for(plot_name in plot_names){
     print(plot_name)
     #df_r <- summarize_count(read_feather(glue('{r_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'R')
-    df_py_reset <- summarize_count(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, cd4 reset')
-    df_py_no_reset <- summarize_count(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, no cd4 reset')
+    df_py_reset <- summarize_count(read_feather(glue('{py_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, old')
+    df_py_no_reset <- summarize_count(read_feather(glue('{py_no_reset_dir}/{group_name}_{plot_name}.feather'))) %>% mutate(algorithm = 'Python, new')
 
     df <- bind_rows(df_py_reset, df_py_no_reset)
     df$age_cat <-factor(df$age_cat,
