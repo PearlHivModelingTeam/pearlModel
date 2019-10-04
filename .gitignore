@@ -7,5 +7,5 @@ data/parameters/*
 *.swp
 code/test/*
 .idea/*
+*.pyc
 
-code/3_simulate/__pycache__/
