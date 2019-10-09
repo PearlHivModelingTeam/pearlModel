@@ -8,4 +8,3 @@ data/parameters/*
 code/test/*
 .idea/*
 *.pyc
-analysis/*
