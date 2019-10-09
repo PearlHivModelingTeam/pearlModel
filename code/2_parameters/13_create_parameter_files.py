@@ -70,6 +70,7 @@ neg['conf_high'] = 2.0 * neg['estimate']
 age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)] = neg
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
+print(age_in_2009)
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
