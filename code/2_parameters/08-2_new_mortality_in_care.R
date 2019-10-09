@@ -60,4 +60,4 @@ model1 <- model1 %>%
   unite(group, pop2, sex) %>%
   unnest()
 
-write_feather(model1, filePath(param_dir, 'mortality_in_care.feather'))
+write_feather(model1, filePath(param_dir, 'new_mortality_in_care.feather'))

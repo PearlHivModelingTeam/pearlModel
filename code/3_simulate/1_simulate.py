@@ -8,7 +8,7 @@ import pearl
 ###############################################################################
 @ray.remote
 def run(parameters, group_name, replication):
-    pearl.Pearl(parameters, group_name, replication, verbose=False, cd4_reset=True)
+    pearl.Pearl(parameters, group_name, replication, verbose=False, cd4_reset=False)
     return True
 
 
@@ -22,6 +22,6 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
 #group_names = ['idu_white_female']
 for group_name in group_names:
     print(group_name)
-    parameters = pearl.Parameters(param_file, group_name, False)
+    parameters = pearl.Parameters(param_file, group_name, [0, 0, 0, 0, 0, 0])
     futures = [run.remote(parameters, group_name, replication) for replication in range(replications)]
     ray.get(futures)

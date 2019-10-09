@@ -383,7 +383,7 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, sa_flag):
+    def __init__(self, path, group_name, sa_flags):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -402,13 +402,13 @@ class Parameters:
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
             self.prob_reengage = store['prob_reengage'].loc[group_name]
-        if sa_flag:
-            self.sensitivity_analysis()
+            self.sensitivity_analysis(sa_flags)
 
-    def sensitivity_analysis(self):
-        for coefficient in [self.mortality_out_care, self.loss_to_follow_up, self.cd4_increase, self.cd4_decrease]:
-            rand = np.random.rand(len(coefficient.index))
-            coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
+    def sensitivity_analysis(self, sa_flags):
+        for flag, coefficient in zip(sa_flags, [self.age_in_2009, self.mortality_in_care, self.mortality_out_care, self.loss_to_follow_up, self.cd4_increase, self.cd4_decrease]):
+            if flag:
+                rand = np.random.rand(len(coefficient.index))
+                coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
 
 
 class Statistics:
@@ -429,6 +429,7 @@ class Statistics:
         self.new_init_age = pd.DataFrame()
         self.years_out = pd.DataFrame()
         self.n_times_lost = pd.DataFrame()
+        self.unique_out_care_ids = set()
 
 
 def output_reindex(df):
@@ -442,7 +443,7 @@ def output_reindex(df):
 ###############################################################################
 
 class Pearl:
-    def __init__(self, parameters, group_name, replication, verbose=False, cd4_reset=False):
+    def __init__(self, parameters, group_name, replication, verbose=False, cd4_reset=True):
         self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/py')
         self.group_name = group_name
         self.replication = replication
@@ -613,6 +614,7 @@ class Pearl:
             ltfu_age = (self.population.loc[ltfu].groupby(['age']).size().reset_index(name='n')
                         .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
             self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
+
         else:
             # Count of those in care by age_cat and year
             in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
@@ -658,6 +660,10 @@ class Pearl:
                         .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
             self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
+            # Keep track of unique individuals lost to follow up 2010-2015
+            if 2010 <= self.year <= 2015:
+                self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
+
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_IN_CARE
         dead_out_care = self.population['status'] == DEAD_OUT_CARE
@@ -696,6 +702,10 @@ class Pearl:
                                 .rename(columns={'years_out': 'n', 'index': 'years_out'})
                                 .assign(replication=self.replication, group=self.group_name))
 
+        # Number of unique people out of care 2010-2015
+        n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
+                             .assign(replication=self.replication, group = self.group_name))
+
         # Make output directory if it doesn't exist
         os.makedirs(self.out_dir, exist_ok=True)
 
@@ -717,6 +727,7 @@ class Pearl:
             store['new_init_age'] = self.stats.new_init_age
             store['years_out'] = self.stats.years_out
             store['n_times_lost'] = self.stats.n_times_lost
+            store['n_unique_out_care'] = n_unique_out_care
 
     def run(self):
         """ Simulate from 2010 to 2030 """
