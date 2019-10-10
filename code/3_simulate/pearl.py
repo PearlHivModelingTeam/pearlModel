@@ -444,7 +444,7 @@ def output_reindex(df):
 
 class Pearl:
     def __init__(self, parameters, group_name, replication, verbose=False, cd4_reset=True):
-        self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/py')
+        self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/raw')
         self.group_name = group_name
         self.replication = replication
         self.cd4_reset = cd4_reset

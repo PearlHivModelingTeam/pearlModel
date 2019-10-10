@@ -4,14 +4,6 @@ import numpy as np
 import pandas as pd
 import feather
 
-## R to python interface
-#import rpy2.robjects as robjects
-#from rpy2.robjects import pandas2ri
-#from rpy2.robjects.packages import importr
-#
-## Activate R interface
-#base = importr('base')
-#pandas2ri.activate()
 pd.set_option("display.max_rows", 1001)
 
 # Define directories
@@ -51,8 +43,6 @@ def gather(df, key, value, cols):
     value_name = value
     return pd.melt( df, id_vars, id_values, var_name, value_name )
 
-#robjects.r.source(cwd + '/scripts/r_convert.r')
-
 # Number of people on art in 2009: on_art_2009
 on_art_2009 = feather.read_dataframe(f'{param_dir}/on_art_2009.feather').set_index(['group']).sort_index()
 
@@ -70,7 +60,6 @@ neg['conf_high'] = 2.0 * neg['estimate']
 age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)] = neg
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
-print(age_in_2009)
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
