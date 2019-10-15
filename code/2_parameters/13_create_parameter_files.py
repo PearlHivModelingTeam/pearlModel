@@ -58,6 +58,10 @@ neg = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_lo
 neg['conf_low'] = 0.0
 neg['conf_high'] = 2.0 * neg['estimate']
 age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)] = neg
+pos = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)].copy()
+pos['conf_high'] = 1.0
+pos['conf_low'] = 1.0 - (2.0 * (1.0 - pos['estimate']))
+age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)] = pos
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
