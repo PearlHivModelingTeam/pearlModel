@@ -19,9 +19,12 @@ replications = 100
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-#group_names = ['idu_white_female']
+
+group_names = ['idu_hisp_female', 'het_white_male']
+
+
 for group_name in group_names:
     print(group_name)
-    parameters = pearl.Parameters(param_file, group_name, [1, 0, 0, 0, 0, 0])
+    parameters = pearl.Parameters(param_file, group_name, [0, 0, 0, 0, 0, 0])
     futures = [run.remote(parameters, group_name, replication) for replication in range(replications)]
     ray.get(futures)
