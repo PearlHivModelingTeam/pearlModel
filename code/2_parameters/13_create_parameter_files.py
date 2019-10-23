@@ -16,14 +16,14 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
 
 def clean_coeff(df):
     """Format tables holding coefficient values"""
-    df.columns = df.columns.str.lower() 
-    
+    df.columns = df.columns.str.lower()
+
     # Combine sex risk and race into single group indentifier
     if (np.issubdtype(df.sex.dtype, np.number)):
         df.sex = np.where(df.sex == 1, 'male', 'female')
     else:
         df.sex = np.where(df.sex == 'Males', 'male', 'female')
-    if ('pop2' in df.columns): 
+    if ('pop2' in df.columns):
         df = df.rename(columns={'pop2':'group'})
         df.group = df.group.str.decode('utf-8')
     else:
@@ -35,13 +35,6 @@ def clean_coeff(df):
     df = df.sort_values(by='group')
     df = df.set_index('group')
     return(df)
-
-def gather(df, key, value, cols):
-    id_vars = [ col for col in df.columns if col not in cols ]
-    id_values = cols
-    var_name = key
-    value_name = value
-    return pd.melt( df, id_vars, id_values, var_name, value_name )
 
 # Number of people on art in 2009: on_art_2009
 on_art_2009 = feather.read_dataframe(f'{param_dir}/on_art_2009.feather').set_index(['group']).sort_index()
@@ -96,8 +89,7 @@ cd4_increase = feather.read_dataframe(f'{param_dir}/cd4_increase.feather').set_i
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[3.0], 'p65': 15*[6.0], 'p95': 15*[12.0]}).set_index('group')
 
 # Probability to reengage in care for each group
-prob_reengage = clean_coeff(pd.read_csv(f'{param_dir}/prob_reengage.csv'))
-print(prob_reengage)
+prob_reengage = pd.read_csv(f'{param_dir}/prob_reengage.csv').set_index(['group'])
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
