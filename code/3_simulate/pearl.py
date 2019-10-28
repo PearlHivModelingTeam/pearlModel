@@ -402,6 +402,8 @@ class Parameters:
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
             self.prob_reengage = store['prob_reengage'].loc[group_name]
+            self.stage0_prob = store['stage0_prob'].loc[group_name]
+            print(self.stage0_prob)
             self.sensitivity_analysis(sa_flags)
 
     def sensitivity_analysis(self, sa_flags):
@@ -409,6 +411,7 @@ class Parameters:
             if flag:
                 rand = np.random.rand(len(coefficient.index))
                 coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
+                print(coefficient['estimate'])
 
 
 class Statistics:
