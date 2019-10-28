@@ -90,6 +90,9 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 
 # Probability to reengage in care for each group
 prob_reengage = pd.read_csv(f'{param_dir}/prob_reengage.csv').set_index(['group'])
+print(prob_reengage)
+
+stage0_prob = pd.read_csv(f'{param_dir}/stage0.csv').set_index(['group'])
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
@@ -109,3 +112,4 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['cd4_increase'] = cd4_increase
     store['cd4_increase_knots'] = cd4_increase_knots
     store['prob_reengage'] = prob_reengage
+    store['stage0_prob'] = stage0_prob
