@@ -70,12 +70,14 @@ cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_i
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather')
-#mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_low'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
-#mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_high'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
+mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_low'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
+mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_high'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
 mortality_in_care = mortality_in_care.set_index(['group', 'term']).sort_index()
+#print(mortality_in_care)
 
 # Coefficients for mortality out of care
 mortality_out_care = feather.read_dataframe(f'{param_dir}/mortality_out_care.feather').set_index(['group', 'term']).sort_index()
+print(mortality_out_care)
 
 # Coefficients for loss to follow up
 loss_to_follow_up = feather.read_dataframe(f'{param_dir}/loss_to_follow_up.feather').set_index(['group', 'term']).sort_index()
@@ -90,7 +92,6 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 
 # Probability to reengage in care for each group
 prob_reengage = pd.read_csv(f'{param_dir}/prob_reengage.csv').set_index(['group'])
-print(prob_reengage)
 
 stage0_prob = pd.read_csv(f'{param_dir}/stage0.csv').set_index(['group'])
 
