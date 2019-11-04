@@ -402,8 +402,6 @@ class Parameters:
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
             self.prob_reengage = store['prob_reengage'].loc[group_name]
-            self.stage0_prob = store['stage0_prob'].loc[group_name]
-            print(self.stage0_prob)
             self.sensitivity_analysis(sa_flags)
 
     def sensitivity_analysis(self, sa_flags):
@@ -411,7 +409,7 @@ class Parameters:
             if flag:
                 rand = np.random.rand(len(coefficient.index))
                 coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
-                print(coefficient['estimate'])
+                print(coefficient)
 
 
 class Statistics:
@@ -546,6 +544,7 @@ class Pearl:
         out_care = self.population['status'] == OUT_CARE
         death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care,
                                                    self.year)
+        print(death_prob)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year
