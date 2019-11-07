@@ -155,16 +155,11 @@ def calculate_ltfu_prob(pop, coeffs, knots, year):
     return prob
 
 
-def calculate_death_in_care_prob(pop, coeffs, year):
+def calculate_death_in_care_prob(pop, coeffs):
     """ Calculate the individual probability of dying in care """
-    odds = (coeffs.loc['intercept_est', 'estimate'] +
-            (coeffs.loc['ageby10_est', 'estimate'] * pop['age_cat']) +
-            (coeffs.loc['sqrtcd4n_est', 'estimate'] * pop['init_sqrtcd4n']) +
-            (coeffs.loc['year_est', 'estimate'] * year) +
-            (coeffs.loc['h1yy_est', 'estimate'] * pop['h1yy']))
-
+    log_odds = np.matmul(pop, coeffs)
     # Convert to probability
-    prob = np.exp(odds) / (1.0 + np.exp(odds))
+    prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
 
 
@@ -244,6 +239,8 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
     population['year_died'] = np.nan
     population['sqrtcd4n_exit'] = 0
     population['ltfu_year'] = 0
+    population['intercept'] = 1.0
+    population['year'] = 2009
 
     # Set status to 1 = 'in_care'
     population['status'] = IN_CARE
@@ -368,6 +365,8 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
     population['year_died'] = np.nan
     population['sqrtcd4n_exit'] = 0
     population['ltfu_year'] = 0
+    population['intercept'] = 1.0
+    population['year'] = population['h1yy_orig']
 
     # Set status to UNINITIATED
     population['status'] = UNINITIATED
@@ -383,7 +382,7 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, sa_flags):
+    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -395,6 +394,9 @@ class Parameters:
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
             self.mortality_in_care = store['mortality_in_care'].loc[group_name]
+            self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
+            #print(self.mortality_in_care)
+            #print(self.mortality_in_care_vcov)
             self.mortality_out_care = store['mortality_out_care'].loc[group_name]
             self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
@@ -402,14 +404,10 @@ class Parameters:
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
             self.prob_reengage = store['prob_reengage'].loc[group_name]
-            self.sensitivity_analysis(sa_flags)
 
-    def sensitivity_analysis(self, sa_flags):
-        for flag, coefficient in zip(sa_flags, [self.age_in_2009, self.mortality_in_care, self.mortality_out_care, self.loss_to_follow_up, self.cd4_increase, self.cd4_decrease]):
-            if flag:
-                rand = np.random.rand(len(coefficient.index))
-                coefficient['estimate'] = rand * (coefficient['conf_high'] - coefficient['conf_low'] ) + coefficient['conf_low']
-                print(coefficient)
+            if age_in_2009_flag:
+                rand = np.random.rand(len(self.age_in_2009.index))
+                self.age_in_2009['estimate'] = (rand * (self.age_in_2009['conf_high'] - self.age_in_2009['conf_low'])) + self.age_in_2009['conf_low']
 
 
 class Statistics:
@@ -506,6 +504,7 @@ class Pearl:
 
     def increment_age(self):
         """ Increment age for those alive in the model """
+        self.population['year'] = self.year
         alive_and_initiated = self.population['status'].isin([IN_CARE, OUT_CARE])
         self.population.loc[alive_and_initiated, 'age'] += 1
         self.population['age_cat'] = np.floor(self.population['age'] / 10)
@@ -535,7 +534,10 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == IN_CARE
-        death_prob = calculate_death_in_care_prob(self.population.copy(), self.parameters.mortality_in_care, self.year)
+        coeff_matrix = self.parameters.mortality_in_care.to_numpy()
+        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
+        death_prob = calculate_death_in_care_prob(pop_matrix, coeff_matrix)
+        print(death_prob)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_IN_CARE
         self.population.loc[died, 'year_died'] = self.year
@@ -544,7 +546,6 @@ class Pearl:
         out_care = self.population['status'] == OUT_CARE
         death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care,
                                                    self.year)
-        print(death_prob)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year

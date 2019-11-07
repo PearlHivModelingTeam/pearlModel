@@ -34,7 +34,7 @@ model2fx <- function(DF) {
 }
 
 tidy_estimates <- function(model) {
-  estimates <- tidy(model, conf.int = TRUE, conf.level = 0.005) %>%
+  estimates <- tidy(model, conf.int = TRUE, conf.level = 0.01) %>%
     mutate(term = c('intercept', 'year', 'age_cat', 'tv_sqrtcd4n')) %>%
     #select(c(term, estimate, conf.low, conf.high)) %>%
     rename(conf_low = conf.low, conf_high = conf.high)

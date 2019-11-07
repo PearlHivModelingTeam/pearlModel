@@ -70,14 +70,18 @@ cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_i
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather')
-mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_low'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
-mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'conf_high'] = mortality_in_care.loc[mortality_in_care['term'] == 'intercept_est', 'estimate']
-mortality_in_care = mortality_in_care.set_index(['group', 'term']).sort_index()
-#print(mortality_in_care)
+cols = mortality_in_care.columns.tolist()
+mortality_in_care = mortality_in_care.set_index('group')
+mortality_in_care_vcov = feather.read_dataframe(f'{param_dir}/mortality_in_care_vcov.feather')
+mortality_in_care_vcov.columns = cols
+mortality_in_care_vcov['covariate'] = 15*(cols[1:])
+mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
 
 # Coefficients for mortality out of care
-mortality_out_care = feather.read_dataframe(f'{param_dir}/mortality_out_care.feather').set_index(['group', 'term']).sort_index()
-print(mortality_out_care)
+mortality_out_care = feather.read_dataframe(f'{param_dir}/mortality_out_care.feather')
+mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'conf_low'] = mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'estimate']
+mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'conf_high'] = mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'estimate']
+mortality_out_care = mortality_out_care.set_index(['group', 'term']).sort_index()
 
 # Coefficients for loss to follow up
 loss_to_follow_up = feather.read_dataframe(f'{param_dir}/loss_to_follow_up.feather').set_index(['group', 'term']).sort_index()
@@ -106,6 +110,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy
     store['mortality_in_care'] = mortality_in_care
+    store['mortality_in_care_vcov'] = mortality_in_care_vcov
     store['mortality_out_care'] = mortality_out_care
     store['loss_to_follow_up'] = loss_to_follow_up
     store['ltfu_knots'] = ltfu_knots
