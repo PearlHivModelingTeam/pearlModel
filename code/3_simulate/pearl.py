@@ -155,9 +155,16 @@ def calculate_ltfu_prob(pop, coeffs, knots, year):
     return prob
 
 
-def calculate_death_in_care_prob(pop, coeffs):
+def calculate_death_in_care_prob(pop, coeffs, flag, vcov, rand):
     """ Calculate the individual probability of dying in care """
     log_odds = np.matmul(pop, coeffs)
+    if flag:
+        # Calculate variance of prediction using matrix multiplication
+        se = np.sqrt(np.sum(np.matmul(pop, vcov) * pop, axis=1))
+        low = log_odds - 1.96 * se
+        high = log_odds + 1.96 * se
+        log_odds = (rand * (high - low)) + low
+
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
@@ -395,6 +402,8 @@ class Parameters:
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
             self.mortality_in_care = store['mortality_in_care'].loc[group_name]
             self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
+            self.mortality_in_care_flag = mortality_in_care_flag
+            self.mortality_in_care_rand = np.random.rand()
             #print(self.mortality_in_care)
             #print(self.mortality_in_care_vcov)
             self.mortality_out_care = store['mortality_out_care'].loc[group_name]
@@ -536,7 +545,7 @@ class Pearl:
         in_care = self.population['status'] == IN_CARE
         coeff_matrix = self.parameters.mortality_in_care.to_numpy()
         pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
-        death_prob = calculate_death_in_care_prob(pop_matrix, coeff_matrix)
+        death_prob = calculate_death_in_care_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag, self.parameters.mortality_in_care_vcov.to_numpy(), self.parameters.mortality_in_care_rand)
         print(death_prob)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_IN_CARE

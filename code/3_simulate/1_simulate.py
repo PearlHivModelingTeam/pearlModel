@@ -25,5 +25,5 @@ group_names = ['idu_white_female']
 
 for group_name in group_names:
     print(group_name)
-    futures = [run.remote(pearl.Parameters(param_file, group_name, 1, 0), group_name, replication) for replication in range(replications)]
+    futures = [run.remote(pearl.Parameters(param_file, group_name, 0, 1), group_name, replication) for replication in range(replications)]
     ray.get(futures)
