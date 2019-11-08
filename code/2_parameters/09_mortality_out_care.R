@@ -33,26 +33,34 @@ model2fx <- function(DF) {
                     family=binomial(link='logit'))
 }
 
-tidy_estimates <- function(model) {
-  estimates <- tidy(model, conf.int = TRUE, conf.level = 0.01) %>%
-    mutate(term = c('intercept', 'year', 'age_cat', 'tv_sqrtcd4n')) %>%
-    #select(c(term, estimate, conf.low, conf.high)) %>%
-    rename(conf_low = conf.low, conf_high = conf.high)
-  print(estimates)
-  estimates <- estimates %>% select(c(term, estimate, conf_low, conf_high))
+get_coeff <- function(DF) {
+  coeffs <- coef(DF)
+  coeffs <- data.frame(t(coeffs))
+  colnames(coeffs) <- c("intercept", "year", "age_cat", "tv_sqrtcd4n")
+  return(coeffs)
 }
-
+ 
 model2 <- yearly %>%
   mutate(model = map(data, model2fx),
-         estimates = map(model, tidy_estimates)) %>%
-  select(-c(data, model))
+         coeffs = map(model, get_coeff),
+         vcov = map(model, ~.$geese$vbeta)) %>%
+  select(-data)
 
 model2$sex[model2$sex==1] <- "male"
 model2$sex[model2$sex==2] <- "female"
 
-model2 <- model2 %>% 
-  unite(group, pop2, sex) %>%
-  unnest()
+model2 <- model2 %>% unite(group, pop2, sex, remove=TRUE)
 
-write_feather(model2, filePath(param_dir, 'mortality_out_care.feather'))
+
+coeffs <- model2 %>% 
+  select(group, coeffs) %>% 
+  unnest(cols=coeffs)
+
+vcov <- model2 %>% 
+  select(group, vcov) %>% 
+  mutate_if(is.list, map, as_data_frame) %>%
+  unnest(cols=vcov)
+
+write_feather(coeffs, filePath(param_dir, 'mortality_out_care.feather'))
+write_feather(vcov, filePath(param_dir, 'mortality_out_care_vcov.feather'))
 
