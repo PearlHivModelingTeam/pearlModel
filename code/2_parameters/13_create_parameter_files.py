@@ -77,11 +77,16 @@ mortality_in_care_vcov.columns = cols
 mortality_in_care_vcov['covariate'] = 15*(cols[1:])
 mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
 
+
 # Coefficients for mortality out of care
 mortality_out_care = feather.read_dataframe(f'{param_dir}/mortality_out_care.feather')
-mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'conf_low'] = mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'estimate']
-mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'conf_high'] = mortality_out_care.loc[mortality_out_care['term'] == 'intercept', 'estimate']
-mortality_out_care = mortality_out_care.set_index(['group', 'term']).sort_index()
+cols = mortality_out_care.columns.tolist()
+mortality_out_care = mortality_out_care.set_index('group')
+mortality_out_care_vcov = feather.read_dataframe(f'{param_dir}/mortality_out_care_vcov.feather')
+mortality_out_care_vcov.columns = cols
+mortality_out_care_vcov['covariate'] = 15*(cols[1:])
+mortality_out_care_vcov = mortality_out_care_vcov.set_index(['group', 'covariate'])
+print(mortality_out_care)
 
 # Coefficients for loss to follow up
 loss_to_follow_up = feather.read_dataframe(f'{param_dir}/loss_to_follow_up.feather').set_index(['group', 'term']).sort_index()
@@ -112,6 +117,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['mortality_in_care'] = mortality_in_care
     store['mortality_in_care_vcov'] = mortality_in_care_vcov
     store['mortality_out_care'] = mortality_out_care
+    store['mortality_out_care_vcov'] = mortality_out_care_vcov
     store['loss_to_follow_up'] = loss_to_follow_up
     store['ltfu_knots'] = ltfu_knots
     store['cd4_decrease'] = cd4_decrease

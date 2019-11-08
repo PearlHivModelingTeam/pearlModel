@@ -155,7 +155,7 @@ def calculate_ltfu_prob(pop, coeffs, knots, year):
     return prob
 
 
-def calculate_death_in_care_prob(pop, coeffs, flag, vcov, rand):
+def calculate_death_prob(pop, coeffs, flag, vcov, rand):
     """ Calculate the individual probability of dying in care """
     log_odds = np.matmul(pop, coeffs)
     if flag:
@@ -168,19 +168,6 @@ def calculate_death_in_care_prob(pop, coeffs, flag, vcov, rand):
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
-
-
-def calculate_death_out_care_prob(pop, coeffs, year):
-    """ Calculate the individual probability of dying in care """
-    odds = (coeffs.loc['intercept', 'estimate'] +
-            (coeffs.loc['age_cat', 'estimate'] * pop['age_cat']) +
-            (coeffs.loc['tv_sqrtcd4n', 'estimate'] * pop['time_varying_sqrtcd4n']) +
-            (coeffs.loc['year', 'estimate'] * year))
-
-    # Convert to probability
-    prob = np.exp(odds) / (1.0 + np.exp(odds))
-    return prob
-
 
 def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase, cd4_increase_knots,
                   group_name):
@@ -389,7 +376,7 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag):
+    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag, mortality_out_care_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -400,13 +387,19 @@ class Parameters:
             self.cd4n_by_h1yy_2009 = store['cd4n_by_h1yy_2009'].loc[group_name]
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
+
+            # Mortality In Care
             self.mortality_in_care = store['mortality_in_care'].loc[group_name]
             self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
             self.mortality_in_care_flag = mortality_in_care_flag
             self.mortality_in_care_rand = np.random.rand()
-            #print(self.mortality_in_care)
-            #print(self.mortality_in_care_vcov)
+
+            # Mortality Out Of Care
             self.mortality_out_care = store['mortality_out_care'].loc[group_name]
+            self.mortality_out_care_vcov = store['mortality_out_care_vcov'].loc[group_name]
+            self.mortality_out_care_flag = mortality_out_care_flag
+            self.mortality_out_care_rand = np.random.rand()
+
             self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
             self.cd4_decrease = store['cd4_decrease'].loc[group_name]
@@ -545,16 +538,19 @@ class Pearl:
         in_care = self.population['status'] == IN_CARE
         coeff_matrix = self.parameters.mortality_in_care.to_numpy()
         pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
-        death_prob = calculate_death_in_care_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag, self.parameters.mortality_in_care_vcov.to_numpy(), self.parameters.mortality_in_care_rand)
-        print(death_prob)
+        vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy()
+        death_prob = calculate_death_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag, self.parameters.mortality_in_care_vcov.to_numpy(), self.parameters.mortality_in_care_rand)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_IN_CARE
         self.population.loc[died, 'year_died'] = self.year
 
     def kill_out_care(self):
         out_care = self.population['status'] == OUT_CARE
-        death_prob = calculate_death_out_care_prob(self.population.copy(), self.parameters.mortality_out_care,
-                                                   self.year)
+        coeff_matrix = self.parameters.mortality_out_care.to_numpy()
+        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy()
+        vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy()
+        death_prob = calculate_death_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag, self.parameters.mortality_out_care_vcov.to_numpy(), self.parameters.mortality_out_care_rand)
+        print(death_prob)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year
