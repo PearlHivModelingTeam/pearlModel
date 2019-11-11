@@ -86,10 +86,17 @@ mortality_out_care_vcov = feather.read_dataframe(f'{param_dir}/mortality_out_car
 mortality_out_care_vcov.columns = cols
 mortality_out_care_vcov['covariate'] = 15*(cols[1:])
 mortality_out_care_vcov = mortality_out_care_vcov.set_index(['group', 'covariate'])
-print(mortality_out_care)
 
 # Coefficients for loss to follow up
-loss_to_follow_up = feather.read_dataframe(f'{param_dir}/loss_to_follow_up.feather').set_index(['group', 'term']).sort_index()
+loss_to_follow_up = feather.read_dataframe(f'{param_dir}/loss_to_follow_up.feather')
+cols = loss_to_follow_up.columns.tolist()
+loss_to_follow_up = loss_to_follow_up.set_index('group')
+loss_to_follow_up_vcov = feather.read_dataframe(f'{param_dir}/loss_to_follow_up_vcov.feather')
+loss_to_follow_up_vcov.columns = cols
+loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
+loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
+print(loss_to_follow_up)
+print(loss_to_follow_up_vcov)
 ltfu_knots = clean_coeff(pd.read_sas(param_dir + '/ltfu_knots.sas7bdat'))
 
 # Coefficients for cd4 decline out of care
@@ -119,6 +126,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['mortality_out_care'] = mortality_out_care
     store['mortality_out_care_vcov'] = mortality_out_care_vcov
     store['loss_to_follow_up'] = loss_to_follow_up
+    store['loss_to_follow_up_vcov'] = loss_to_follow_up_vcov
     store['ltfu_knots'] = ltfu_knots
     store['cd4_decrease'] = cd4_decrease
     store['cd4_increase'] = cd4_increase
