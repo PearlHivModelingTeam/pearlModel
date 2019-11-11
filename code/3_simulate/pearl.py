@@ -124,39 +124,23 @@ def calculate_out_care_cd4n(pop, coeffs, year):
 
     return time_varying_sqrtcd4n
 
+def create_ltfu_pop_matrix(pop, knots):
+    """ Create the population matrix for use in calculating probability of loss to follow up"""
 
-def calculate_ltfu_prob(pop, coeffs, knots, year):
-    """ Calculate the probability of loss to follow up """
-
-    # Calculate spline variables
     age = pop['age'].values
-    age_ = (np.maximum(0, age - knots['p5']) ** 2 -
-            np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
-    age__ = (np.maximum(0, age - knots['p35']) ** 2 -
-             np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
-    age___ = (np.maximum(0, age - knots['p65']) ** 2 -
-              np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['age_']   = (np.maximum(0, age - knots['p5']) ** 2 -
+                     np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['age__']  = (np.maximum(0, age - knots['p35']) ** 2 -
+                     np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['age___'] = (np.maximum(0, age - knots['p65']) ** 2 -
+                     np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
 
-    # Create haart_period variable
-    haart_period = (pop['h1yy'].values > 2010).astype(int)
+    pop['haart_period'] = (pop['h1yy'].values > 2010).astype(int)
+    return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy()
 
-    # Calculate log odds
-    odds = (coeffs.loc['intercept', 'estimate'] +
-            (coeffs.loc['age', 'estimate'] * age) +
-            (coeffs.loc['_age', 'estimate'] * age_) +
-            (coeffs.loc['__age', 'estimate'] * age__) +
-            (coeffs.loc['___age', 'estimate'] * age___) +
-            (coeffs.loc['year', 'estimate'] * year) +
-            (coeffs.loc['sqrt_cd4n', 'estimate'] * pop['init_sqrtcd4n']) +
-            (coeffs.loc['haart_period', 'estimate'] * haart_period))
+def calculate_prob(pop, coeffs, flag, vcov, rand):
+    """ Calculate the individual probability from logistic regression """
 
-    # Convert to probability
-    prob = np.exp(odds) / (1.0 + np.exp(odds))
-    return prob
-
-
-def calculate_death_prob(pop, coeffs, flag, vcov, rand):
-    """ Calculate the individual probability of dying in care """
     log_odds = np.matmul(pop, coeffs)
     if flag:
         # Calculate variance of prediction using matrix multiplication
@@ -312,8 +296,8 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
                        cols=['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2']).set_index(['h1yy', 'term'])
 
     # Write out data for plots
-    #feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
-    #feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
+    feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
+    feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
 
     population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
@@ -376,7 +360,7 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag, mortality_out_care_flag):
+    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag, mortality_out_care_flag, loss_to_follow_up_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -400,8 +384,13 @@ class Parameters:
             self.mortality_out_care_flag = mortality_out_care_flag
             self.mortality_out_care_rand = np.random.rand()
 
+            # Loss To Follow Up
             self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
+            self.loss_to_follow_up_vcov = store['loss_to_follow_up_vcov'].loc[group_name]
+            self.loss_to_follow_up_flag = loss_to_follow_up_flag
+            self.loss_to_follow_up_rand = np.random.rand()
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
+
             self.cd4_decrease = store['cd4_decrease'].loc[group_name]
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
@@ -539,7 +528,8 @@ class Pearl:
         coeff_matrix = self.parameters.mortality_in_care.to_numpy()
         pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy()
-        death_prob = calculate_death_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag, self.parameters.mortality_in_care_vcov.to_numpy(), self.parameters.mortality_in_care_rand)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag,
+                                    vcov_matrix, self.parameters.mortality_in_care_rand)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_IN_CARE
         self.population.loc[died, 'year_died'] = self.year
@@ -549,16 +539,19 @@ class Pearl:
         coeff_matrix = self.parameters.mortality_out_care.to_numpy()
         pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy()
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy()
-        death_prob = calculate_death_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag, self.parameters.mortality_out_care_vcov.to_numpy(), self.parameters.mortality_out_care_rand)
-        print(death_prob)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag,
+                                    vcov_matrix, self.parameters.mortality_out_care_rand)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_OUT_CARE
         self.population.loc[died, 'year_died'] = self.year
 
     def lose_to_follow_up(self):
         in_care = self.population['status'] == IN_CARE
-        ltfu_prob = calculate_ltfu_prob(self.population.copy(), self.parameters.loss_to_follow_up,
-                                        self.parameters.ltfu_knots, self.year)
+        coeff_matrix = self.parameters.loss_to_follow_up.to_numpy()
+        vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy()
+        pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
+        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_flag,
+                                   vcov_matrix, self.parameters.loss_to_follow_up_rand)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         self.population.loc[lost, 'status'] = LTFU
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n']
