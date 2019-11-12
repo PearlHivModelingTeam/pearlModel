@@ -123,15 +123,19 @@ def calculate_cd4_increase(pop, knots, year, coeffs, vcov, flag, rand):
 
     return new_cd4
 
-def calculate_out_care_cd4n(pop, coeffs, year):
-    """ Calculate new time varying cd4 count for population out of care """
-    time_out = year - pop['ltfu_year'].values
-    diff = (coeffs.loc['time_out_of_naaccord', 'estimate'] * time_out) + (
-                coeffs.loc['sqrtcd4n_exit', 'estimate'] * pop['sqrtcd4n_exit'].values) + coeffs.loc[
-               'intercept', 'estimate']
-    time_varying_sqrtcd4n = np.sqrt((pop['sqrtcd4n_exit'].values ** 2) * np.exp(diff) * 1.5)
+def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
+    pop['time_out'] = pop['year'] - pop['ltfu_year']
+    pop_matrix = pop[['intercept', 'time_out', 'sqrtcd4n_exit']].to_numpy()
+    diff = np.matmul(pop_matrix, coeffs)
 
-    return time_varying_sqrtcd4n
+    if flag:
+        se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
+        low = diff - 1.96 * se
+        high = diff + 1.96 * se
+        diff = (rand * (high - low)) + low
+
+    cd4_decrease = np.sqrt((diff ** 2)*np.exp(diff) * 1.5 )
+    return cd4_decrease
 
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
@@ -284,7 +288,7 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
     for name, group in sim_coeff.groupby('param'):
         sim_coeff.loc[(name,), 'pred18'] = sim_coeff.loc[(name, 2018), 'pred']
 
-        # Draw uniformly between predicted coeffs and coeff in 2018
+    # Draw uniformly between predicted coeffs and coeff in 2018
     sim_coeff['rand'] = np.random.rand(len(sim_coeff.index))
     sim_coeff['min'] = np.minimum(sim_coeff['pred'], sim_coeff['pred18'])
     sim_coeff['max'] = np.maximum(sim_coeff['pred'], sim_coeff['pred18'])
@@ -373,7 +377,8 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 
 class Parameters:
     def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag,
-                 mortality_out_care_flag, loss_to_follow_up_flag, cd4_increase_flag):
+                 mortality_out_care_flag, loss_to_follow_up_flag, cd4_increase_flag,
+                 cd4_decrease_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -411,9 +416,12 @@ class Parameters:
             self.cd4_increase_rand = np.random.rand()
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
 
-            self.cd4_decrease = store['cd4_decrease'].loc[group_name]
-            self.cd4_increase = store['cd4_increase'].loc[group_name]
-            self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
+            # Cd4 Decrease
+            self.cd4_decrease = store['cd4_decrease']
+            self.cd4_decrease_vcov = store['cd4_decrease_vcov']
+            self.cd4_decrease_flag = cd4_decrease_flag
+            self.cd4_decrease_rand = np.random.rand()
+
             self.prob_reengage = store['prob_reengage'].loc[group_name]
 
             if age_in_2009_flag:
@@ -542,9 +550,13 @@ class Pearl:
 
     def decrease_cd4_count(self):
         out_care = self.population['status'] == OUT_CARE
-        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_out_care_cd4n(
+        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_cd4_decrease(
             self.population.loc[out_care].copy(),
-            self.parameters.cd4_decrease, self.year)
+            self.parameters.cd4_decrease.to_numpy(),
+            self.parameters.cd4_decrease_flag,
+            self.parameters.cd4_decrease_vcov.to_numpy(),
+            self.parameters.cd4_decrease_rand)
+
 
     def add_new_dx(self):
         new_dx = (self.population['status'] == UNINITIATED) & (self.population['h1yy_orig'] == self.year)

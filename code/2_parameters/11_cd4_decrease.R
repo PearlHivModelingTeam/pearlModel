@@ -17,21 +17,21 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
 #####################################################################################
 # Read in analysis population
 
+get_coeff <- function(DF) {
+  coeffs <- coef(DF)
+  coeffs <- data.frame(t(coeffs))
+  colnames(coeffs) <- c('intercept', 'time_out_of_naaccord', 'sqrtcd4n_exit')
+  return(coeffs)
+}
+
 pop1 <- read_sas(filePath(input_dir, 'pop_cd4_decrease_190508.sas7bdat'))
 colnames(pop1) <- tolower(colnames(pop1))
 
 model <- glm(diff ~ time_out_of_naaccord + sqrtcd4_exit,
               data = pop1)
 
-estimates <- tidy(model, conf.int = TRUE) %>%
-  mutate(term = c('intercept', 'time_out_of_naaccord', 'sqrtcd4n_exit')) %>%
-  select(c(term, estimate, conf.low, conf.high)) %>%
-  rename(conf_low = conf.low, conf_high = conf.high)
+coeffs = as_tibble(get_coeff(model))
+vcov = as_tibble(vcov(model))
 
-model4 <- tbl_df(data.frame())
-for (group_name in group_names) {
-  model4 <- bind_rows(model4, mutate(estimates, group = group_name))
-}
-
-write_feather(model4, filePath(param_dir, 'cd4_decrease.feather'))
-
+write_feather(coeffs, filePath(param_dir, 'cd4_decrease.feather'))
+write_feather(vcov, filePath(param_dir, 'cd4_decrease_vcov.feather'))
