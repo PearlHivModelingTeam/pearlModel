@@ -134,8 +134,8 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
         high = diff + 1.96 * se
         diff = (rand * (high - low)) + low
 
-    cd4_decrease = np.sqrt((pop['sqrtcd4n_exit'].to_numpy().T ** 2)*np.exp(diff) * 1.5 )
-    return cd4_decrease
+    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * 1.5 )
+    return new_cd4
 
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
@@ -417,7 +417,7 @@ class Parameters:
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
 
             # Cd4 Decrease
-            self.cd4_decrease = store['cd4_decrease']
+            self.cd4_decrease = store['cd4_decrease'].loc['all']
             self.cd4_decrease_vcov = store['cd4_decrease_vcov']
             self.cd4_decrease_flag = cd4_decrease_flag
             self.cd4_decrease_rand = np.random.rand()
