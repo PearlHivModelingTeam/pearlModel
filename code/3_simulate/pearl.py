@@ -79,40 +79,49 @@ def set_cd4_cat(pop):
     return pop
 
 
-def calculate_in_care_cd4n(pop, coeffs, knots, year):
-    """ Calculate time varying cd4n as a linear function of age_cat, cd4_cat, time_from_h1yy and their cross terms """
+def calculate_cd4_increase(pop, knots, year, coeffs, vcov, flag, rand):
+    """ Calculate in care cd4 count via a linear function of time since art initiation, initial cd4 count, age
+        category and cross terms"""
 
     # Calculate spline variables
-    time_from_h1yy = year - pop['h1yy'].values
-    time_from_h1yy_ = (np.maximum(0, time_from_h1yy - knots['p5']) ** 2 -
-                       np.maximum(0, time_from_h1yy - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
-    time_from_h1yy__ = (np.maximum(0, time_from_h1yy - knots['p35']) ** 2 -
-                        np.maximum(0, time_from_h1yy - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
-    time_from_h1yy___ = (np.maximum(0, time_from_h1yy - knots['p65']) ** 2 -
-                         np.maximum(0, time_from_h1yy - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['time_from_h1yy'] = year - pop['h1yy']
+    pop['time_from_h1yy_'] = (np.maximum(0, pop['time_from_h1yy'] - knots['p5']) ** 2 -
+                              np.maximum(0, pop['time_from_h1yy'] - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['time_from_h1yy__'] = (np.maximum(0, pop['time_from_h1yy'] - knots['p35']) ** 2 -
+                               np.maximum(0, pop['time_from_h1yy'] - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
+    pop['time_from_h1yy___'] = (np.maximum(0, pop['time_from_h1yy'] - knots['p65']) ** 2 -
+                                np.maximum(0, pop['time_from_h1yy'] - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
 
-    # Calculate time varying sqrt cd4n
-    time_varying_sqrtcd4n = (coeffs.loc['intercept', 'estimate'] +
-                             (coeffs.loc['agecat', 'estimate'] * pop['age_cat']) +
-                             (coeffs.loc['cd4cat349', 'estimate'] * pop['cd4_cat_349']) +
-                             (coeffs.loc['cd4cat499', 'estimate'] * pop['cd4_cat_499']) +
-                             (coeffs.loc['cd4cat500', 'estimate'] * pop['cd4_cat_500']) +
-                             (coeffs.loc['time_from_h1yy', 'estimate'] * time_from_h1yy) +
-                             (coeffs.loc['_time_from_h1yy', 'estimate'] * time_from_h1yy_) +
-                             (coeffs.loc['__time_from_h1yy', 'estimate'] * time_from_h1yy__) +
-                             (coeffs.loc['___time_from_h1yy', 'estimate'] * time_from_h1yy___) +
-                             (coeffs.loc['_timecd4cat349', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_349']) +
-                             (coeffs.loc['_timecd4cat499', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_499']) +
-                             (coeffs.loc['_timecd4cat500', 'estimate'] * time_from_h1yy_ * pop['cd4_cat_500']) +
-                             (coeffs.loc['__timecd4cat349', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_349']) +
-                             (coeffs.loc['__timecd4cat499', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_499']) +
-                             (coeffs.loc['__timecd4cat500', 'estimate'] * time_from_h1yy__ * pop['cd4_cat_500']) +
-                             (coeffs.loc['___timecd4cat349', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_349']) +
-                             (coeffs.loc['___timecd4cat499', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_499']) +
-                             (coeffs.loc['___timecd4cat500', 'estimate'] * time_from_h1yy___ * pop['cd4_cat_500']))
+    # Create cross term variables
+    pop['timecd4cat349_'] = pop['time_from_h1yy_'] * pop['cd4_cat_349']
+    pop['timecd4cat499_'] = pop['time_from_h1yy_'] * pop['cd4_cat_499']
+    pop['timecd4cat500_'] = pop['time_from_h1yy_'] * pop['cd4_cat_500']
 
-    return time_varying_sqrtcd4n
+    pop['timecd4cat349__'] = pop['time_from_h1yy__'] * pop['cd4_cat_349']
+    pop['timecd4cat499__'] = pop['time_from_h1yy__'] * pop['cd4_cat_499']
+    pop['timecd4cat500__'] = pop['time_from_h1yy__'] * pop['cd4_cat_500']
 
+    pop['timecd4cat349___'] = pop['time_from_h1yy___'] * pop['cd4_cat_349']
+    pop['timecd4cat499___'] = pop['time_from_h1yy___'] * pop['cd4_cat_499']
+    pop['timecd4cat500___'] = pop['time_from_h1yy___'] * pop['cd4_cat_500']
+
+    # Create numpy matrix
+    pop_matrix = pop[['intercept', 'time_from_h1yy', 'time_from_h1yy_', 'time_from_h1yy__', 'time_from_h1yy___',
+                      'cd4_cat_349', 'cd4_cat_499', 'cd4_cat_500', 'age_cat', 'timecd4cat349_', 'timecd4cat499_',
+                      'timecd4cat500_', 'timecd4cat349__', 'timecd4cat499__', 'timecd4cat500__',
+                      'timecd4cat349___', 'timecd4cat499___', 'timecd4cat500___']].to_numpy()
+
+    # Perform matrix multiplication
+    new_cd4 = np.matmul(pop_matrix, coeffs)
+
+    if flag:
+        # Calculate variance of prediction using matrix multiplication
+        se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
+        low = new_cd4 - 1.96 * se
+        high = new_cd4 + 1.96 * se
+        new_cd4 = (rand * (high - low)) + low
+
+    return new_cd4
 
 def calculate_out_care_cd4n(pop, coeffs, year):
     """ Calculate new time varying cd4 count for population out of care """
@@ -154,7 +163,7 @@ def calculate_prob(pop, coeffs, flag, vcov, rand):
     return prob
 
 def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase, cd4_increase_knots,
-                  group_name):
+                  cd4_increase_vcov, cd4_increase_flag, cd4_increase_rand, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
@@ -208,8 +217,6 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
     population = set_cd4_cat(population)
     population['h1yy_orig'] = population['h1yy']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
-    population['time_varying_sqrtcd4n'] = calculate_in_care_cd4n(population.copy(), cd4_increase, cd4_increase_knots,
-                                                                 2009)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -220,6 +227,11 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
     population['intercept'] = 1.0
     population['year'] = 2009
 
+    population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), cd4_increase_knots, 2009,
+                                                                 cd4_increase.to_numpy(),
+                                                                 cd4_increase_vcov.to_numpy(),
+                                                                 cd4_increase_flag,
+                                                                 cd4_increase_rand)
     # Set status to 1 = 'in_care'
     population['status'] = IN_CARE
 
@@ -296,8 +308,8 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
                        cols=['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2']).set_index(['h1yy', 'term'])
 
     # Write out data for plots
-    feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
-    feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
+    #feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
+    #feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
 
     population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
@@ -360,7 +372,8 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag, mortality_out_care_flag, loss_to_follow_up_flag):
+    def __init__(self, path, group_name, age_in_2009_flag, mortality_in_care_flag,
+                 mortality_out_care_flag, loss_to_follow_up_flag, cd4_increase_flag):
         with pd.HDFStore(path) as store:
             self.new_dx = store['new_dx'].loc[group_name]
             self.new_dx_interval = store['new_dx_interval'].loc[group_name]
@@ -390,6 +403,13 @@ class Parameters:
             self.loss_to_follow_up_flag = loss_to_follow_up_flag
             self.loss_to_follow_up_rand = np.random.rand()
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
+
+            # Cd4 Increase
+            self.cd4_increase = store['cd4_increase'].loc[group_name]
+            self.cd4_increase_vcov = store['cd4_increase_vcov'].loc[group_name]
+            self.cd4_increase_flag = cd4_increase_flag
+            self.cd4_increase_rand = np.random.rand()
+            self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
 
             self.cd4_decrease = store['cd4_decrease'].loc[group_name]
             self.cd4_increase = store['cd4_increase'].loc[group_name]
@@ -448,7 +468,9 @@ class Pearl:
         # Create 2009 population
         self.population = make_pop_2009(parameters.on_art_2009, parameters.age_in_2009.copy(),
                                         parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
-                                        parameters.cd4_increase, parameters.cd4_increase_knots, group_name)
+                                        parameters.cd4_increase, parameters.cd4_increase_knots,
+                                        parameters.cd4_increase_vcov, parameters.cd4_increase_flag,
+                                        parameters.cd4_increase_rand, group_name)
 
         # Create population of new art initiators
         self.population = self.population.append(
@@ -508,10 +530,15 @@ class Pearl:
 
     def increase_cd4_count(self):
         in_care = self.population['status'] == IN_CARE
-        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_in_care_cd4n(
+        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_cd4_increase(
             self.population.loc[in_care].copy(),
-            self.parameters.cd4_increase,
-            self.parameters.cd4_increase_knots, self.year)
+            self.parameters.cd4_increase_knots,
+            self.year,
+            self.parameters.cd4_increase.to_numpy(),
+            self.parameters.cd4_increase_vcov.to_numpy(),
+            self.parameters.cd4_increase_flag,
+            self.parameters.cd4_increase_rand)
+
 
     def decrease_cd4_count(self):
         out_care = self.population['status'] == OUT_CARE
