@@ -134,7 +134,7 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
         high = diff + 1.96 * se
         diff = (rand * (high - low)) + low
 
-    cd4_decrease = np.sqrt((diff ** 2)*np.exp(diff) * 1.5 )
+    cd4_decrease = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * 1.5 )
     return cd4_decrease
 
 def create_ltfu_pop_matrix(pop, knots):
