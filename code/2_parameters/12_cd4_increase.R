@@ -46,28 +46,38 @@ model5fx <- function(DF) {
                     family=gaussian(link='identity'))
 }
 
-tidy_estimates <- function(model) {
-  terms <- c("intercept", "time_from_h1yy", "_time_from_h1yy", "__time_from_h1yy", "___time_from_h1yy", 
-                               "cd4cat349", "cd4cat499", "cd4cat500", "agecat",
-                               "_timecd4cat349", "_timecd4cat499", "_timecd4cat500",
-                               "__timecd4cat349", "__timecd4cat499", "__timecd4cat500",
-                               "___timecd4cat349", "___timecd4cat499", "___timecd4cat500")
-  estimates <- tidy(model, conf.int = TRUE) %>%
-    mutate(term = terms) %>%
-    select(c(term, estimate, conf.low, conf.high)) %>%
-    rename(conf_low = conf.low, conf_high = conf.high)
+get_coeff <- function(DF) {
+  coeffs <- coef(DF)
+  coeffs <- data.frame(t(coeffs))
+  colnames(coeffs) <- c("intercept", "time_from_h1yy", "_time_from_h1yy", "__time_from_h1yy", "___time_from_h1yy", 
+                        "cd4cat349", "cd4cat499", "cd4cat500", "agecat",
+                        "_timecd4cat349", "_timecd4cat499", "_timecd4cat500",
+                        "__timecd4cat349", "__timecd4cat499", "__timecd4cat500",
+                        "___timecd4cat349", "___timecd4cat499", "___timecd4cat500")
+
+  return(coeffs)
 }
+
 
 model5 <- yearly %>%
   mutate(model = map(data, model5fx),
-         estimates = map(model, tidy_estimates)) %>%
-  select(-c(data, model))
+         coeffs = map(model, get_coeff),
+         vcov = map(model, ~.$geese$vbeta)) %>%
+  select(-c(data))
 
 model5$sex[model5$sex==1] <- "male"
 model5$sex[model5$sex==2] <- "female"
 
-model5 <- model5 %>% 
-  unite(group, pop2, sex) %>%
-  unnest() 
+model5 <- model5 %>% unite(group, pop2, sex, remove=TRUE)
 
-write_feather(model5, filePath(param_dir, 'cd4_increase.feather'))
+coeffs <- model5 %>% 
+  select(group, coeffs) %>% 
+  unnest(cols=coeffs)
+
+vcov <- model5 %>% 
+  select(group, vcov) %>% 
+  mutate_if(is.list, map, as_data_frame) %>%
+  unnest(cols=vcov)
+
+write_feather(coeffs, filePath(param_dir, 'cd4_increase.feather'))
+write_feather(vcov, filePath(param_dir, 'cd4_increase_vcov.feather'))

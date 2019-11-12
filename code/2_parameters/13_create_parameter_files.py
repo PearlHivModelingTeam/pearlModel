@@ -95,15 +95,21 @@ loss_to_follow_up_vcov = feather.read_dataframe(f'{param_dir}/loss_to_follow_up_
 loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
-print(loss_to_follow_up)
-print(loss_to_follow_up_vcov)
 ltfu_knots = clean_coeff(pd.read_sas(param_dir + '/ltfu_knots.sas7bdat'))
 
 # Coefficients for cd4 decline out of care
 cd4_decrease = feather.read_dataframe(f'{param_dir}/cd4_decrease.feather').set_index(['group', 'term']).sort_index()
 
 # Coefficients of cd4 increase over time
-cd4_increase = feather.read_dataframe(f'{param_dir}/cd4_increase.feather').set_index(['group', 'term']).sort_index()
+cd4_increase = feather.read_dataframe(f'{param_dir}/cd4_increase.feather')
+cols = cd4_increase.columns.tolist()
+cd4_increase = cd4_increase.set_index('group')
+cd4_increase_vcov = feather.read_dataframe(f'{param_dir}/cd4_increase_vcov.feather')
+cd4_increase_vcov.columns = cols
+cd4_increase_vcov['covariate'] = 15*(cols[1:])
+cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
+print(cd4_increase)
+print(cd4_increase_vcov)
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[3.0], 'p65': 15*[6.0], 'p95': 15*[12.0]}).set_index('group')
 
 # Probability to reengage in care for each group
@@ -130,6 +136,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['ltfu_knots'] = ltfu_knots
     store['cd4_decrease'] = cd4_decrease
     store['cd4_increase'] = cd4_increase
+    store['cd4_increase_vcov'] = cd4_increase_vcov
     store['cd4_increase_knots'] = cd4_increase_knots
     store['prob_reengage'] = prob_reengage
     store['stage0_prob'] = stage0_prob
