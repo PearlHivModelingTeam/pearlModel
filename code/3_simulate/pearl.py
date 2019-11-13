@@ -380,13 +380,18 @@ class Parameters:
                  mortality_out_care_flag, loss_to_follow_up_flag, cd4_increase_flag,
                  cd4_decrease_flag):
         with pd.HDFStore(path) as store:
-            self.new_dx = store['new_dx'].loc[group_name]
-            self.new_dx_interval = store['new_dx_interval'].loc[group_name]
+            # 2009 population
             self.on_art_2009 = store['on_art_2009'].loc[group_name]
             self.age_in_2009 = store['age_in_2009'].loc[group_name]
-            self.new_age_in_2009 = store['new_age_in_2009'].loc[group_name]
+            self.age_in_2009_rand = np.random.rand(5)
             self.h1yy_by_age_2009 = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009 = store['cd4n_by_h1yy_2009'].loc[group_name]
+            if age_in_2009_flag:
+                self.age_in_2009['estimate'] = (self.age_in_2009_rand * (self.age_in_2009['conf_high'] - self.age_in_2009['conf_low'])) + self.age_in_2009['conf_low']
+
+            # New ART initiators
+            self.new_dx = store['new_dx'].loc[group_name]
+            self.new_dx_interval = store['new_dx_interval'].loc[group_name]
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
 
@@ -422,11 +427,9 @@ class Parameters:
             self.cd4_decrease_flag = cd4_decrease_flag
             self.cd4_decrease_rand = np.random.rand()
 
+            # Reengagement probability
             self.prob_reengage = store['prob_reengage'].loc[group_name]
 
-            if age_in_2009_flag:
-                rand = np.random.rand(len(self.age_in_2009.index))
-                self.age_in_2009['estimate'] = (rand * (self.age_in_2009['conf_high'] - self.age_in_2009['conf_low'])) + self.age_in_2009['conf_low']
 
 
 class Statistics:
@@ -746,6 +749,19 @@ class Pearl:
         n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
                              .assign(replication=self.replication, group = self.group_name))
 
+        # Record randomly generated numbers for sensitivity analysis
+        random_params = pd.DataFrame({'mortality_in_care': self.parameters.mortality_in_care_rand,
+                                      'mortality_out_care': self.parameters.mortality_out_care_rand,
+                                      'loss_to_follow_up': self.parameters.loss_to_follow_up_rand,
+                                      'cd4_increase': self.parameters.cd4_increase_rand,
+                                      'cd4_decrease': self.parameters.cd4_decrease_rand,
+                                      'lambda1_2009': self.parameters.age_in_2009_rand[0],
+                                      'mu1_2009': self.parameters.age_in_2009_rand[1],
+                                      'mu2_2009': self.parameters.age_in_2009_rand[2],
+                                      'sigma1_2009': self.parameters.age_in_2009_rand[3],
+                                      'sigma2_2009': self.parameters.age_in_2009_rand[4]}, index=[0]).assign(
+            replication=self.replication, group=self.group_name)
+
         # Make output directory if it doesn't exist
         os.makedirs(self.out_dir, exist_ok=True)
 
@@ -768,6 +784,7 @@ class Pearl:
             store['years_out'] = self.stats.years_out
             store['n_times_lost'] = self.stats.n_times_lost
             store['n_unique_out_care'] = n_unique_out_care
+            store['random_params'] = random_params
 
     def run(self):
         """ Simulate from 2010 to 2030 """
