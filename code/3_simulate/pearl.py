@@ -33,33 +33,25 @@ def gather(df, key, value, cols):
 
 def draw_from_trunc_norm(a, b, mu, sigma, n):
     """ Draws n values from a truncated normal with the given parameters """
-    a_mod = (a - mu) / sigma
-    b_mod = (b - mu) / sigma
-    return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=n)
+    if n != 0:
+        a_mod = (a - mu) / sigma
+        b_mod = (b - mu) / sigma
+        return stats.truncnorm.rvs(a_mod, b_mod, loc=mu, scale=sigma, size=n)
+    else:
+        return []
 
 
-def sim_pop(coeffs, pop_size):
+def simulate_ages(coeffs, pop_size):
     """ Draw ages from a mixed or single gaussian truncated at 18 and 85 given the coefficients and population size."""
 
+    # Draw population size of each normal from the binomial distribution
     pop_size_1 = np.random.binomial(pop_size, coeffs.loc['lambda1', 'estimate'])
     pop_size_2 = pop_size - pop_size_1
-    #components = np.random.choice([1, 2], size=pop_size,
-    #                              p=[coeffs.loc['lambda1', 'estimate'], 1.0 - coeffs.loc['lambda1', 'estimate']],
-    #                              replace=True)
-    #pop_size_1 = (components == 1).sum()
-    #pop_size_2 = (components == 2).sum()
 
-    # Draw age from each respective truncated normal
-    if pop_size_1 == 0:
-        population = draw_from_trunc_norm(18, 85, coeffs.loc['mu2', 'estimate'], coeffs.loc['sigma2', 'estimate'],
-                                          pop_size_2)
-    elif pop_size_2 == 0:
-        population = draw_from_trunc_norm(18, 85, coeffs.loc['mu1', 'estimate'], coeffs.loc['sigma1', 'estimate'],
-                                          pop_size_1)
-    else:
-        pop1 = draw_from_trunc_norm(18, 85, coeffs.loc['mu1', 'estimate'], coeffs.loc['sigma1', 'estimate'], pop_size_1)
-        pop2 = draw_from_trunc_norm(18, 85, coeffs.loc['mu2', 'estimate'], coeffs.loc['sigma2', 'estimate'], pop_size_2)
-        population = np.concatenate((pop1, pop2))
+    # Draw ages from truncated normal
+    pop1 = draw_from_trunc_norm(18, 85, coeffs.loc['mu1', 'estimate'], coeffs.loc['sigma1', 'estimate'], pop_size_1)
+    pop2 = draw_from_trunc_norm(18, 85, coeffs.loc['mu2', 'estimate'], coeffs.loc['sigma2', 'estimate'], pop_size_2)
+    population = np.concatenate((pop1, pop2))
 
     # Create DataFrame
     population = pd.DataFrame(data={'age': population})
@@ -175,7 +167,7 @@ def make_pop_2009(parameters, group_name):
 
     # Draw ages from the truncated mixed gaussian
     pop_size = parameters.on_art_2009[0].astype('int')
-    population = sim_pop(parameters.age_in_2009, pop_size)
+    population = simulate_ages(parameters.age_in_2009, pop_size)
 
     # Create age categories
     population['age'] = np.floor(population['age'])
@@ -321,7 +313,7 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
 
     population = pd.DataFrame()
     for h1yy, coeffs in sim_coeff.groupby('h1yy'):
-        grouped_pop = sim_pop(sim_coeff.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
+        grouped_pop = simulate_ages(sim_coeff.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
         grouped_pop['h1yy'] = h1yy
         population = pd.concat([population, grouped_pop])
 
