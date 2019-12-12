@@ -41,6 +41,7 @@ on_art_2009 = feather.read_dataframe(f'{param_dir}/on_art_2009.feather').set_ind
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
 h1yy_by_age_2009 = feather.read_dataframe(f'{param_dir}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
+print(h1yy_by_age_2009)
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
 cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
@@ -65,7 +66,7 @@ new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather')
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather').set_index(['group', 'param', 'h1yy']).sort_index()
 
-# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy
+# Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
 
 # Coefficients for mortality in care
@@ -102,7 +103,6 @@ cd4_decrease = feather.read_dataframe(f'{param_dir}/cd4_decrease.feather')
 cols = cd4_decrease.columns.tolist()
 cd4_decrease['group'] = 'all'
 cd4_decrease = cd4_decrease.set_index('group')
-print(cd4_decrease.loc['all'])
 cd4_decrease_vcov = feather.read_dataframe(f'{param_dir}/cd4_decrease_vcov.feather')
 cd4_decrease_vcov.columns = cols
 
