@@ -41,7 +41,6 @@ on_art_2009 = feather.read_dataframe(f'{param_dir}/on_art_2009.feather').set_ind
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
 h1yy_by_age_2009 = feather.read_dataframe(f'{param_dir}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
-print(h1yy_by_age_2009)
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
 cd4n_by_h1yy_2009 = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
@@ -58,6 +57,7 @@ pos['conf_low'] = 1.0 - (2.0 * (1.0 - pos['estimate']))
 age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)] = pos
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
+print(age_in_2009)
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
@@ -119,7 +119,11 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 # Probability to reengage in care for each group
 prob_reengage = pd.read_csv(f'{param_dir}/prob_reengage.csv').set_index(['group'])
 
-stage0_prob = pd.read_csv(f'{param_dir}/stage0.csv').set_index(['group'])
+# Stage 0 comorbidities
+hcv_prev_users = pd.read_csv(f'{param_dir}/stage_0/hcv_prevalence_users.csv').set_index('group')
+hcv_prev_inits = pd.read_csv(f'{param_dir}/stage_0/hcv_prevalence_initiators.csv').set_index('group')
+smoking_prev_users = pd.read_csv(f'{param_dir}/stage_0/smoking_prevalence_users.csv').set_index('group')
+smoking_prev_inits = pd.read_csv(f'{param_dir}/stage_0/smoking_prevalence_initiators.csv').set_index('group')
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
@@ -144,4 +148,10 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['cd4_increase_vcov'] = cd4_increase_vcov
     store['cd4_increase_knots'] = cd4_increase_knots
     store['prob_reengage'] = prob_reengage
-    store['stage0_prob'] = stage0_prob
+
+    # Stage 0 comorbidities
+    store['hcv_prev_users'] = hcv_prev_users
+    store['hcv_prev_inits'] = hcv_prev_inits
+    store['smoking_prev_users'] = smoking_prev_users
+    store['smoking_prev_inits'] = smoking_prev_inits
+

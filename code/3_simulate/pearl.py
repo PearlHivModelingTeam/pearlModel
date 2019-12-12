@@ -42,7 +42,7 @@ def sim_pop(coeffs, pop_size):
     """ Draw ages from a mixed or single gaussian truncated at 18 and 85 given the coefficients and population size."""
 
     components = np.random.choice([1, 2], size=pop_size,
-                                  p=[coeffs.loc['lambda1', 'estimate'], coeffs.loc['lambda2', 'estimate']],
+                                  p=[coeffs.loc['lambda1', 'estimate'], 1.0 - coeffs.loc['lambda1', 'estimate']],
                                   replace=True)
     pop_size_1 = (components == 1).sum()
     pop_size_2 = (components == 2).sum()
@@ -166,16 +166,14 @@ def calculate_prob(pop, coeffs, flag, vcov, rand):
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
 
-def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009, cd4_increase, cd4_increase_knots,
-                  cd4_increase_vcov, cd4_increase_flag, cd4_increase_rand, group_name):
+def make_pop_2009(parameters, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
 
     # Draw ages from the truncated mixed gaussian
-    age_in_2009.loc['lambda2', 'estimate'] = 1.0 - age_in_2009.loc['lambda1', 'estimate']
-    pop_size = on_art_2009[0].astype('int')
-    population = sim_pop(age_in_2009, pop_size)
+    pop_size = parameters.on_art_2009[0].astype('int')
+    population = sim_pop(parameters.age_in_2009, pop_size)
 
     # Create age categories
     population['age'] = np.floor(population['age'])
@@ -187,18 +185,18 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
 
     # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
     for age_cat, grouped in population.groupby('age_cat'):
-        if h1yy_by_age_2009.index.isin([(group_name, age_cat, 2000.0)]).any():
-            h1yy_data = h1yy_by_age_2009.loc[(group_name, age_cat)]
+        if parameters.h1yy_by_age_2009.index.isin([(group_name, age_cat, 2000.0)]).any():
+            h1yy_data = parameters.h1yy_by_age_2009.loc[(group_name, age_cat)]
         else:  # replace missing data
-            h1yy_data = h1yy_by_age_2009.loc[('msm_white_male', age_cat)]
+            h1yy_data = parameters.h1yy_by_age_2009.loc[('msm_white_male', age_cat)]
         population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data.index.values, size=grouped.shape[0],
                                                            p=h1yy_data.pct.values)
 
     # Pull cd4 count coefficients
-    mean_intercept = cd4n_by_h1yy_2009['meanint']
-    mean_slope = cd4n_by_h1yy_2009['meanslp']
-    std_intercept = cd4n_by_h1yy_2009['stdint']
-    std_slope = cd4n_by_h1yy_2009['stdslp']
+    mean_intercept = parameters.cd4n_by_h1yy_2009['meanint']
+    mean_slope = parameters.cd4n_by_h1yy_2009['meanslp']
+    std_intercept = parameters.cd4n_by_h1yy_2009['stdint']
+    std_slope = parameters.cd4n_by_h1yy_2009['stdslp']
 
     # Reindex for group operation
     population['h1yy'] = population['h1yy'].astype(int)
@@ -231,13 +229,17 @@ def make_pop_2009(on_art_2009, age_in_2009, h1yy_by_age_2009, cd4n_by_h1yy_2009,
     population['intercept'] = 1.0
     population['year'] = 2009
 
-    population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), cd4_increase_knots, 2009,
-                                                                 cd4_increase.to_numpy(),
-                                                                 cd4_increase_vcov.to_numpy(),
-                                                                 cd4_increase_flag,
-                                                                 cd4_increase_rand)
+    population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), parameters.cd4_increase_knots, 2009,
+                                                                 parameters.cd4_increase.to_numpy(),
+                                                                 parameters.cd4_increase_vcov.to_numpy(),
+                                                                 parameters.cd4_increase_flag,
+                                                                 parameters.cd4_increase_rand)
     # Set status to 1 = 'in_care'
     population['status'] = IN_CARE
+
+    # Stage 0 comorbidities
+    population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_users.values).astype(int)
+    population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_users.values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -270,15 +272,15 @@ def simulate_new_dx(new_dx, dx_interval):
     return new_dx.filter(items=['n_art_init'])
 
 
-def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, group_name, replication):
+def make_new_population(parameters, art_init_sim, pop_size_2009):
     """ Draw ages for new art initiators """
 
     # Replace negative values with 0
-    age_by_h1yy[age_by_h1yy < 0] = 0
+    parameters.age_by_h1yy[parameters.age_by_h1yy < 0] = 0
 
     # Split into before and after 2018
-    sim_coeff = age_by_h1yy.loc[age_by_h1yy.index.get_level_values('h1yy') >= 2018].copy()
-    observed_coeff = age_by_h1yy.loc[age_by_h1yy.index.get_level_values('h1yy') < 2018].copy().rename(
+    sim_coeff = parameters.age_by_h1yy.loc[parameters.age_by_h1yy.index.get_level_values('h1yy') >= 2018].copy()
+    observed_coeff = parameters.age_by_h1yy.loc[parameters.age_by_h1yy.index.get_level_values('h1yy') < 2018].copy().rename(
         columns={'pred': 'estimate'})
     observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='estimate', index='h1yy',
                                     columns='param').rename_axis(None, axis=1)
@@ -330,10 +332,10 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
     population['id'] = np.arange(pop_size_2009, (pop_size_2009 + population.index.size))
 
     # Pull cd4 count coefficients
-    mean_intercept = cd4n_by_h1yy['meanint']
-    mean_slope = cd4n_by_h1yy['meanslp']
-    std_intercept = cd4n_by_h1yy['stdint']
-    std_slope = cd4n_by_h1yy['stdslp']
+    mean_intercept = parameters.cd4n_by_h1yy['meanint']
+    mean_slope = parameters.cd4n_by_h1yy['meanslp']
+    std_intercept = parameters.cd4n_by_h1yy['stdint']
+    std_slope = parameters.cd4n_by_h1yy['stdslp']
 
     # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
     population = population.set_index('h1yy')
@@ -364,6 +366,10 @@ def make_new_population(art_init_sim, age_by_h1yy, cd4n_by_h1yy, pop_size_2009, 
 
     # Set status to UNINITIATED
     population['status'] = UNINITIATED
+
+    # Stage 0 comorbidities
+    population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_inits.values).astype(int)
+    population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_inits.values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -430,6 +436,11 @@ class Parameters:
             # Reengagement probability
             self.prob_reengage = store['prob_reengage'].loc[group_name]
 
+            # Stage 0 Comorbidities
+            self.hcv_prev_users = store['hcv_prev_users'].loc[group_name]
+            self.hcv_prev_inits = store['hcv_prev_inits'].loc[group_name]
+            self.smoking_prev_users = store['smoking_prev_users'].loc[group_name]
+            self.smoking_prev_inits = store['smoking_prev_inits'].loc[group_name]
 
 
 class Statistics:
@@ -477,16 +488,11 @@ class Pearl:
         art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
 
         # Create 2009 population
-        self.population = make_pop_2009(parameters.on_art_2009, parameters.age_in_2009.copy(),
-                                        parameters.h1yy_by_age_2009, parameters.cd4n_by_h1yy_2009,
-                                        parameters.cd4_increase, parameters.cd4_increase_knots,
-                                        parameters.cd4_increase_vcov, parameters.cd4_increase_flag,
-                                        parameters.cd4_increase_rand, group_name)
+        self.population = make_pop_2009(parameters, group_name)
 
         # Create population of new art initiators
         self.population = self.population.append(
-            make_new_population(art_init_sim, parameters.age_by_h1yy, parameters.cd4n_by_h1yy,
-                                len(self.population.index), self.group_name, self.replication))
+            make_new_population(parameters, art_init_sim, len(self.population.index)))
 
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
