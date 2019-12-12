@@ -41,11 +41,13 @@ def draw_from_trunc_norm(a, b, mu, sigma, n):
 def sim_pop(coeffs, pop_size):
     """ Draw ages from a mixed or single gaussian truncated at 18 and 85 given the coefficients and population size."""
 
-    components = np.random.choice([1, 2], size=pop_size,
-                                  p=[coeffs.loc['lambda1', 'estimate'], 1.0 - coeffs.loc['lambda1', 'estimate']],
-                                  replace=True)
-    pop_size_1 = (components == 1).sum()
-    pop_size_2 = (components == 2).sum()
+    pop_size_1 = np.random.binomial(pop_size, coeffs.loc['lambda1', 'estimate'])
+    pop_size_2 = pop_size - pop_size_1
+    #components = np.random.choice([1, 2], size=pop_size,
+    #                              p=[coeffs.loc['lambda1', 'estimate'], 1.0 - coeffs.loc['lambda1', 'estimate']],
+    #                              replace=True)
+    #pop_size_1 = (components == 1).sum()
+    #pop_size_2 = (components == 2).sum()
 
     # Draw age from each respective truncated normal
     if pop_size_1 == 0:
