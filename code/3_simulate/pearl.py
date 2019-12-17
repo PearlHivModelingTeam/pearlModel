@@ -131,6 +131,14 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
     new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * 1.5 )
     return new_cd4
 
+def create_stage1_pop_matrix(pop, condition):
+    pop['time_since_art'] = pop['year'] - pop['h1yy_orig']
+    pop['out_care'] = (pop['status'] == OUT_CARE).astype(int)
+    if condition=='anxiety':
+        return pop[['age', 'init_sqrtcd4n_orig', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+    elif condition=='depression':
+        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
 
@@ -201,7 +209,7 @@ def make_pop_2009(parameters, group_name):
         mu = mean_intercept + (h1yy * mean_slope)
         sigma = std_intercept + (h1yy * std_slope)
         size = group.shape[0]
-        sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
+        sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
         population.loc[(h1yy,), 'init_sqrtcd4n'] = sqrt_cd4n
 
     population = population.reset_index().set_index('id').sort_index()
@@ -234,6 +242,10 @@ def make_pop_2009(parameters, group_name):
     # Stage 0 comorbidities
     population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_users.values).astype(int)
     population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_users.values).astype(int)
+
+    # Stage 1 comorbidities
+    population['anxiety'] = (np.random.rand(len(population.index)) < parameters.anxiety_prev_users.values).astype(int)
+    population['depression'] = (np.random.rand(len(population.index)) < parameters.depression_prev_users.values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -338,7 +350,7 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
         mu = mean_intercept + (h1yy_mod * mean_slope)
         sigma = std_intercept + (h1yy_mod * std_slope)
         size = group.shape[0]
-        sqrt_cd4n = draw_from_trunc_norm(0, np.inf, mu, sigma, size)
+        sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
         population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
 
     population = population.reset_index().set_index('id').sort_index()
@@ -364,6 +376,15 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
     # Stage 0 comorbidities
     population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_inits.values).astype(int)
     population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_inits.values).astype(int)
+
+    # Stage 1 comorbidities
+    anxiety_list = []
+    depression_list = []
+    for h1yy, group in population.groupby('h1yy'):
+        anxiety_list.append((np.random.rand(len(group.index)) < parameters.anxiety_prev_inits.loc[h1yy].values).astype(int))
+        depression_list.append((np.random.rand(len(group.index)) < parameters.depression_prev_inits.loc[h1yy].values).astype(int))
+    population['anxiety'] = np.concatenate(anxiety_list)
+    population['depression'] = np.concatenate(depression_list)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -436,6 +457,13 @@ class Parameters:
             self.smoking_prev_users = store['smoking_prev_users'].loc[group_name]
             self.smoking_prev_inits = store['smoking_prev_inits'].loc[group_name]
 
+            # Stage 1 Comorbidities
+            self.anxiety_prev_users = store['anxiety_prev_users'].loc[group_name]
+            self.anxiety_prev_inits = store['anxiety_prev_inits'].loc[group_name]
+            self.anxiety_coeff = store['anxiety_coeff'].loc[group_name]
+            self.depression_prev_users = store['depression_prev_users'].loc[group_name]
+            self.depression_prev_inits = store['depression_prev_inits'].loc[group_name]
+            self.depression_coeff = store['depression_coeff'].loc[group_name]
 
 class Statistics:
     def __init__(self):
@@ -618,6 +646,27 @@ class Pearl:
 
         self.population.loc[reengaged, 'status'] = IN_CARE
         self.population.loc[ltfu, 'status'] = OUT_CARE
+
+    def apply_stage_1(self):
+        in_care = self.population['status'] == IN_CARE
+        out_care = self.population['status'] == OUT_CARE
+
+        # Use matrix multiplication to calculate probability of anxiety incidence
+        anxiety_coeff_matrix = self.parameters.anxiety_coeff.to_numpy()
+        anxiety_pop_matrix = create_stage1_pop_matrix(self.population.copy(), condition = 'anxiety')
+        anxiety_prob = calculate_prob(anxiety_pop_matrix, anxiety_coeff_matrix, False, 0, 0)
+
+        # Set anxiety=1 if a person is: (they were selected to get anxiety and they are (in or out of care)) or they already have anxiety
+        self.population['anxiety'] = ((anxiety_prob > np.random.rand(len(self.population.index))) & (in_care | out_care)) | self.population['anxiety'].values
+
+        # Use matrix multiplication to calculate probability of depression incidence
+        depression_coeff_matrix = self.parameters.depression_coeff.to_numpy()
+        depression_pop_matrix = create_stage1_pop_matrix(self.population.copy(), condition='depression')
+        depression_prob = calculate_prob(depression_pop_matrix, depression_coeff_matrix, False, 0, 0)
+
+        # Set depression=1 if a person is: (they were selected to get depression and they are (in or out of care)) or they already have depression
+        self.population['depression'] = ((depression_prob > np.random.rand(len(self.population.index))) & (
+                in_care | out_care)) | self.population['depression'].values
 
     def record_stats(self):
         uninitiated = self.population['status'] == UNINITIATED
@@ -809,6 +858,9 @@ class Pearl:
 
             # Append changed populations to their respective DataFrames
             self.append_new()
+
+            # Stage 1 comorbidities
+            self.apply_stage_1()
 
             if self.verbose:
                 print(self)

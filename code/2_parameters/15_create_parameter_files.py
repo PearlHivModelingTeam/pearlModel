@@ -57,7 +57,6 @@ pos['conf_low'] = 1.0 - (2.0 * (1.0 - pos['estimate']))
 age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)] = pos
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
-print(age_in_2009)
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
@@ -120,10 +119,18 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 prob_reengage = pd.read_csv(f'{param_dir}/prob_reengage.csv').set_index(['group'])
 
 # Stage 0 comorbidities
-hcv_prev_users = pd.read_csv(f'{param_dir}/stage_0/hcv_prevalence_users.csv').set_index('group')
-hcv_prev_inits = pd.read_csv(f'{param_dir}/stage_0/hcv_prevalence_initiators.csv').set_index('group')
-smoking_prev_users = pd.read_csv(f'{param_dir}/stage_0/smoking_prevalence_users.csv').set_index('group')
-smoking_prev_inits = pd.read_csv(f'{param_dir}/stage_0/smoking_prevalence_initiators.csv').set_index('group')
+hcv_prev_users = pd.read_feather(f'{param_dir}/stage_0/hcv_prev_users.feather').set_index('group')
+hcv_prev_inits = pd.read_feather(f'{param_dir}/stage_0/hcv_prev_inits.feather').set_index('group')
+smoking_prev_users = pd.read_feather(f'{param_dir}/stage_0/smoking_prev_users.feather').set_index('group')
+smoking_prev_inits = pd.read_feather(f'{param_dir}/stage_0/smoking_prev_inits.feather').set_index('group')
+
+# Stage 1 comorbidities
+anxiety_prev_users = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_users.feather').set_index('group')
+depression_prev_users = pd.read_feather(f'{param_dir}/stage_1/depression_prev_users.feather').set_index('group')
+anxiety_prev_inits = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_inits.feather').set_index(['group', 'h1yy'])
+depression_prev_inits = pd.read_feather(f'{param_dir}/stage_1/depression_prev_inits.feather').set_index(['group', 'h1yy'])
+anxiety_coeff = pd.read_feather(f'{param_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param'])
+depression_coeff = pd.read_feather(f'{param_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param'])
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
@@ -154,4 +161,15 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['hcv_prev_inits'] = hcv_prev_inits
     store['smoking_prev_users'] = smoking_prev_users
     store['smoking_prev_inits'] = smoking_prev_inits
+
+    # Stage 1 comorbidities
+    store['anxiety_prev_users'] = anxiety_prev_users
+    store['anxiety_prev_inits'] = anxiety_prev_inits
+    store['anxiety_coeff'] = anxiety_coeff
+    store['depression_prev_users'] = depression_prev_users
+    store['depression_prev_inits'] = depression_prev_inits
+    store['depression_coeff'] = depression_coeff
+
+    print(anxiety_prev_inits.loc['msm_white_male'])
+    print(depression_prev_inits.loc['msm_white_male'])
 
