@@ -485,6 +485,12 @@ class Statistics:
         self.n_times_lost = pd.DataFrame()
         self.unique_out_care_ids = set()
 
+        # Stage 0 and 1
+        self.smoking_count = pd.DataFrame()
+        self.hcv_count = pd.DataFrame()
+        self.anxiety_count = pd.DataFrame()
+        self.depression_count = pd.DataFrame()
+
 
 def output_reindex(df):
     """ Helper function for reindexing output tables """
@@ -707,6 +713,31 @@ class Pearl:
                         .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
             self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
+            # Count of those with smoking by year
+            alive_pop_size = len(self.population.loc[self.population['status'].isin([IN_CARE, OUT_CARE])].index)
+            smoking = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['smoking']
+            smoking_pop = self.population.loc[smoking]
+            smoking_count = pd.DataFrame({'n': [len(smoking_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
+
+            # Count of those with anxiety by year
+            hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
+            hcv_pop = self.population.loc[hcv]
+            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
+
+            # Count of those with anxiety by year
+            anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
+            anxiety_pop = self.population.loc[anxiety]
+            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
+
+            # Count of those with anxiety by year
+            depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
+            depression_pop = self.population.loc[depression]
+            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.depression_count = self.stats.depression_count.append(depression_count)
+
         else:
             # Count of those in care by age_cat and year
             in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
@@ -755,6 +786,31 @@ class Pearl:
             # Keep track of unique individuals lost to follow up 2010-2015
             if 2010 <= self.year <= 2015:
                 self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
+
+            # Count of those with smoking by year
+            alive_pop_size = len(self.population.loc[self.population['status'].isin([IN_CARE, OUT_CARE])].index)
+            smoking = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['smoking']
+            smoking_pop = self.population.loc[smoking]
+            smoking_count = pd.DataFrame({'n': [len(smoking_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
+
+            # Count of those with anxiety by year
+            hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
+            hcv_pop = self.population.loc[hcv]
+            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
+
+            # Count of those with anxiety by year
+            anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
+            anxiety_pop = self.population.loc[anxiety]
+            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
+
+            # Count of those with anxiety by year
+            depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
+            depression_pop = self.population.loc[depression]
+            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            self.stats.depression_count = self.stats.depression_count.append(depression_count)
 
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_IN_CARE
@@ -834,6 +890,10 @@ class Pearl:
             store['n_times_lost'] = self.stats.n_times_lost
             store['n_unique_out_care'] = n_unique_out_care
             store['random_params'] = random_params
+            store['smoking_count'] = self.stats.smoking_count
+            store['hcv_count'] = self.stats.hcv_count
+            store['anxiety_count'] = self.stats.anxiety_count
+            store['depression_count'] = self.stats.depression_count
 
     def run(self):
         """ Simulate from 2010 to 2030 """
