@@ -623,6 +623,7 @@ class Pearl:
 
     def lose_to_follow_up(self):
         in_care = self.population['status'] == IN_CARE
+        #print(self.parameters.loss_to_follow_up)
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy()
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy()
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
@@ -658,12 +659,13 @@ class Pearl:
         out_care = self.population['status'] == OUT_CARE
 
         # Use matrix multiplication to calculate probability of anxiety incidence
+        #print(self.parameters.anxiety_coeff)
         anxiety_coeff_matrix = self.parameters.anxiety_coeff.to_numpy()
         anxiety_pop_matrix = create_stage1_pop_matrix(self.population.copy(), condition = 'anxiety')
         anxiety_prob = calculate_prob(anxiety_pop_matrix, anxiety_coeff_matrix, False, 0, 0)
 
         # Set anxiety=1 if a person is: (they were selected to get anxiety and they are (in or out of care)) or they already have anxiety
-        self.population['anxiety'] = ((anxiety_prob > np.random.rand(len(self.population.index))) & (in_care | out_care)) | self.population['anxiety'].values
+        anxiety = anxiety_prob > np.random.rand(len(self.population.index))
 
         # Use matrix multiplication to calculate probability of depression incidence
         depression_coeff_matrix = self.parameters.depression_coeff.to_numpy()
@@ -671,8 +673,9 @@ class Pearl:
         depression_prob = calculate_prob(depression_pop_matrix, depression_coeff_matrix, False, 0, 0)
 
         # Set depression=1 if a person is: (they were selected to get depression and they are (in or out of care)) or they already have depression
-        self.population['depression'] = ((depression_prob > np.random.rand(len(self.population.index))) & (
-                in_care | out_care)) | self.population['depression'].values
+        depression = depression_prob > np.random.rand(len(self.population.index))
+        self.population['anxiety'] = ((anxiety & (in_care | out_care)) | self.population['anxiety'].values).astype(int)
+        self.population['depression'] = ((depression & (in_care | out_care)) | self.population['depression'].values).astype(int)
 
     def record_stats(self):
         uninitiated = self.population['status'] == UNINITIATED

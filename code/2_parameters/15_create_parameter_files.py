@@ -129,8 +129,11 @@ anxiety_prev_users = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_users.fe
 depression_prev_users = pd.read_feather(f'{param_dir}/stage_1/depression_prev_users.feather').set_index('group')
 anxiety_prev_inits = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_inits.feather').set_index(['group', 'h1yy'])
 depression_prev_inits = pd.read_feather(f'{param_dir}/stage_1/depression_prev_inits.feather').set_index(['group', 'h1yy'])
-anxiety_coeff = pd.read_feather(f'{param_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param'])
-depression_coeff = pd.read_feather(f'{param_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param'])
+anxiety_coeff = pd.read_feather(f'{param_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
+depression_coeff = pd.read_feather(f'{param_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param']).unstack()
+
+print(loss_to_follow_up)
+print(anxiety_coeff)
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
@@ -169,7 +172,4 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['depression_prev_users'] = depression_prev_users
     store['depression_prev_inits'] = depression_prev_inits
     store['depression_coeff'] = depression_coeff
-
-    print(anxiety_prev_inits.loc['msm_white_male'])
-    print(depression_prev_inits.loc['msm_white_male'])
 
