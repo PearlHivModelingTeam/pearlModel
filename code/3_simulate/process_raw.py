@@ -9,7 +9,7 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
-feather_dir = cwd + '/../../out/processed/sense/mortality_in_care'
+feather_dir = cwd + '/../../out/processed/stage0'
 
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
@@ -19,7 +19,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
 #group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 #group_names = ['idu_white_female']
 
-replications = 100
+replications = 50
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
@@ -39,6 +39,11 @@ for group_name in group_names:
     n_unique_out_care = pd.DataFrame()
     years_out = pd.DataFrame()
     random_params = pd.DataFrame()
+
+    smoking_count = pd.DataFrame()
+    hcv_count = pd.DataFrame()
+    anxiety_count = pd.DataFrame()
+    depression_count = pd.DataFrame()
 
 
     print(group_name)
@@ -71,6 +76,11 @@ for group_name in group_names:
 
             random_params = random_params.append(store['random_params'])
 
+            smoking_count = smoking_count.append(store['smoking_count'])
+            hcv_count = hcv_count.append(store['hcv_count'])
+            anxiety_count = anxiety_count.append(store['anxiety_count'])
+            depression_count = depression_count.append(store['depression_count'])
+
 
     dead_in_care_age = dead_in_care_age.loc[dead_in_care_age.age <= 85]
     dead_out_care_age = dead_out_care_age.loc[dead_out_care_age.age <= 85]
@@ -100,6 +110,11 @@ for group_name in group_names:
     feather.write_dataframe(years_out, f'{feather_dir}/{group_name}_years_out.feather')
 
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
+
+    feather.write_dataframe(smoking_count, f'{feather_dir}/{group_name}_smoking_count.feather')
+    feather.write_dataframe(hcv_count, f'{feather_dir}/{group_name}_hcv_count.feather')
+    feather.write_dataframe(anxiety_count, f'{feather_dir}/{group_name}_anxiety_count.feather')
+    feather.write_dataframe(depression_count, f'{feather_dir}/{group_name}_depression_count.feather')
 
 
     

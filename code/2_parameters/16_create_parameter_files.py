@@ -127,13 +127,10 @@ smoking_prev_inits = pd.read_feather(f'{param_dir}/stage_0/smoking_prev_inits.fe
 # Stage 1 comorbidities
 anxiety_prev_users = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_users.feather').set_index('group')
 depression_prev_users = pd.read_feather(f'{param_dir}/stage_1/depression_prev_users.feather').set_index('group')
-anxiety_prev_inits = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_inits.feather').set_index(['group', 'h1yy'])
-depression_prev_inits = pd.read_feather(f'{param_dir}/stage_1/depression_prev_inits.feather').set_index(['group', 'h1yy'])
+anxiety_prev_inits = pd.read_feather(f'{param_dir}/stage_1/anxiety_prev_inits.feather').set_index('group')
+depression_prev_inits = pd.read_feather(f'{param_dir}/stage_1/depression_prev_inits.feather').set_index('group')
 anxiety_coeff = pd.read_feather(f'{param_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
 depression_coeff = pd.read_feather(f'{param_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param']).unstack()
-
-print(loss_to_follow_up)
-print(anxiety_coeff)
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:

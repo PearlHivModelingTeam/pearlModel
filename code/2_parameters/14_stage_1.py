@@ -105,127 +105,15 @@ mh_prev_inits['sex'] = mh_prev_inits['sex'].str.lower()
 mh_prev_inits['pop2'] = mh_prev_inits['pop2'].str.lower()
 mh_prev_inits['group'] = mh_prev_inits['pop2'] + '_' + mh_prev_inits['sex']
 mh_prev_inits['prevalence'] /= 100.0
-mh_prev_inits = mh_prev_inits.rename(columns={'prevalence': 'proportion'}).sort_values(['dx','group','h1yy'])
+mh_prev_inits = mh_prev_inits.rename(columns={'prevalence': 'proportion'}).sort_values(['dx','group'])
 
-anxiety_prev_inits = mh_prev_inits.loc[mh_prev_inits['dx'] == 'anx'].reset_index()[['group', 'h1yy', 'proportion']].copy()
-depression_prev_inits = mh_prev_inits.loc[mh_prev_inits['dx'] == 'dpr'].reset_index()[['group', 'h1yy', 'proportion']].copy()
-
-anxiety_list = []
-for group in group_names:
-    data = anxiety_prev_inits.loc[anxiety_prev_inits['group'] == group].copy()
-    # Only regress if there are multiple values
-    if len(data['proportion'].unique())!=1:
-        results = smf.ols('proportion ~ h1yy', data=data).fit()
-        intercept = results.params['Intercept']
-        h1yy = results.params['h1yy']
-    else:
-        intercept = data['proportion'].iloc[0]
-        h1yy = 0
-    anxiety_list.append({'group': group, 'intercept': intercept, 'h1yy': h1yy})
-
-anxiety_prev_inits_coeff = pd.DataFrame(anxiety_list)
-#anxiety_prev_inits_coeff['2010'] = anxiety_prev_inits_coeff['intercept'] + anxiety_prev_inits_coeff['h1yy'] * 2010
-#anxiety_prev_inits_coeff['2030'] = anxiety_prev_inits_coeff['intercept'] + anxiety_prev_inits_coeff['h1yy'] * 2030
-print('anxiety')
-print(anxiety_prev_inits_coeff)
-
-years = np.arange(2010, 2031)
-years_dict = {'h1yy': years}
-
-result_list = []
-for group in group_names:
-    data = anxiety_prev_inits.loc[anxiety_prev_inits['group'] == group].copy()
-    # Only regress if there are multiple values
-    if len(data['proportion'].unique())!=1:
-        linear = smf.glm('proportion ~ h1yy', data=data, family=sm.families.Gamma(sm.families.links.identity)).fit()
-        gamma = smf.glm('proportion ~ np.sqrt(h1yy)', data=data, family=sm.families.Gamma(sm.families.links.identity)).fit()
-        poisson = smf.glm('proportion ~ h1yy', data=data, family=sm.families.Gamma(sm.families.links.log)).fit()
-        result_list.append({'group': group, 'linear': linear, 'gamma': gamma, 'poisson': poisson})
-
-results = pd.DataFrame(result_list).set_index('group')
-
-anxiety_list = []
-for group in group_names:
-    if group in results.index:
-        linear = results.loc[group, 'linear']
-        anxiety_list.append(pd.DataFrame({'group': len(years) * [group], 'h1yy': years, 'proportion': linear.predict(years_dict)}))
-    else:
-        data = anxiety_prev_inits.loc[anxiety_prev_inits['group'] == group]
-        anxiety_list.append(pd.DataFrame({'group': len(years) * [group], 'h1yy': years, 'proportion': len(years) * [data['proportion'].values[0]]}))
-
-
-anxiety_prev_inits_pred = pd.concat(anxiety_list, ignore_index=True)
-
-
-#sns.set(style='ticks')
-#sns.set_context('paper', font_scale = 1.8, rc={'lines.linewidth':1.5})
-#
-#for group in results.index:
-#    fig, ax =plt.subplots(figsize=(16,9))
-#    data = anxiety_prev_inits.loc[anxiety_prev_inits['group'] == group]
-#    linear = results.loc[group, 'linear']
-#    gamma =  results.loc[group, 'gamma']
-#    poisson =  results.loc[group, 'poisson']
-#    plt.scatter(data['h1yy'], data['proportion'], color='k', label='NA-ACCORD')
-#    plt.plot(years, linear.predict(years_dict), label='linear')
-#    plt.plot(years, gamma.predict(years_dict), label='gamma')
-#    plt.plot(years, poisson.predict(years_dict), label='poisson')
-#    plt.legend(frameon=False)
-#    ax.set_xlabel('ART Initiation Year')
-#    ax.set_ylabel('Prevalence')
-#    ax.set_title(f'Anxiety Prevalence: {group}')
-#
-#    plt.savefig(f'{fig_dir}/anxiety/{group}.png', bbox_inches='tight')
-
-result_list = []
-for group in group_names:
-    data = depression_prev_inits.loc[depression_prev_inits['group'] == group].copy()
-    # Only regress if there are multiple values
-    if len(data['proportion'].unique())!=1:
-        linear = smf.glm('proportion ~ h1yy', data=data).fit()
-        gamma = smf.glm('proportion ~ h1yy', data=data, family=sm.families.Gamma()).fit()
-        poisson = smf.glm('proportion ~ h1yy', data=data, family=sm.families.Poisson()).fit()
-        result_list.append({'group': group, 'linear': linear, 'gamma': gamma, 'poisson': poisson})
-
-results = pd.DataFrame(result_list).set_index('group')
-
-depression_list = []
-for group in group_names:
-    if group in results.index:
-        gamma = results.loc[group, 'gamma']
-        depression_list.append(pd.DataFrame({'group': len(years) * [group], 'h1yy': years, 'proportion': gamma.predict(years_dict)}))
-    else:
-        data = depression_prev_inits.loc[depression_prev_inits['group'] == group]
-        depression_list.append(pd.DataFrame({'group': len(years) * [group], 'h1yy': years, 'proportion': len(years) * [data['proportion'].values[0]]}))
-
-
-depression_prev_inits_pred = pd.concat(depression_list, ignore_index=True)
-
-#sns.set(style='ticks')
-#sns.set_context('paper', font_scale = 1.8, rc={'lines.linewidth':1.5})
-#
-#
-#for group in results.index:
-#    fig, ax =plt.subplots(figsize=(16,9))
-#    data = depression_prev_inits.loc[depression_prev_inits['group'] == group]
-#    linear = results.loc[group, 'linear']
-#    gamma =  results.loc[group, 'gamma']
-#    poisson =  results.loc[group, 'poisson']
-#    plt.scatter(data['h1yy'], data['proportion'], color='k', label='NA-ACCORD')
-#    plt.plot(years, linear.predict(years_dict), label='linear')
-#    plt.plot(years, gamma.predict(years_dict), label='gamma')
-#    plt.plot(years, poisson.predict(years_dict), label='poisson')
-#    plt.legend(frameon=False)
-#    ax.set_xlabel('ART Initiation Year')
-#    ax.set_ylabel('Prevalence')
-#    ax.set_title(f'Depression Prevalence: {group}')
-#
-#    plt.savefig(f'{fig_dir}/depression/{group}.png', bbox_inches='tight')
+anxiety_prev_inits = mh_prev_inits.loc[mh_prev_inits['dx'] == 'anx'].reset_index()[['group', 'proportion']].copy()
+depression_prev_inits = mh_prev_inits.loc[mh_prev_inits['dx'] == 'dpr'].reset_index()[['group', 'proportion']].copy()
 
 # Save them all
 anxiety_coeff.to_feather(f'{out_dir}/anxiety_coeff.feather')
 depression_coeff.to_feather(f'{out_dir}/depression_coeff.feather')
 anxiety_prev_users.to_feather(f'{out_dir}/anxiety_prev_users.feather')
 depression_prev_users.to_feather(f'{out_dir}/depression_prev_users.feather')
-anxiety_prev_inits_pred.to_feather(f'{out_dir}/anxiety_prev_inits.feather')
-depression_prev_inits_pred.to_feather(f'{out_dir}/depression_prev_inits.feather')
+anxiety_prev_inits.to_feather(f'{out_dir}/anxiety_prev_inits.feather')
+depression_prev_inits.to_feather(f'{out_dir}/depression_prev_inits.feather')
