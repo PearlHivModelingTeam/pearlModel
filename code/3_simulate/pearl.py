@@ -378,13 +378,8 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
     population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_inits.values).astype(int)
 
     # Stage 1 comorbidities
-    anxiety_list = []
-    depression_list = []
-    for h1yy, group in population.groupby('h1yy'):
-        anxiety_list.append((np.random.rand(len(group.index)) < parameters.anxiety_prev_inits.loc[h1yy].values).astype(int))
-        depression_list.append((np.random.rand(len(group.index)) < parameters.depression_prev_inits.loc[h1yy].values).astype(int))
-    population['anxiety'] = np.concatenate(anxiety_list)
-    population['depression'] = np.concatenate(depression_list)
+    population['anxiety'] = (np.random.rand(len(population.index)) < parameters.anxiety_prev_inits.values).astype(int)
+    population['depression'] = (np.random.rand(len(population.index)) < parameters.depression_prev_inits.values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -726,19 +721,19 @@ class Pearl:
             # Count of those with anxiety by year
             hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
             hcv_pop = self.population.loc[hcv]
-            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(hcv_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
 
             # Count of those with anxiety by year
             anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
             anxiety_pop = self.population.loc[anxiety]
-            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(anxiety_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
 
             # Count of those with anxiety by year
             depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
             depression_pop = self.population.loc[depression]
-            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(depression_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.depression_count = self.stats.depression_count.append(depression_count)
 
         else:
@@ -800,19 +795,19 @@ class Pearl:
             # Count of those with anxiety by year
             hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
             hcv_pop = self.population.loc[hcv]
-            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(hcv_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
 
             # Count of those with anxiety by year
             anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
             anxiety_pop = self.population.loc[anxiety]
-            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(anxiety_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
 
             # Count of those with anxiety by year
             depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
             depression_pop = self.population.loc[depression]
-            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
+            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(depression_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
             self.stats.depression_count = self.stats.depression_count.append(depression_count)
 
     def record_final_stats(self):
