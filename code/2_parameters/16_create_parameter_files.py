@@ -132,6 +132,26 @@ depression_prev_inits = pd.read_feather(f'{param_dir}/stage_1/depression_prev_in
 anxiety_coeff = pd.read_feather(f'{param_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
 depression_coeff = pd.read_feather(f'{param_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param']).unstack()
 
+# Stage 2 comorbidities
+ckd_prev_users = pd.read_feather(f'{param_dir}/stage_2/ckd_prev_users.feather').set_index('group')
+lipid_prev_users = pd.read_feather(f'{param_dir}/stage_2/lipid_prev_users.feather').set_index('group')
+diabetes_prev_users = pd.read_feather(f'{param_dir}/stage_2/diabetes_prev_users.feather').set_index('group')
+hypertension_prev_users = pd.read_feather(f'{param_dir}/stage_2/hypertension_prev_users.feather').set_index('group')
+
+ckd_prev_inits = pd.read_feather(f'{param_dir}/stage_2/ckd_prev_inits.feather').set_index('group')
+lipid_prev_inits = pd.read_feather(f'{param_dir}/stage_2/lipid_prev_inits.feather').set_index('group')
+diabetes_prev_inits = pd.read_feather(f'{param_dir}/stage_2/diabetes_prev_inits.feather').set_index('group')
+hypertension_prev_inits = pd.read_feather(f'{param_dir}/stage_2/hypertension_prev_inits.feather').set_index('group')
+
+ckd_coeff = pd.read_feather(f'{param_dir}/stage_2/ckd_coeff.feather').set_index(['group', 'param']).unstack()
+lipid_coeff = pd.read_feather(f'{param_dir}/stage_2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
+diabetes_coeff = pd.read_feather(f'{param_dir}/stage_2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
+hypertension_coeff = pd.read_feather(f'{param_dir}/stage_2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
+
+# Comortality
+mortality_in_care_co = pd.read_feather(f'{param_dir}/comortality/mortality_in_care.feather').set_index('group')
+mortality_out_care_co = pd.read_feather(f'{param_dir}/comortality/mortality_out_care.feather').set_index('group')
+
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['on_art_2009'] = on_art_2009
@@ -169,4 +189,27 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['depression_prev_users'] = depression_prev_users
     store['depression_prev_inits'] = depression_prev_inits
     store['depression_coeff'] = depression_coeff
+
+    # Stage 2 comorbidities
+    store['ckd_prev_users'] = ckd_prev_users
+    store['lipid_prev_users'] = lipid_prev_users
+    store['diabetes_prev_users'] = diabetes_prev_users
+    store['hypertension_prev_users'] = hypertension_prev_users
+
+    store['ckd_prev_inits'] = ckd_prev_inits
+    store['lipid_prev_inits'] = lipid_prev_inits
+    store['diabetes_prev_inits'] = diabetes_prev_inits
+    store['hypertension_prev_inits'] = hypertension_prev_inits
+
+    store['ckd_coeff'] = ckd_coeff
+    store['lipid_coeff'] = lipid_coeff
+    store['diabetes_coeff'] = diabetes_coeff
+    store['hypertension_coeff'] = hypertension_coeff
+
+    # Comortality
+    store['mortality_in_care_co'] = mortality_in_care_co
+    store['mortality_out_care_co'] = mortality_out_care_co
+    print(mortality_in_care_co)
+
+
 
