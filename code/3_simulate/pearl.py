@@ -131,13 +131,27 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
     new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * 1.5 )
     return new_cd4
 
-def create_stage1_pop_matrix(pop, condition):
+def create_comorbidity_pop_matrix(pop, condition):
     pop['time_since_art'] = pop['year'] - pop['h1yy_orig']
     pop['out_care'] = (pop['status'] == OUT_CARE).astype(int)
+
     if condition=='anxiety':
         return pop[['age', 'init_sqrtcd4n_orig', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+
     elif condition=='depression':
         return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+
+    elif condition=='ckd':
+        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+
+    elif condition=='lipid':
+        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+
+    elif condition=='diabetes':
+        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+
+    elif condition=='hypertension':
+        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
@@ -246,6 +260,12 @@ def make_pop_2009(parameters, group_name):
     # Stage 1 comorbidities
     population['anxiety'] = (np.random.rand(len(population.index)) < parameters.anxiety_prev_users.values).astype(int)
     population['depression'] = (np.random.rand(len(population.index)) < parameters.depression_prev_users.values).astype(int)
+
+    # Stage 2 comorbidities
+    population['ckd'] = (np.random.rand(len(population.index)) < parameters.ckd_prev_users.values).astype(int)
+    population['lipid'] = (np.random.rand(len(population.index)) < parameters.lipid_prev_users.values).astype(int)
+    population['diabetes'] = (np.random.rand(len(population.index)) < parameters.diabetes_prev_users.values).astype(int)
+    population['hypertension'] = (np.random.rand(len(population.index)) < parameters.hypertension_prev_users.values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -381,6 +401,12 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
     population['anxiety'] = (np.random.rand(len(population.index)) < parameters.anxiety_prev_inits.values).astype(int)
     population['depression'] = (np.random.rand(len(population.index)) < parameters.depression_prev_inits.values).astype(int)
 
+    # Stage 2 comorbidities
+    population['ckd'] = (np.random.rand(len(population.index)) < parameters.ckd_prev_inits.values).astype(int)
+    population['lipid'] = (np.random.rand(len(population.index)) < parameters.lipid_prev_inits.values).astype(int)
+    population['diabetes'] = (np.random.rand(len(population.index)) < parameters.diabetes_prev_inits.values).astype(int)
+    population['hypertension'] = (np.random.rand(len(population.index)) < parameters.hypertension_prev_inits.values).astype(int)
+
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
 
@@ -448,17 +474,41 @@ class Parameters:
 
             # Stage 0 Comorbidities
             self.hcv_prev_users = store['hcv_prev_users'].loc[group_name]
-            self.hcv_prev_inits = store['hcv_prev_inits'].loc[group_name]
             self.smoking_prev_users = store['smoking_prev_users'].loc[group_name]
+
+            self.hcv_prev_inits = store['hcv_prev_inits'].loc[group_name]
             self.smoking_prev_inits = store['smoking_prev_inits'].loc[group_name]
 
             # Stage 1 Comorbidities
             self.anxiety_prev_users = store['anxiety_prev_users'].loc[group_name]
-            self.anxiety_prev_inits = store['anxiety_prev_inits'].loc[group_name]
-            self.anxiety_coeff = store['anxiety_coeff'].loc[group_name]
             self.depression_prev_users = store['depression_prev_users'].loc[group_name]
+
+            self.anxiety_prev_inits = store['anxiety_prev_inits'].loc[group_name]
             self.depression_prev_inits = store['depression_prev_inits'].loc[group_name]
+
+            self.anxiety_coeff = store['anxiety_coeff'].loc[group_name]
             self.depression_coeff = store['depression_coeff'].loc[group_name]
+
+            # Stage 2 Comorbidities
+            self.ckd_prev_users = store['ckd_prev_users'].loc[group_name]
+            self.lipid_prev_users = store['lipid_prev_users'].loc[group_name]
+            self.diabetes_prev_users = store['diabetes_prev_users'].loc[group_name]
+            self.hypertension_prev_users = store['hypertension_prev_users'].loc[group_name]
+
+            self.ckd_prev_inits = store['ckd_prev_inits'].loc[group_name]
+            self.lipid_prev_inits = store['lipid_prev_inits'].loc[group_name]
+            self.diabetes_prev_inits = store['diabetes_prev_inits'].loc[group_name]
+            self.hypertension_prev_inits = store['hypertension_prev_inits'].loc[group_name]
+
+            self.ckd_coeff = store['ckd_coeff'].loc[group_name]
+            self.lipid_coeff = store['lipid_coeff'].loc[group_name]
+            self.diabetes_coeff = store['diabetes_coeff'].loc[group_name]
+            self.hypertension_coeff = store['hypertension_coeff'].loc[group_name]
+
+            # Comortality
+            self.mortality_in_care_co = store['mortality_in_care_co'].loc[group_name]
+            self.mortality_out_care_co = store['mortality_out_care_co'].loc[group_name]
+
 
 class Statistics:
     def __init__(self):
@@ -480,11 +530,35 @@ class Statistics:
         self.n_times_lost = pd.DataFrame()
         self.unique_out_care_ids = set()
 
-        # Stage 0 and 1
+        # Stage 0, 1, and 2
+
+        self.alive_count = pd.DataFrame()
+
         self.smoking_count = pd.DataFrame()
         self.hcv_count = pd.DataFrame()
         self.anxiety_count = pd.DataFrame()
         self.depression_count = pd.DataFrame()
+
+        self.ckd_count = pd.DataFrame()
+        self.lipid_count = pd.DataFrame()
+        self.diabetes_count = pd.DataFrame()
+        self.hypertension_count = pd.DataFrame()
+
+        self.dead = pd.DataFrame()
+
+        self.smoking_dead = pd.DataFrame()
+        self.hcv_dead = pd.DataFrame()
+        self.anxiety_dead = pd.DataFrame()
+        self.depression_dead = pd.DataFrame()
+
+        self.ckd_dead = pd.DataFrame()
+        self.lipid_dead = pd.DataFrame()
+        self.diabetes_dead = pd.DataFrame()
+        self.hypertension_dead = pd.DataFrame()
+
+        self.greater_than_zero_count = pd.DataFrame()
+        self.greater_than_one_count = pd.DataFrame()
+
 
 
 def output_reindex(df):
@@ -596,8 +670,8 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == IN_CARE
-        coeff_matrix = self.parameters.mortality_in_care.to_numpy()
-        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
+        coeff_matrix = self.parameters.mortality_in_care_co.to_numpy()
+        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy', 'smoking', 'hcv', 'anxiety', 'depression', 'hypertension', 'diabetes', 'ckd', 'lipid']].to_numpy()
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy()
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag,
                                     vcov_matrix, self.parameters.mortality_in_care_rand)
@@ -607,8 +681,8 @@ class Pearl:
 
     def kill_out_care(self):
         out_care = self.population['status'] == OUT_CARE
-        coeff_matrix = self.parameters.mortality_out_care.to_numpy()
-        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy()
+        coeff_matrix = self.parameters.mortality_out_care_co.to_numpy()
+        pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n', 'smoking', 'hcv', 'anxiety', 'depression', 'hypertension', 'diabetes', 'ckd', 'lipid']].to_numpy()
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy()
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag,
                                     vcov_matrix, self.parameters.mortality_out_care_rand)
@@ -618,7 +692,6 @@ class Pearl:
 
     def lose_to_follow_up(self):
         in_care = self.population['status'] == IN_CARE
-        #print(self.parameters.loss_to_follow_up)
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy()
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy()
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
@@ -654,9 +727,8 @@ class Pearl:
         out_care = self.population['status'] == OUT_CARE
 
         # Use matrix multiplication to calculate probability of anxiety incidence
-        #print(self.parameters.anxiety_coeff)
         anxiety_coeff_matrix = self.parameters.anxiety_coeff.to_numpy()
-        anxiety_pop_matrix = create_stage1_pop_matrix(self.population.copy(), condition = 'anxiety')
+        anxiety_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition ='anxiety')
         anxiety_prob = calculate_prob(anxiety_pop_matrix, anxiety_coeff_matrix, False, 0, 0)
 
         # Set anxiety=1 if a person is: (they were selected to get anxiety and they are (in or out of care)) or they already have anxiety
@@ -664,13 +736,55 @@ class Pearl:
 
         # Use matrix multiplication to calculate probability of depression incidence
         depression_coeff_matrix = self.parameters.depression_coeff.to_numpy()
-        depression_pop_matrix = create_stage1_pop_matrix(self.population.copy(), condition='depression')
+        depression_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='depression')
         depression_prob = calculate_prob(depression_pop_matrix, depression_coeff_matrix, False, 0, 0)
 
         # Set depression=1 if a person is: (they were selected to get depression and they are (in or out of care)) or they already have depression
         depression = depression_prob > np.random.rand(len(self.population.index))
+
+        # Set variables
         self.population['anxiety'] = ((anxiety & (in_care | out_care)) | self.population['anxiety'].values).astype(int)
         self.population['depression'] = ((depression & (in_care | out_care)) | self.population['depression'].values).astype(int)
+
+    def apply_stage_2(self):
+        in_care = self.population['status'] == IN_CARE
+        out_care = self.population['status'] == OUT_CARE
+
+        # ckd
+        ckd_coeff_matrix = self.parameters.ckd_coeff.to_numpy()
+        ckd_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='ckd')
+        ckd_prob = calculate_prob(ckd_pop_matrix, ckd_coeff_matrix, False, 0, 0)
+        ckd = ckd_prob > np.random.rand(len(self.population.index))
+
+        # Set variables
+        self.population['ckd'] = ((ckd & (in_care | out_care)) | self.population['ckd'].values).astype(int)
+
+        # lipid
+        lipid_coeff_matrix = self.parameters.lipid_coeff.to_numpy()
+        lipid_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='lipid')
+        lipid_prob = calculate_prob(lipid_pop_matrix, lipid_coeff_matrix, False, 0, 0)
+        lipid = lipid_prob > np.random.rand(len(self.population.index))
+
+        # Set variables
+        self.population['lipid'] = ((lipid & (in_care | out_care)) | self.population['lipid'].values).astype(int)
+
+        # diabetes
+        diabetes_coeff_matrix = self.parameters.diabetes_coeff.to_numpy()
+        diabetes_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='diabetes')
+        diabetes_prob = calculate_prob(diabetes_pop_matrix, diabetes_coeff_matrix, False, 0, 0)
+        diabetes = diabetes_prob > np.random.rand(len(self.population.index))
+
+        # Set variables
+        self.population['diabetes'] = ((diabetes & (in_care | out_care)) | self.population['diabetes'].values).astype(int)
+
+        # hypertension
+        hypertension_coeff_matrix = self.parameters.hypertension_coeff.to_numpy()
+        hypertension_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='hypertension')
+        hypertension_prob = calculate_prob(hypertension_pop_matrix, hypertension_coeff_matrix, False, 0, 0)
+        hypertension = hypertension_prob > np.random.rand(len(self.population.index))
+
+        # Set variables
+        self.population['hypertension'] = ((hypertension & (in_care | out_care)) | self.population['hypertension'].values).astype(int)
 
     def record_stats(self):
         uninitiated = self.population['status'] == UNINITIATED
@@ -678,141 +792,151 @@ class Pearl:
         out_care = self.population['status'] == OUT_CARE
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
+        alive = self.population['status'].isin([IN_CARE, OUT_CARE, REENGAGED, LTFU])
 
         # Count of new initiators by year
         if self.year == 2009:
+            # Count of new initiators by year
             self.stats.new_init_count = (
                 self.population.loc[uninitiated].groupby(['h1yy_orig']).size().reset_index(name='n').
                 assign(replication=self.replication, group=self.group_name))
 
+            # Count of new initiators by year and age
             self.stats.new_init_age = (
                 self.population.loc[uninitiated].groupby(['h1yy_orig', 'age']).size().reset_index(name='n').
                 assign(replication=self.replication, group=self.group_name))
 
-            # Count of those in care by age_cat and year
-            in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
-                             .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                             .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
+        # Count of those in care by age_cat and year
+        in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
+                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                         .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
 
-            # Count of those in care by age and year
-            in_care_age = (self.population.loc[in_care | ltfu].groupby(['age']).size().reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
-
-            # Count of those lost to care by age_cat and year
-            ltfu_count = (self.population.loc[ltfu].groupby(['age_cat']).size()
+        # Count of those out of care by age_cat and year
+        out_care_count = (self.population.loc[out_care | reengaged].groupby(['age_cat']).size()
                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                          .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
+                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
 
-            # Count of those lost to care by age and year
-            ltfu_age = (self.population.loc[ltfu].groupby(['age']).size().reset_index(name='n')
-                        .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
+        # Count of those reengaging in care by age_cat and year
+        reengaged_count = (self.population.loc[reengaged].groupby(['age_cat']).size()
+                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                           .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+        self.stats.reengaged_count = self.stats.reengaged_count.append(reengaged_count)
 
-            # Count of those with smoking by year
-            alive_pop_size = len(self.population.loc[self.population['status'].isin([IN_CARE, OUT_CARE])].index)
-            smoking = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['smoking']
-            smoking_pop = self.population.loc[smoking]
-            smoking_count = pd.DataFrame({'n': [len(smoking_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
+        # Count of those lost to care by age_cat and year
+        ltfu_count = (self.population.loc[ltfu].groupby(['age_cat']).size()
+                      .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                      .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+        self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
 
-            # Count of those with anxiety by year
-            hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
-            hcv_pop = self.population.loc[hcv]
-            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(hcv_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
+        # Count of those in care by age and year
+        in_care_age = (self.population.loc[in_care | ltfu].groupby(['age']).size().reset_index(name='n')
+                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
 
-            # Count of those with anxiety by year
-            anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
-            anxiety_pop = self.population.loc[anxiety]
-            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(anxiety_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
+        # Count of those in care by age and year
+        out_care_age = (self.population.loc[out_care | reengaged].groupby(['age']).size().reset_index(name='n')
+                        .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
 
-            # Count of those with anxiety by year
-            depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
-            depression_pop = self.population.loc[depression]
-            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(depression_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.depression_count = self.stats.depression_count.append(depression_count)
+        # Count of those reengaging in care by age and year
+        reengaged_age = (self.population.loc[reengaged].groupby(['age']).size().reset_index(name='n')
+                         .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+        self.stats.reengaged_age = self.stats.reengaged_age.append(reengaged_age)
 
-        else:
-            # Count of those in care by age_cat and year
-            in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
-                             .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                             .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
+        # Count of those lost to care by age and year
+        ltfu_age = (self.population.loc[ltfu].groupby(['age']).size().reset_index(name='n')
+                    .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+        self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
-            # Count of those out of care by age_cat and year
-            out_care_count = (self.population.loc[out_care | reengaged].groupby(['age_cat']).size()
+        # Keep track of unique individuals lost to follow up 2010-2015
+        if 2010 <= self.year <= 2015:
+            self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
+
+        # Count of those in care by age_cat and year
+        alive_count = (self.population.loc[alive].groupby(['age_cat']).size()
+                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.alive_count = self.stats.alive_count.append(alive_count)
+
+        # Count of those in care by age_cat and year
+        smoking = self.population['smoking']
+        smoking_count = (self.population.loc[in_care & smoking].groupby(['age_cat']).size()
+                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                         .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
+
+        # Count of those hcv by age_cat and year
+        hcv = self.population['hcv']
+        hcv_count = (self.population.loc[in_care & hcv].groupby(['age_cat']).size()
+                     .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                     .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
+
+        # Count of those anxiety by age_cat and year
+        anxiety = self.population['anxiety']
+        anxiety_count = (self.population.loc[in_care & anxiety].groupby(['age_cat']).size()
+                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                         .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
+
+        # Count of those depression by age_cat and year
+        depression = self.population['depression']
+        depression_count = (self.population.loc[in_care & depression].groupby(['age_cat']).size()
+                            .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                            .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.depression_count = self.stats.depression_count.append(depression_count)
+
+        # Count of those ckd by age_cat and year
+        ckd = self.population['ckd']
+        ckd_count = (self.population.loc[in_care & ckd].groupby(['age_cat']).size()
+                     .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                     .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.ckd_count = self.stats.ckd_count.append(ckd_count)
+
+        # Count of those lipid by age_cat and year
+        lipid = self.population['lipid']
+        lipid_count = (self.population.loc[in_care & lipid].groupby(['age_cat']).size()
+                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.lipid_count = self.stats.lipid_count.append(lipid_count)
+
+        # Count of those diabetes by age_cat and year
+        diabetes = self.population['diabetes']
+        diabetes_count = (self.population.loc[in_care & diabetes].groupby(['age_cat']).size()
+                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.diabetes_count = self.stats.diabetes_count.append(diabetes_count)
+
+        # Count of those hypertension by age_cat and year
+        hypertension = self.population['hypertension']
+        hypertension_count = (self.population.loc[in_care & hypertension].groupby(['age_cat']).size()
                               .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                               .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
+        self.stats.hypertension_count = self.stats.hypertension_count.append(hypertension_count)
 
-            # Count of those reengaging in care by age_cat and year
-            reengaged_count = (self.population.loc[reengaged].groupby(['age_cat']).size()
-                               .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                               .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.reengaged_count = self.stats.reengaged_count.append(reengaged_count)
+        # Count of those with at least one comorbidity
+        n_comorbidities = ckd + lipid + diabetes + hypertension
+        greater_than_zero = n_comorbidities > 0
+        greater_than_zero_count = (self.population.loc[in_care & greater_than_zero].groupby(['age_cat']).size()
+                                   .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                   .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.greater_than_zero_count = self.stats.greater_than_zero_count.append(greater_than_zero_count)
 
-            # Count of those lost to care by age_cat and year
-            ltfu_count = (self.population.loc[ltfu].groupby(['age_cat']).size()
-                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                          .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
+        # Count of those with more than one comorbidity
+        greater_than_one = n_comorbidities > 1
+        greater_than_one_count = (self.population.loc[in_care & greater_than_one].groupby(['age_cat']).size()
+                                   .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                   .assign(year=self.year, replication=self.replication, group=self.group_name))
+        self.stats.greater_than_one_count = self.stats.greater_than_one_count.append(greater_than_one_count)
+        print(self.stats.greater_than_one_count)
 
-            # Count of those in care by age and year
-            in_care_age = (self.population.loc[in_care | ltfu].groupby(['age']).size().reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
-
-            # Count of those in care by age and year
-            out_care_age = (self.population.loc[out_care | reengaged].groupby(['age']).size().reset_index(name='n')
-                            .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
-
-            # Count of those reengaging in care by age and year
-            reengaged_age = (self.population.loc[reengaged].groupby(['age']).size().reset_index(name='n')
-                             .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.reengaged_age = self.stats.reengaged_age.append(reengaged_age)
-
-            # Count of those lost to care by age and year
-            ltfu_age = (self.population.loc[ltfu].groupby(['age']).size().reset_index(name='n')
-                        .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
-            self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
-
-            # Keep track of unique individuals lost to follow up 2010-2015
-            if 2010 <= self.year <= 2015:
-                self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
-
-            # Count of those with smoking by year
-            alive_pop_size = len(self.population.loc[self.population['status'].isin([IN_CARE, OUT_CARE])].index)
-            smoking = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['smoking']
-            smoking_pop = self.population.loc[smoking]
-            smoking_count = pd.DataFrame({'n': [len(smoking_pop.index)], 'prop': [len(smoking_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
-
-            # Count of those with anxiety by year
-            hcv = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['hcv']
-            hcv_pop = self.population.loc[hcv]
-            hcv_count = pd.DataFrame({'n': [len(hcv_pop.index)], 'prop': [len(hcv_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
-
-            # Count of those with anxiety by year
-            anxiety = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['anxiety']
-            anxiety_pop = self.population.loc[anxiety]
-            anxiety_count = pd.DataFrame({'n': [len(anxiety_pop.index)], 'prop': [len(anxiety_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
-
-            # Count of those with anxiety by year
-            depression = self.population['status'].isin([IN_CARE, OUT_CARE]) & self.population['depression']
-            depression_pop = self.population.loc[depression]
-            depression_count = pd.DataFrame({'n': [len(depression_pop.index)], 'prop': [len(depression_pop.index)/alive_pop_size], 'year': [self.year], 'replication': [self.replication], 'group': [self.group_name]})
-            self.stats.depression_count = self.stats.depression_count.append(depression_count)
 
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_IN_CARE
         dead_out_care = self.population['status'] == DEAD_OUT_CARE
+        dead = self.population['status'].isin([DEAD_IN_CARE, DEAD_OUT_CARE])
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
@@ -826,6 +950,28 @@ class Pearl:
             output_reindex(self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size())
             .reset_index(name='n').rename(columns={'year_died': 'year'})
             .assign(replication=self.replication, group=self.group_name))
+
+        self.stats.dead = self.population.loc[dead].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+
+        # Stage <2 Comorbidity Mortality
+        smoking = self.population['smoking']
+        self.stats.smoking_dead = self.population.loc[dead & smoking].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        hcv = self.population['hcv']
+        self.stats.hcv_dead = self.population.loc[dead & hcv].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        anxiety = self.population['anxiety']
+        self.stats.anxiety_dead = self.population.loc[dead & anxiety].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        depression = self.population['depression']
+        self.stats.depression_dead = self.population.loc[dead & depression].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+
+        # Stage 2 Comorbidity Mortality
+        ckd = self.population['ckd']
+        self.stats.ckd_dead = self.population.loc[dead & ckd].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        lipid = self.population['lipid']
+        self.stats.lipid_dead = self.population.loc[dead & lipid].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        diabetes = self.population['diabetes']
+        self.stats.diabetes_dead = self.population.loc[dead & diabetes].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        hypertension = self.population['hypertension']
+        self.stats.hypertension_dead = self.population.loc[dead & hypertension].groupby('year_died').size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
         # Count of those that died in care by age_cat and year
         self.stats.dead_out_care_count = (
@@ -865,6 +1011,8 @@ class Pearl:
                                       'sigma2_2009': self.parameters.age_in_2009_rand[4]}, index=[0]).assign(
             replication=self.replication, group=self.group_name)
 
+
+
         # Make output directory if it doesn't exist
         os.makedirs(self.out_dir, exist_ok=True)
 
@@ -888,10 +1036,30 @@ class Pearl:
             store['n_times_lost'] = self.stats.n_times_lost
             store['n_unique_out_care'] = n_unique_out_care
             store['random_params'] = random_params
+
+            store['alive_count'] = self.stats.alive_count
             store['smoking_count'] = self.stats.smoking_count
             store['hcv_count'] = self.stats.hcv_count
             store['anxiety_count'] = self.stats.anxiety_count
             store['depression_count'] = self.stats.depression_count
+            store['ckd_count'] = self.stats.ckd_count
+            store['lipid_count'] = self.stats.lipid_count
+            store['diabetes_count'] = self.stats.diabetes_count
+            store['hypertension_count'] = self.stats.hypertension_count
+
+            store['dead'] = self.stats.dead
+            store['smoking_dead'] = self.stats.smoking_dead
+            store['hcv_dead'] = self.stats.hcv_dead
+            store['anxiety_dead'] = self.stats.anxiety_dead
+            store['depression_dead'] = self.stats.depression_dead
+            store['ckd_dead'] = self.stats.ckd_dead
+            store['lipid_dead'] = self.stats.lipid_dead
+            store['diabetes_dead'] = self.stats.diabetes_dead
+            store['hypertension_dead'] = self.stats.hypertension_dead
+
+            store['greater_than_zero_count'] = self.stats.greater_than_zero_count
+            store['greater_than_one_count'] = self.stats.greater_than_one_count
+
 
     def run(self):
         """ Simulate from 2010 to 2030 """
@@ -917,8 +1085,9 @@ class Pearl:
             # Append changed populations to their respective DataFrames
             self.append_new()
 
-            # Stage 1 comorbidities
+            # Apply comorbidities
             self.apply_stage_1()
+            self.apply_stage_2()
 
             if self.verbose:
                 print(self)
