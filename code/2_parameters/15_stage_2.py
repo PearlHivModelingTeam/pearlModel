@@ -164,10 +164,12 @@ het_hisp['pop2_'] = 'het_hisp'
 het_white = lipid_coeff.loc[lipid_coeff['pop2_'] == 'het hisp + white'].copy()
 het_white['pop2_'] = 'het_white'
 
-idu_hisp_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu hisp + white'].copy()
+idu_hisp_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
 idu_hisp_male['pop2_'] = 'idu_hisp'
-idu_white_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu hisp + white'].copy()
+idu_white_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
 idu_white_male['pop2_'] = 'idu_white'
+idu_black_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
+idu_black_male['pop2_'] = 'idu_black'
 
 idu_hisp_female = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu females'].copy()
 idu_hisp_female['pop2_'] = 'idu_hisp'
@@ -176,13 +178,14 @@ idu_black_female['pop2_'] = 'idu_black'
 idu_white_female = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu females'].copy()
 idu_white_female['pop2_'] = 'idu_white'
 
-lipid_coeff = lipid_coeff.loc[~lipid_coeff['pop2_'].isin(['het hisp + white', 'idu hisp + white', 'idu females'])].copy()
+lipid_coeff = lipid_coeff.loc[~lipid_coeff['pop2_'].isin(['het hisp + white', 'idu males', 'idu females'])].copy()
 
 # Reattach separated groups
 lipid_coeff = lipid_coeff.append(het_hisp, ignore_index=True)
 lipid_coeff = lipid_coeff.append(het_white, ignore_index=True)
 lipid_coeff = lipid_coeff.append(idu_hisp_male, ignore_index=True)
 lipid_coeff = lipid_coeff.append(idu_white_male, ignore_index=True)
+lipid_coeff = lipid_coeff.append(idu_black_male, ignore_index=True)
 lipid_coeff = lipid_coeff.append(idu_hisp_female, ignore_index=True)
 lipid_coeff = lipid_coeff.append(idu_black_female, ignore_index=True)
 lipid_coeff = lipid_coeff.append(idu_white_female, ignore_index=True)
@@ -191,6 +194,7 @@ lipid_coeff = lipid_coeff.append(idu_white_female, ignore_index=True)
 lipid_coeff['group'] = lipid_coeff['pop2_'] + '_' + lipid_coeff['sex']
 lipid_coeff['param'] = lipid_coeff['parm']
 lipid_coeff = lipid_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+print(lipid_coeff)
 
 # Load anxiety coeff csv file
 stage2_prev_users = pd.read_csv(f'{in_dir}/stage2_prev_users.csv')

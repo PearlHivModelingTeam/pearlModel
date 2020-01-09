@@ -147,6 +147,7 @@ ckd_coeff = pd.read_feather(f'{param_dir}/stage_2/ckd_coeff.feather').set_index(
 lipid_coeff = pd.read_feather(f'{param_dir}/stage_2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
 diabetes_coeff = pd.read_feather(f'{param_dir}/stage_2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
 hypertension_coeff = pd.read_feather(f'{param_dir}/stage_2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
+print(lipid_coeff)
 
 # Comortality
 mortality_in_care_co = pd.read_feather(f'{param_dir}/comortality/mortality_in_care.feather').set_index('group')
