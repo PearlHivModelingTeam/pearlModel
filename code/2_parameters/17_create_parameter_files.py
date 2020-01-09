@@ -209,7 +209,6 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     # Comortality
     store['mortality_in_care_co'] = mortality_in_care_co
     store['mortality_out_care_co'] = mortality_out_care_co
-    print(mortality_in_care_co)
 
 
 
