@@ -19,7 +19,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 #group_names = ['idu_white_female']
 
-replications = 36
+replications = 200
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
@@ -40,7 +40,6 @@ for group_name in group_names:
     years_out = pd.DataFrame()
     random_params = pd.DataFrame()
 
-    alive_count = pd.DataFrame()
     smoking_count = pd.DataFrame()
     hcv_count = pd.DataFrame()
     anxiety_count = pd.DataFrame()
@@ -94,7 +93,6 @@ for group_name in group_names:
 
             random_params = random_params.append(store['random_params'])
 
-            alive_count = alive_count.append(store['alive_count'])
             smoking_count = smoking_count.append(store['smoking_count'])
             hcv_count = hcv_count.append(store['hcv_count'])
             anxiety_count = anxiety_count.append(store['anxiety_count'])
@@ -146,7 +144,6 @@ for group_name in group_names:
 
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
 
-    feather.write_dataframe(alive_count, f'{feather_dir}/{group_name}_alive_count.feather')
     feather.write_dataframe(smoking_count, f'{feather_dir}/{group_name}_smoking_count.feather')
     feather.write_dataframe(hcv_count, f'{feather_dir}/{group_name}_hcv_count.feather')
     feather.write_dataframe(anxiety_count, f'{feather_dir}/{group_name}_anxiety_count.feather')
