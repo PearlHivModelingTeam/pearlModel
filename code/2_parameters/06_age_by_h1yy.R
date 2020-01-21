@@ -88,7 +88,8 @@ fit_glm_to_age_by_h1yy <- function(DATA) {
 }
 
 test <- test %>% 
-  mutate(ini1 = pmap(list(naaccord, group), get_age_by_h1yy)) 
+  mutate(ini1 = pmap(list(naaccord, group), get_age_by_h1yy))
+print(test)
 
 age_by_h1yy <- test %>%
   mutate(age_by_h1yy = map(ini1, fit_glm_to_age_by_h1yy)) %>%

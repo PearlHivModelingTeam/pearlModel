@@ -194,7 +194,6 @@ lipid_coeff = lipid_coeff.append(idu_white_female, ignore_index=True)
 lipid_coeff['group'] = lipid_coeff['pop2_'] + '_' + lipid_coeff['sex']
 lipid_coeff['param'] = lipid_coeff['parm']
 lipid_coeff = lipid_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-print(lipid_coeff)
 
 # Load anxiety coeff csv file
 stage2_prev_users = pd.read_csv(f'{in_dir}/stage2_prev_users.csv')
@@ -243,3 +242,15 @@ lipid_prev_inits.to_feather(f'{out_dir}/lipid_prev_inits.feather')
 diabetes_prev_inits.to_feather(f'{out_dir}/diabetes_prev_inits.feather')
 hypertension_prev_inits.to_feather(f'{out_dir}/hypertension_prev_inits.feather')
 
+ckd_table = ckd_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'lipid', 'dm', 'ht']]
+lipid_table = lipid_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'dm', 'ht']]
+diabetes_table = diabetes_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'ht']]
+hypertension_table = hypertension_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'dm']]
+#ckd_table.to_csv('~/ckd_coeff.csv')
+#lipid_table.to_csv('~/lipid_coeff.csv')
+#diabetes_table.to_csv('~/diabetes_coeff.csv')
+#hypertension_table.to_csv('~/hypertension_coeff.csv')
+
+
+x = hypertension_coeff
+print(x.loc[x['param'] == 'intercept'].sort_values('estimate'))
