@@ -302,51 +302,14 @@ def simulate_new_dx(new_dx, dx_interval):
 def make_new_population(parameters, art_init_sim, pop_size_2009):
     """ Draw ages for new art initiators """
 
-    # Replace negative values with 0
-    parameters.age_by_h1yy[parameters.age_by_h1yy < 0] = 0
+    # Draw a random value between predicted and 2018 predicted value for years greater than 2018
+    rand = np.random.rand(len(parameters.age_by_h1yy.index))
+    parameters.age_by_h1yy['estimate'] = rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
 
-    # Split into before and after 2018
-    sim_coeff = parameters.age_by_h1yy.loc[parameters.age_by_h1yy.index.get_level_values('h1yy') >= 2018].copy()
-    observed_coeff = parameters.age_by_h1yy.loc[parameters.age_by_h1yy.index.get_level_values('h1yy') < 2018].copy().rename(
-        columns={'pred': 'estimate'})
-    observed_coeff = pd.pivot_table(observed_coeff.reset_index(), values='estimate', index='h1yy',
-                                    columns='param').rename_axis(None, axis=1)
-
-    # Pull coefficients in 2018
-    sim_coeff['pred18'] = np.nan
-    for name, group in sim_coeff.groupby('param'):
-        sim_coeff.loc[(name,), 'pred18'] = sim_coeff.loc[(name, 2018), 'pred']
-
-    # Draw uniformly between predicted coeffs and coeff in 2018
-    sim_coeff['rand'] = np.random.rand(len(sim_coeff.index))
-    sim_coeff['min'] = np.minimum(sim_coeff['pred'], sim_coeff['pred18'])
-    sim_coeff['max'] = np.maximum(sim_coeff['pred'], sim_coeff['pred18'])
-    sim_coeff['estimate'] = sim_coeff['min'] + sim_coeff['rand'] * (sim_coeff['max'] - sim_coeff['min'])
-
-    # Reorganize table and glue them back together
-    sim_coeff = pd.pivot_table(sim_coeff.reset_index(), values='estimate', index='h1yy', columns='param').rename_axis(
-        None, axis=1)
-    sim_coeff = pd.concat([observed_coeff, sim_coeff])
-
-    # Lambdas should add to 1.0
-    sim_coeff.loc[sim_coeff['lambda2'] < 0, 'lambda2'] = 0
-    sim_coeff.loc[sim_coeff['lambda2'] > 1, 'lambda2'] = 1
-    sim_coeff['lambda1'] = 1.0 - sim_coeff['lambda2']
-
-    # Don't simulate new dxs in 2009
-    sim_coeff = sim_coeff.drop(2009)
-
-    # Convert to long data set
-    sim_coeff = gather(sim_coeff.reset_index(), key='term', value='estimate',
-                       cols=['mu1', 'mu2', 'lambda1', 'lambda2', 'sigma1', 'sigma2']).set_index(['h1yy', 'term'])
-
-    # Write out data for plots
-    #feather.write_dataframe(sim_coeff.reset_index(), f'{os.getcwd()}/../../out/age_by_h1yy/{group_name}_{replication}.feather')
-    #feather.write_dataframe(art_init_sim.reset_index(), f'{os.getcwd()}/../../out/art_init_sim/{group_name}_{replication}.feather')
-
+    # Create population
     population = pd.DataFrame()
-    for h1yy, coeffs in sim_coeff.groupby('h1yy'):
-        grouped_pop = simulate_ages(sim_coeff.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
+    for h1yy in parameters.age_by_h1yy.index.levels[0]:
+        grouped_pop = simulate_ages(parameters.age_by_h1yy.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
         grouped_pop['h1yy'] = h1yy
         population = pd.concat([population, grouped_pop])
 

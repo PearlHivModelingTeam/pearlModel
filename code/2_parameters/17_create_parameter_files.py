@@ -63,10 +63,29 @@ new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group
 new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
-age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather').set_index(['group', 'param', 'h1yy']).sort_index()
+age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather')
+age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
+
+# No values less than 0 and no lambda1 greater than 1
+age_by_h1yy.loc[age_by_h1yy['pred'] < 0, 'pred'] = 0
+age_by_h1yy.loc[(age_by_h1yy['param'] == 'lambda1') & (age_by_h1yy['pred'] > 1), 'pred'] = 1.0
+
+# Create column of 2018 values
+values_2018 = age_by_h1yy.loc[age_by_h1yy['h1yy'] == 2018]['pred'].to_numpy()
+total_years = len(age_by_h1yy['h1yy'].unique())
+age_by_h1yy['value_2018'] = np.array([total_years*[value_2018] for value_2018 in values_2018]).flatten()
+
+# Create range after 2018
+age_by_h1yy['le_2018'] = (age_by_h1yy['h1yy'] <= 2018)
+age_by_h1yy['pred2'] = age_by_h1yy['le_2018'].astype(int) * age_by_h1yy['pred'] + (~age_by_h1yy['le_2018']).astype(int) * age_by_h1yy['value_2018']
+age_by_h1yy['low_value'] = age_by_h1yy[['pred', 'pred2']].min(axis=1)
+age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
+age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
+
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
+cd4n_by_h1yy.to_csv('/home/cameron/cd4n_by_h1yy.csv')
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather')
@@ -151,6 +170,7 @@ hypertension_coeff = pd.read_feather(f'{param_dir}/stage_2/hypertension_coeff.fe
 # Comortality
 mortality_in_care_co = pd.read_feather(f'{param_dir}/comortality/mortality_in_care.feather').set_index('group')
 mortality_out_care_co = pd.read_feather(f'{param_dir}/comortality/mortality_out_care.feather').set_index('group')
+
 
 # Save everything
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
