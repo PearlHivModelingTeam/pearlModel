@@ -89,7 +89,9 @@ fit_glm_to_age_by_h1yy <- function(DATA) {
 
 test <- test %>% 
   mutate(ini1 = pmap(list(naaccord, group), get_age_by_h1yy))
-print(test)
+
+test1 <- unnest(test, ini1) %>% select(-'naaccord')
+write_feather(test1, filePath(param_dir, 'age_by_h1yy_raw.feather'))
 
 age_by_h1yy <- test %>%
   mutate(age_by_h1yy = map(ini1, fit_glm_to_age_by_h1yy)) %>%
