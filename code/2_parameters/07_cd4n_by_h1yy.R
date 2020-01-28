@@ -46,7 +46,7 @@ get_cd4n_by_h1yy <- function(naaccord, group) {
     summarise(mean = mean(sqrtcd4n),
               sd = sd(sqrtcd4n)) %>%
     ungroup
-  
+
   # Fit GLMs to the mean and SD (MODIFIED FOR IDU TO USE PERIOD INSTEAD OF H1YY)
   meandat <- glm(sumdat$mean ~ sumdat$period)
   stddat <- glm(sumdat$sd ~ sumdat$period)

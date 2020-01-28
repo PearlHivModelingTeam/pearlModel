@@ -21,7 +21,7 @@ test <- test %>%
   nest(.key = "naaccord_2009")
 
 # Get Mean/SD of CD4N at H1YY - stratified by H1YY ----------------------------
-get_cd4n_by_h1yy <- function(NAACCORD) {
+get_cd4n_by_h1yy <- function(group, NAACCORD) {
   popu2 <- NAACCORD %>%
     mutate(startYY = year(obs_entry),
            stopYY = year(obs_exit),
@@ -37,6 +37,9 @@ get_cd4n_by_h1yy <- function(NAACCORD) {
               sqrtcd4n_sd = sd(sqrtcd4n),
               sqrtcd4n_n = n()) %>%
     ungroup
+  #print(outdat)
+  #print(group)
+  #write_csv(outdat, paste0('temp/', group, '.csv'))
   
   # FIT GLM TO MEAN AND SD OF SQRTCD4N
   meandat <- glm(outdat$sqrtcd4n_mean ~ outdat$H1YY)
@@ -50,7 +53,7 @@ get_cd4n_by_h1yy <- function(NAACCORD) {
 
 
 cd4n_by_h1yy_2009 <- test %>% 
-  mutate(cd4n_by_h1yy_2009 = map(naaccord_2009, get_cd4n_by_h1yy)) %>%
+  mutate(cd4n_by_h1yy_2009 = pmap(list(group, naaccord_2009), get_cd4n_by_h1yy)) %>%
   select(c(group, cd4n_by_h1yy_2009)) %>%
   unnest() %>% 
   rename_all(tolower)
