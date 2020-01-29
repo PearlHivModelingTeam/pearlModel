@@ -66,6 +66,7 @@ new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather')
 age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
 
+
 # No values less than 0 and no lambda1 greater than 1
 age_by_h1yy.loc[age_by_h1yy['pred'] < 0, 'pred'] = 0
 age_by_h1yy.loc[(age_by_h1yy['param'] == 'lambda1') & (age_by_h1yy['pred'] > 1), 'pred'] = 1.0
@@ -82,10 +83,10 @@ age_by_h1yy['low_value'] = age_by_h1yy[['pred', 'pred2']].min(axis=1)
 age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
 
+print(age_by_h1yy.loc['idu_white_female'])
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
-cd4n_by_h1yy.to_csv('/home/cameron/cd4n_by_h1yy.csv')
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{param_dir}/mortality_in_care.feather')
@@ -230,5 +231,4 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['mortality_in_care_co'] = mortality_in_care_co
     store['mortality_out_care_co'] = mortality_out_care_co
 
-print(cd4_decrease)
 

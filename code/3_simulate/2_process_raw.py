@@ -9,17 +9,17 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
-feather_dir = cwd + '/../../out/processed/abstract'
+feather_dir = cwd + '/../../out/processed/new'
 
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
-group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
+#group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 #group_names = ['idu_white_female']
 
-replications = 200
+replications = 500
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
@@ -40,28 +40,27 @@ for group_name in group_names:
     years_out = pd.DataFrame()
     random_params = pd.DataFrame()
 
-    smoking_count = pd.DataFrame()
-    hcv_count = pd.DataFrame()
-    anxiety_count = pd.DataFrame()
-    depression_count = pd.DataFrame()
-    ckd_count = pd.DataFrame()
-    lipid_count = pd.DataFrame()
-    diabetes_count = pd.DataFrame()
-    hypertension_count = pd.DataFrame()
+    #smoking_count = pd.DataFrame()
+    #hcv_count = pd.DataFrame()
+    #anxiety_count = pd.DataFrame()
+    #depression_count = pd.DataFrame()
+    #ckd_count = pd.DataFrame()
+    #lipid_count = pd.DataFrame()
+    #diabetes_count = pd.DataFrame()
+    #hypertension_count = pd.DataFrame()
 
-    dead = pd.DataFrame()
-    smoking_dead = pd.DataFrame()
-    hcv_dead = pd.DataFrame()
-    anxiety_dead = pd.DataFrame()
-    depression_dead = pd.DataFrame()
-    ckd_dead = pd.DataFrame()
-    lipid_dead = pd.DataFrame()
-    diabetes_dead = pd.DataFrame()
-    hypertension_dead = pd.DataFrame()
+    #dead = pd.DataFrame()
+    #smoking_dead = pd.DataFrame()
+    #hcv_dead = pd.DataFrame()
+    #anxiety_dead = pd.DataFrame()
+    #depression_dead = pd.DataFrame()
+    #ckd_dead = pd.DataFrame()
+    #lipid_dead = pd.DataFrame()
+    #diabetes_dead = pd.DataFrame()
+    #hypertension_dead = pd.DataFrame()
 
-    greater_than_zero_count = pd.DataFrame()
-    greater_than_one_count = pd.DataFrame()
-
+    #greater_than_zero_count = pd.DataFrame()
+    #greater_than_one_count = pd.DataFrame()
 
     print(group_name)
     for replication in range(replications):
@@ -93,6 +92,7 @@ for group_name in group_names:
 
             random_params = random_params.append(store['random_params'])
 
+            """
             smoking_count = smoking_count.append(store['smoking_count'])
             hcv_count = hcv_count.append(store['hcv_count'])
             anxiety_count = anxiety_count.append(store['anxiety_count'])
@@ -114,6 +114,7 @@ for group_name in group_names:
 
             greater_than_zero_count = greater_than_zero_count.append(store['greater_than_zero_count'])
             greater_than_one_count = greater_than_one_count.append(store['greater_than_one_count'])
+            """
 
     dead_in_care_age = dead_in_care_age.loc[dead_in_care_age.age <= 85]
     dead_out_care_age = dead_out_care_age.loc[dead_out_care_age.age <= 85]
@@ -144,6 +145,7 @@ for group_name in group_names:
 
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
 
+    """
     feather.write_dataframe(smoking_count, f'{feather_dir}/{group_name}_smoking_count.feather')
     feather.write_dataframe(hcv_count, f'{feather_dir}/{group_name}_hcv_count.feather')
     feather.write_dataframe(anxiety_count, f'{feather_dir}/{group_name}_anxiety_count.feather')
@@ -165,7 +167,7 @@ for group_name in group_names:
 
     feather.write_dataframe(greater_than_zero_count, f'{feather_dir}/{group_name}_greater_than_zero_count.feather')
     feather.write_dataframe(greater_than_one_count, f'{feather_dir}/{group_name}_greater_than_one_count.feather')
-
+    """
 
     
 
