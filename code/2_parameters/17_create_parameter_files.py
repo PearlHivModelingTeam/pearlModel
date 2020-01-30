@@ -83,7 +83,6 @@ age_by_h1yy['low_value'] = age_by_h1yy[['pred', 'pred2']].min(axis=1)
 age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
 
-print(age_by_h1yy.loc['idu_white_female'])
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{param_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
