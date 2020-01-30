@@ -9,7 +9,7 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
-feather_dir = cwd + '/../../out/processed/new'
+feather_dir = cwd + '/../../out/processed/no_cd4_limit'
 
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
@@ -19,7 +19,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
 #group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 #group_names = ['idu_white_female']
 
-replications = 500
+replications = 50
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
