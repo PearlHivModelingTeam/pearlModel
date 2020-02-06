@@ -60,7 +60,8 @@ age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
-new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather').set_index(['group', 'year'])
+#new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather').set_index(['group', 'year'])
+new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval_reduce.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather')
