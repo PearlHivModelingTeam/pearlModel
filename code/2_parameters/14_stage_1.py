@@ -117,12 +117,3 @@ anxiety_prev_users.to_feather(f'{out_dir}/anxiety_prev_users.feather')
 depression_prev_users.to_feather(f'{out_dir}/depression_prev_users.feather')
 anxiety_prev_inits.to_feather(f'{out_dir}/anxiety_prev_inits.feather')
 depression_prev_inits.to_feather(f'{out_dir}/depression_prev_inits.feather')
-
-anxiety_table = anxiety_coeff.pivot(index='group', columns='param', values='estimate')
-depression_table = depression_coeff.pivot(index='group', columns='param', values='estimate')
-anxiety_table.to_csv(f'~/anxiety_coeff.csv')
-depression_table[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx']].to_csv(f'~/depression_coeff.csv')
-
-x = depression_coeff
-print(x.loc[x['param'] == 'intercept'].sort_values('estimate'))
-
