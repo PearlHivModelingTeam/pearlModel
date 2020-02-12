@@ -294,7 +294,10 @@ def simulate_new_dx(new_dx, dx_interval):
     new_dx['year3'] = new_dx['lag_step'].shift(3, fill_value=0)
     new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
 
-    new_dx['n_art_init'] = (new_dx['total_linked'] * 0.75).astype(int)
+    # Reflect treat all era in 2012
+    year_multiplier = np.concatenate((4*[0.75],18*[1.0] ))
+
+    new_dx['n_art_init'] = (new_dx['total_linked'] * year_multiplier).astype(int)
 
     return new_dx.filter(items=['n_art_init'])
 
@@ -383,7 +386,7 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, sensitivity_analysis_list):
+    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sensitivity_analysis_list):
         # Unpack Sensitivity Analysis List
         age_in_2009_flag=sensitivity_analysis_list[0]
         mortality_in_care_flag=sensitivity_analysis_list[1]
@@ -404,7 +407,10 @@ class Parameters:
 
             # New ART initiators
             self.new_dx = store['new_dx'].loc[group_name]
-            self.new_dx_interval = store['new_dx_interval'].loc[group_name]
+            if dx_reduce_flag:
+                self.new_dx_interval = store['new_dx_interval_reduce'].loc[group_name]
+            else:
+                self.new_dx_interval = store['new_dx_interval'].loc[group_name]
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
 
@@ -529,8 +535,11 @@ class Statistics:
         self.diabetes_dead = pd.DataFrame()
         self.hypertension_dead = pd.DataFrame()
 
-        self.greater_than_zero_count = pd.DataFrame()
-        self.greater_than_one_count = pd.DataFrame()
+        self.comorbid_zero_count = pd.DataFrame()
+        self.comorbid_one_count = pd.DataFrame()
+        self.comorbid_two_count = pd.DataFrame()
+        self.comorbid_three_count = pd.DataFrame()
+        self.comorbid_four_count = pd.DataFrame()
 
         # Incidence
         self.anxiety_incidence = pd.DataFrame()
@@ -944,20 +953,36 @@ class Pearl:
                                   .assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.hypertension_count = self.stats.hypertension_count.append(hypertension_count)
 
-            # Count of those with at least one comorbidity
+            # Count of those with at least no comorbidities
             n_comorbidities = ckd + lipid + diabetes + hypertension
-            greater_than_zero = n_comorbidities > 0
-            greater_than_zero_count = (self.population.loc[in_care & greater_than_zero].groupby(['age_cat']).size()
+            comorbid_zero_count = (self.population.loc[in_care & (n_comorbidities == 0)].groupby(['age_cat']).size()
                                        .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                                        .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.greater_than_zero_count = self.stats.greater_than_zero_count.append(greater_than_zero_count)
+            self.stats.comorbid_zero_count = self.stats.comorbid_zero_count.append(comorbid_zero_count)
 
-            # Count of those with more than one comorbidity
-            greater_than_one = n_comorbidities > 1
-            greater_than_one_count = (self.population.loc[in_care & greater_than_one].groupby(['age_cat']).size()
+            # Count of those with one comorbidity
+            comorbid_one_count = (self.population.loc[in_care & (n_comorbidities == 1)].groupby(['age_cat']).size()
                                        .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                                        .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.greater_than_one_count = self.stats.greater_than_one_count.append(greater_than_one_count)
+            self.stats.comorbid_one_count = self.stats.comorbid_one_count.append(comorbid_one_count)
+
+            # Count of those with two comorbidities
+            comorbid_two_count = (self.population.loc[in_care & (n_comorbidities == 2)].groupby(['age_cat']).size()
+                                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+            self.stats.comorbid_two_count = self.stats.comorbid_two_count.append(comorbid_two_count)
+
+            # Count of those with three comorbidities
+            comorbid_three_count = (self.population.loc[in_care & (n_comorbidities == 3)].groupby(['age_cat']).size()
+                                      .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                      .assign(year=self.year, replication=self.replication, group=self.group_name))
+            self.stats.comorbid_three_count = self.stats.comorbid_three_count.append(comorbid_three_count)
+
+            # Count of those with four comorbidities
+            comorbid_four_count = (self.population.loc[in_care & (n_comorbidities == 4)].groupby(['age_cat']).size()
+                                    .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                    .assign(year=self.year, replication=self.replication, group=self.group_name))
+            self.stats.comorbid_four_count = self.stats.comorbid_four_count.append(comorbid_four_count)
 
 
     def record_final_stats(self):
@@ -1117,8 +1142,11 @@ class Pearl:
                 store['diabetes_dead'] = self.stats.diabetes_dead
                 store['hypertension_dead'] = self.stats.hypertension_dead
 
-                store['greater_than_zero_count'] = self.stats.greater_than_zero_count
-                store['greater_than_one_count'] = self.stats.greater_than_one_count
+                store['comorbid_zero_count'] = self.stats.comorbid_zero_count
+                store['comorbid_one_count'] = self.stats.comorbid_one_count
+                store['comorbid_two_count'] = self.stats.comorbid_two_count
+                store['comorbid_three_count'] = self.stats.comorbid_three_count
+                store['comorbid_four_count'] = self.stats.comorbid_four_count
 
                 store['anxiety_incidence'] = self.stats.anxiety_incidence
                 store['depression_incidence'] = self.stats.depression_incidence
@@ -1164,20 +1192,3 @@ class Pearl:
             self.year += 1
         self.record_final_stats()
 
-
-###############################################################################
-# Main Function                                                               #
-###############################################################################
-
-#if __name__ == '__main__':
-#    # Add argument parsing
-#    parser = argparse.ArgumentParser(description='Run the PEARL model for a given group and replication')
-#    parser.add_argument('param_file', help='Relative path to parameter file')
-#    parser.add_argument('group', help='Risk group, e.g. msm_white_male')
-#    parser.add_argument('replication', help='Replication number')
-#    args = parser.parse_args()
-#
-#    param_file_path = os.path.realpath(f'{os.getcwd()}/{args.param_file}')
-#
-#    parameters = Parameters(param_file_path, args.group)
-#    pearl = Pearl(parameters, args.group, args.replication, verbose=False, cd4_reset=True)

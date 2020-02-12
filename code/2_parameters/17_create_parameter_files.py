@@ -60,8 +60,8 @@ age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
 # New dx and dx prediction intervals
 new_dx = feather.read_dataframe(f'{param_dir}/new_dx.feather').set_index(['group', 'year'])
-#new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather').set_index(['group', 'year'])
-new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval_reduce.feather').set_index(['group', 'year'])
+new_dx_interval = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather').set_index(['group', 'year'])
+new_dx_interval_reduce = feather.read_dataframe(f'{param_dir}/new_dx_interval_reduce.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{param_dir}/age_by_h1yy.feather')
@@ -181,6 +181,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_interval'] = new_dx_interval
+    store['new_dx_interval_reduce'] = new_dx_interval_reduce
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy
     store['mortality_in_care'] = mortality_in_care
