@@ -380,6 +380,21 @@ def make_new_population(parameters, art_init_sim, pop_size_2009):
 
     return population
 
+def create_multimorbidity_stats(pop):
+    # Encode multimorbidity as 8 bit integer
+    df = pop[['age_cat', 'smoking', 'hcv', 'anxiety', 'depression', 'ckd', 'lipid', 'diabetes', 'hypertension']].copy()
+    df['multimorbidity'] = (
+            df['smoking'].map(str) + df['hcv'].map(str) + df['anxiety'].map(str) + df['depression'].map(str)
+            + df['ckd'].map(str) + df['lipid'].map(str) + df['diabetes'].map(str) + df['hypertension'].map(
+        str)).apply(int, base=2)
+
+    # Count how many people have each unique set of comorbidities
+    df = df.groupby(['age_cat', 'multimorbidity']).size()
+    index = pd.MultiIndex.from_product([df.index.levels[0], range(256)], names=['age_cat', 'multimorbidity'])
+    df = df.reindex(index=index, fill_value=0).reset_index(name='n')
+
+    return (df)
+
 
 ###############################################################################
 # Parameter and Statistics Classes                                            #
@@ -509,37 +524,9 @@ class Statistics:
         self.n_times_lost = pd.DataFrame()
         self.unique_out_care_ids = set()
 
-        # Stage 0, 1, and 2
-
-        self.alive_count = pd.DataFrame()
-
-        self.smoking_count = pd.DataFrame()
-        self.hcv_count = pd.DataFrame()
-        self.anxiety_count = pd.DataFrame()
-        self.depression_count = pd.DataFrame()
-
-        self.ckd_count = pd.DataFrame()
-        self.lipid_count = pd.DataFrame()
-        self.diabetes_count = pd.DataFrame()
-        self.hypertension_count = pd.DataFrame()
-
-        self.dead = pd.DataFrame()
-
-        self.smoking_dead = pd.DataFrame()
-        self.hcv_dead = pd.DataFrame()
-        self.anxiety_dead = pd.DataFrame()
-        self.depression_dead = pd.DataFrame()
-
-        self.ckd_dead = pd.DataFrame()
-        self.lipid_dead = pd.DataFrame()
-        self.diabetes_dead = pd.DataFrame()
-        self.hypertension_dead = pd.DataFrame()
-
-        self.comorbid_zero_count = pd.DataFrame()
-        self.comorbid_one_count = pd.DataFrame()
-        self.comorbid_two_count = pd.DataFrame()
-        self.comorbid_three_count = pd.DataFrame()
-        self.comorbid_four_count = pd.DataFrame()
+        # Multimorbidity
+        self.multimorbidity_in_care = pd.DataFrame()
+        self.multimorbidity_dead = pd.DataFrame()
 
         # Incidence
         self.anxiety_incidence = pd.DataFrame()
@@ -896,99 +883,16 @@ class Pearl:
         if 2010 <= self.year <= 2015:
             self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
 
+
         if self.parameters.comorbidity_flag:
-            # Count of those in care by age_cat and year
-            smoking = self.population['smoking']
-            smoking_count = (self.population.loc[in_care & smoking].groupby(['age_cat']).size()
-                             .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                             .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.smoking_count = self.stats.smoking_count.append(smoking_count)
-
-            # Count of those hcv by age_cat and year
-            hcv = self.population['hcv']
-            hcv_count = (self.population.loc[in_care & hcv].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.hcv_count = self.stats.hcv_count.append(hcv_count)
-
-            # Count of those anxiety by age_cat and year
-            anxiety = self.population['anxiety']
-            anxiety_count = (self.population.loc[in_care & anxiety].groupby(['age_cat']).size()
-                             .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                             .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.anxiety_count = self.stats.anxiety_count.append(anxiety_count)
-
-            # Count of those depression by age_cat and year
-            depression = self.population['depression']
-            depression_count = (self.population.loc[in_care & depression].groupby(['age_cat']).size()
-                                .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.depression_count = self.stats.depression_count.append(depression_count)
-
-            # Count of those ckd by age_cat and year
-            ckd = self.population['ckd']
-            ckd_count = (self.population.loc[in_care & ckd].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.ckd_count = self.stats.ckd_count.append(ckd_count)
-
-            # Count of those lipid by age_cat and year
-            lipid = self.population['lipid']
-            lipid_count = (self.population.loc[in_care & lipid].groupby(['age_cat']).size()
-                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.lipid_count = self.stats.lipid_count.append(lipid_count)
-
-            # Count of those diabetes by age_cat and year
-            diabetes = self.population['diabetes']
-            diabetes_count = (self.population.loc[in_care & diabetes].groupby(['age_cat']).size()
-                              .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                              .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.diabetes_count = self.stats.diabetes_count.append(diabetes_count)
-
-            # Count of those hypertension by age_cat and year
-            hypertension = self.population['hypertension']
-            hypertension_count = (self.population.loc[in_care & hypertension].groupby(['age_cat']).size()
-                                  .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                  .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.hypertension_count = self.stats.hypertension_count.append(hypertension_count)
-
-            # Count of those with at least no comorbidities
-            n_comorbidities = ckd + lipid + diabetes + hypertension
-            comorbid_zero_count = (self.population.loc[in_care & (n_comorbidities == 0)].groupby(['age_cat']).size()
-                                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                       .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.comorbid_zero_count = self.stats.comorbid_zero_count.append(comorbid_zero_count)
-
-            # Count of those with one comorbidity
-            comorbid_one_count = (self.population.loc[in_care & (n_comorbidities == 1)].groupby(['age_cat']).size()
-                                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                       .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.comorbid_one_count = self.stats.comorbid_one_count.append(comorbid_one_count)
-
-            # Count of those with two comorbidities
-            comorbid_two_count = (self.population.loc[in_care & (n_comorbidities == 2)].groupby(['age_cat']).size()
-                                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                       .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.comorbid_two_count = self.stats.comorbid_two_count.append(comorbid_two_count)
-
-            # Count of those with three comorbidities
-            comorbid_three_count = (self.population.loc[in_care & (n_comorbidities == 3)].groupby(['age_cat']).size()
-                                      .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                      .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.comorbid_three_count = self.stats.comorbid_three_count.append(comorbid_three_count)
-
-            # Count of those with four comorbidities
-            comorbid_four_count = (self.population.loc[in_care & (n_comorbidities == 4)].groupby(['age_cat']).size()
-                                    .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                                    .assign(year=self.year, replication=self.replication, group=self.group_name))
-            self.stats.comorbid_four_count = self.stats.comorbid_four_count.append(comorbid_four_count)
-
+            # Encode set of comorbidities as an 8 bit integer
+            multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
+            multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
+            self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
 
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_IN_CARE
         dead_out_care = self.population['status'] == DEAD_OUT_CARE
-        dead = self.population['status'].isin([DEAD_IN_CARE, DEAD_OUT_CARE])
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
@@ -1043,60 +947,10 @@ class Pearl:
             replication=self.replication, group=self.group_name)
 
         if self.parameters.comorbidity_flag:
-            self.stats.dead = (
-                output_reindex(self.population.loc[dead].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            # Stage <2 Comorbidity Mortality
-            smoking = self.population['smoking']
-            self.stats.smoking_dead = (
-                output_reindex(self.population.loc[dead & smoking].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            hcv = self.population['hcv']
-            self.stats.hcv_dead = (
-                output_reindex(self.population.loc[dead & hcv].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            anxiety = self.population['anxiety']
-            self.stats.anxiety_dead = (
-                output_reindex(self.population.loc[dead & anxiety].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            depression = self.population['depression']
-            self.stats.depression_dead = (
-                output_reindex(self.population.loc[dead & depression].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            # Stage 2 Comorbidity Mortality
-            ckd = self.population['ckd']
-            self.stats.ckd_dead = (
-                output_reindex(self.population.loc[dead & ckd].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            lipid = self.population['lipid']
-            self.stats.lipid_dead = (
-                output_reindex(self.population.loc[dead & lipid].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            diabetes = self.population['diabetes']
-            self.stats.diabetes_dead = (
-                output_reindex(self.population.loc[dead & diabetes].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
-
-            hypertension = self.population['hypertension']
-            self.stats.hypertension_dead = (
-                output_reindex(self.population.loc[dead & hypertension].groupby(['year_died', 'age_cat']).size())
-                    .reset_index(name='n').rename(columns={'year_died': 'year'})
-                    .assign(replication=self.replication, group=self.group_name))
+            # Encode set of comorbidities as an 8 bit integer
+            multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dead_in_care | dead_out_care].copy())
+            multimorbidity_dead = multimorbidity_dead.assign(year=self.year, replication=self.replication, group=self.group_name)
+            self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
 
         # Make output directory if it doesn't exist
         os.makedirs(self.out_dir, exist_ok=True)
@@ -1123,30 +977,8 @@ class Pearl:
             store['random_params'] = random_params
 
             if self.parameters.comorbidity_flag:
-                store['smoking_count'] = self.stats.smoking_count
-                store['hcv_count'] = self.stats.hcv_count
-                store['anxiety_count'] = self.stats.anxiety_count
-                store['depression_count'] = self.stats.depression_count
-                store['ckd_count'] = self.stats.ckd_count
-                store['lipid_count'] = self.stats.lipid_count
-                store['diabetes_count'] = self.stats.diabetes_count
-                store['hypertension_count'] = self.stats.hypertension_count
-
-                store['dead'] = self.stats.dead
-                store['smoking_dead'] = self.stats.smoking_dead
-                store['hcv_dead'] = self.stats.hcv_dead
-                store['anxiety_dead'] = self.stats.anxiety_dead
-                store['depression_dead'] = self.stats.depression_dead
-                store['ckd_dead'] = self.stats.ckd_dead
-                store['lipid_dead'] = self.stats.lipid_dead
-                store['diabetes_dead'] = self.stats.diabetes_dead
-                store['hypertension_dead'] = self.stats.hypertension_dead
-
-                store['comorbid_zero_count'] = self.stats.comorbid_zero_count
-                store['comorbid_one_count'] = self.stats.comorbid_one_count
-                store['comorbid_two_count'] = self.stats.comorbid_two_count
-                store['comorbid_three_count'] = self.stats.comorbid_three_count
-                store['comorbid_four_count'] = self.stats.comorbid_four_count
+                store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care
+                store['multimorbidity_dead'] = self.stats.multimorbidity_dead
 
                 store['anxiety_incidence'] = self.stats.anxiety_incidence
                 store['depression_incidence'] = self.stats.depression_incidence

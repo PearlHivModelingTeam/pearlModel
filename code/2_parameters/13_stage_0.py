@@ -60,4 +60,3 @@ hcv_prev_inits.to_feather(f'{out_dir}/hcv_prev_inits.feather')
 smoking_prev_users.to_feather(f'{out_dir}/smoking_prev_users.feather')
 smoking_prev_inits.to_feather(f'{out_dir}/smoking_prev_inits.feather')
 
-print(hcv_prev_inits.sort_values('proportion'))
