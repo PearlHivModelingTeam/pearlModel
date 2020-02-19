@@ -718,9 +718,13 @@ class Pearl:
         new_anxiety = anxiety_rand & (in_care | out_care) & ~old_anxiety
 
         # Save incidence
+        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
+                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
         anxiety_incidence = (self.population.loc[new_anxiety].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        anxiety_incidence['N'] = denominator
+
         self.stats.anxiety_incidence = self.stats.anxiety_incidence.append(anxiety_incidence)
 
         # Set variables
@@ -738,6 +742,9 @@ class Pearl:
         depression_incidence = (self.population.loc[new_depression].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        depression_incidence['N'] = denominator
+
+
         self.stats.depression_incidence = self.stats.depression_incidence.append(depression_incidence)
 
         # Set variables
@@ -756,9 +763,12 @@ class Pearl:
         new_ckd = ckd_rand & (in_care | out_care) & ~old_ckd
 
         # Save incidence
+        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
+                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
         ckd_incidence = (self.population.loc[new_ckd].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        ckd_incidence['N'] = denominator
         self.stats.ckd_incidence = self.stats.ckd_incidence.append(ckd_incidence)
 
         # Set variables
@@ -776,6 +786,7 @@ class Pearl:
         lipid_incidence = (self.population.loc[new_lipid].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+        lipid_incidence['N'] = denominator
         self.stats.lipid_incidence = self.stats.lipid_incidence.append(lipid_incidence)
 
         # Set variables
@@ -793,6 +804,7 @@ class Pearl:
         diabetes_incidence = (self.population.loc[new_diabetes].groupby(['age_cat']).size()
                            .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                            .assign(year=self.year, replication=self.replication, group=self.group_name))
+        diabetes_incidence['N'] = denominator
         self.stats.diabetes_incidence = self.stats.diabetes_incidence.append(diabetes_incidence)
 
         # Set variables
@@ -810,6 +822,7 @@ class Pearl:
         hypertension_incidence = (self.population.loc[new_hypertension].groupby(['age_cat']).size()
                            .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                            .assign(year=self.year, replication=self.replication, group=self.group_name))
+        hypertension_incidence['N'] = denominator
         self.stats.hypertension_incidence = self.stats.hypertension_incidence.append(hypertension_incidence)
 
         # Set variables

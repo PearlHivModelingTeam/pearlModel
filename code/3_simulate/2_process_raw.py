@@ -44,6 +44,13 @@ for group_name in group_names:
     multimorbidity_in_care = pd.DataFrame()
     multimorbidity_dead = pd.DataFrame()
 
+    anxiety_incidence = pd.DataFrame()
+    depression_incidence = pd.DataFrame()
+    ckd_incidence = pd.DataFrame()
+    lipid_incidence = pd.DataFrame()
+    diabetes_incidence = pd.DataFrame()
+    hypertension_incidence = pd.DataFrame()
+
     print(group_name)
     for replication in range(replications):
         print(replication)
@@ -77,6 +84,13 @@ for group_name in group_names:
             if comorbidity:
                 multimorbidity_in_care = multimorbidity_in_care.append(store['multimorbidity_in_care'])
                 multimorbidity_dead = multimorbidity_dead.append(store['multimorbidity_dead'])
+
+                anxiety_incidence = anxiety_incidence.append(store['anxiety_incidence'])
+                depression_incidence = depression_incidence.append(store['depression_incidence'])
+                ckd_incidence = ckd_incidence.append(store['ckd_incidence'])
+                lipid_incidence = lipid_incidence.append(store['lipid_incidence'])
+                diabetes_incidence = diabetes_incidence.append(store['diabetes_incidence'])
+                hypertension_incidence = hypertension_incidence.append(store['hypertension_incidence'])
 
     dead_in_care_age = dead_in_care_age.loc[dead_in_care_age.age <= 85]
     dead_out_care_age = dead_out_care_age.loc[dead_out_care_age.age <= 85]
@@ -112,5 +126,9 @@ for group_name in group_names:
         feather.write_dataframe(multimorbidity_in_care, f'{feather_dir}/{group_name}_multimorbidity_in_care.feather')
         feather.write_dataframe(multimorbidity_dead, f'{feather_dir}/{group_name}_multimorbidity_dead.feather')
 
-
-
+        feather.write_dataframe(anxiety_incidence, f'{feather_dir}/{group_name}_anxiety_incidence.feather')
+        feather.write_dataframe(depression_incidence, f'{feather_dir}/{group_name}_depression_incidence.feather')
+        feather.write_dataframe(ckd_incidence, f'{feather_dir}/{group_name}_ckd_incidence.feather')
+        feather.write_dataframe(lipid_incidence, f'{feather_dir}/{group_name}_lipid_incidence.feather')
+        feather.write_dataframe(diabetes_incidence, f'{feather_dir}/{group_name}_diabetes_incidence.feather')
+        feather.write_dataframe(hypertension_incidence, f'{feather_dir}/{group_name}_hypertension_incidence.feather')
