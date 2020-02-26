@@ -302,12 +302,17 @@ def simulate_new_dx(new_dx, dx_interval):
     return new_dx.filter(items=['n_art_init'])
 
 
-def make_new_population(parameters, art_init_sim, pop_size_2009):
+def make_new_population(parameters, art_init_sim, pop_size_2009, out_dir, group_name, replication):
     """ Draw ages for new art initiators """
 
     # Draw a random value between predicted and 2018 predicted value for years greater than 2018
     rand = np.random.rand(len(parameters.age_by_h1yy.index))
     parameters.age_by_h1yy['estimate'] = rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
+
+    out = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
+    print(out)
+    out.to_feather(f'{out_dir}/new_art_coeff_{group_name}_{replication}.feather')
+    exit()
 
     # Create population
     population = pd.DataFrame()
@@ -566,7 +571,7 @@ class Pearl:
 
         # Create population of new art initiators
         self.population = self.population.append(
-            make_new_population(parameters, art_init_sim, len(self.population.index)))
+            make_new_population(parameters, art_init_sim, len(self.population.index), self.out_dir, self.group_name, self.replication))
 
         # Allow loss to follow up to occur in initial year
         self.lose_to_follow_up()
