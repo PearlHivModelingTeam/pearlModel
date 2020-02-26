@@ -232,4 +232,3 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['mortality_in_care_co'] = mortality_in_care_co
     store['mortality_out_care_co'] = mortality_out_care_co
 
-
