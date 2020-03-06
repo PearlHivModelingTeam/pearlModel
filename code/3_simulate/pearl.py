@@ -182,7 +182,7 @@ def calculate_prob(pop, coeffs, flag, vcov, rand):
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
 
-def make_pop_2009(parameters, group_name):
+def make_pop_2009(parameters, out_dir, group_name, replication):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
@@ -236,6 +236,11 @@ def make_pop_2009(parameters, group_name):
     population['h1yy_orig'] = population['h1yy']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
 
+    #cd4n_out = population[['init_sqrtcd4n', 'h1yy']].assign(group=group_name, replication=replication).copy().reset_index()
+    #print(cd4n_out)
+    #cd4n_out.to_feather(f'{out_dir}/{group_name}_cd4n_out_{replication}.feather')
+    #exit(1)
+
     # Add final columns used for calculations and output
     population['n_lost'] = 0
     population['years_out'] = 0
@@ -270,6 +275,8 @@ def make_pop_2009(parameters, group_name):
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
+
+
 
     return population
 
@@ -310,9 +317,6 @@ def make_new_population(parameters, art_init_sim, pop_size_2009, out_dir, group_
     parameters.age_by_h1yy['estimate'] = rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
 
     out = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
-    print(out)
-    out.to_feather(f'{out_dir}/new_art_coeff_{group_name}_{replication}.feather')
-    exit()
 
     # Create population
     population = pd.DataFrame()
@@ -567,7 +571,7 @@ class Pearl:
         art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
 
         # Create 2009 population
-        self.population = make_pop_2009(parameters, group_name)
+        self.population = make_pop_2009(parameters, self.out_dir, self.group_name, self.replication)
 
         # Create population of new art initiators
         self.population = self.population.append(

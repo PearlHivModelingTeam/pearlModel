@@ -17,9 +17,8 @@ group_names.sort()
 
 # Define directories
 cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/stage_1'
-out_dir = cwd + '/../../data/parameters/stage_1'
-fig_dir = cwd + '/../../out/fig/stage_1'
+in_dir = cwd + '/../../data/input/aim_2/stage_1'
+out_dir = cwd + '/../../data/parameters/aim_2/stage_1'
 
 # Load depression coeff csv file
 depression_coeff = pd.read_csv(f'{in_dir}/depression_coeff.csv')

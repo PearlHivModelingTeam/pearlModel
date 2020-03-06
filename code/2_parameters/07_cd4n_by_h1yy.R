@@ -7,8 +7,8 @@ suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -26,19 +26,24 @@ get_cd4n_by_h1yy <- function(naaccord, group) {
   popu2 <- naaccord %>%
     mutate(H1YY = year(haart1date),
            sqrtcd4n = ifelse(cd4n >= 0, sqrt(cd4n), NA)) %>%
-    filter(2010 <= H1YY, H1YY <= 2014)
+    filter(2010 <= H1YY, H1YY <= 2017)
   
   # Collapse H1YYs into periods for groups with small numbers (IDU only)
   popu2 <- popu2 %>%
-    mutate(period = case_when(group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2009, 2010) ~ 2009,
-                              group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2011, 2012) ~ 2011,
-                              group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2013, 2014, 2015) ~ 2013,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2009, 2010) ~ 2009,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2011, 2012) ~ 2011,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2013, 2014, 2015) ~ 2013,
-                              group %in% c("idu_hisp_female") ~ 2009,
-                              TRUE ~ H1YY))
-  
+     mutate(period = case_when(group %in% c("het_hisp_female", "het_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
+                               group %in% c("het_white_female", "het_white_male") & H1YY %in% c(2016, 2017) ~ 2016,
+                               group %in% c("idu_black_female") & H1YY %in% c(2012, 2013) ~ 2012,
+                               group %in% c("idu_black_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
+                               group %in% c("idu_black_male") & H1YY %in% c(2016,2017) ~ 2016,
+                               group %in% c("idu_hisp_male") & H1YY %in% c(2012, 2013) ~ 2012,
+                               group %in% c("idu_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
+                               group %in% c("idu_hisp_female") ~ 2009,
+                               group %in% c("idu_white_female") & H1YY %in% c(2009,2010,2011) ~ 2009,
+                               group %in% c("idu_white_female") & H1YY %in% c(2012,2013) ~ 2012,
+                               group %in% c("idu_white_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
+                               group %in% c("idu_white_male") & H1YY %in% c(2016,2017) ~ 2016,
+                               TRUE ~ H1YY))
+
   # Get the mean sqrt CD4N by H1YY (MODIFIED FOR IDU TO USE PERIOD INSTEAD OF H1YY)
   sumdat <- popu2 %>%
     filter(!is.na(sqrtcd4n)) %>%

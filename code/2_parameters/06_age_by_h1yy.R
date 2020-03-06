@@ -7,8 +7,8 @@ suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -26,19 +26,23 @@ get_age_by_h1yy <- function(NAACCORD, group) {
   inipop <- NAACCORD %>%
     mutate(H1YY = year(haart1date),
            iniage = H1YY-yob) %>%
-    filter(H1YY <= 2015, 2009 <= H1YY) 
+    filter(H1YY <= 2017, 2009 <= H1YY) 
   
-  # IDU - collapse groups
-  inipop <- inipop %>%
-    mutate(period = case_when(group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2009, 2010) ~ 2009,
-                              group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2011, 2012) ~ 2011,
-                              group %in% c("idu_black_female", "idu_white_female") & H1YY %in% c(2013, 2014, 2015) ~ 2013,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2009, 2010) ~ 2009,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2011, 2012) ~ 2011,
-                              group %in% c("idu_hisp_male") & H1YY %in% c(2013, 2014, 2015) ~ 2013,
+ inipop <- inipop %>%
+    mutate(period = case_when(group %in% c("het_hisp_female", "het_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
+                              group %in% c("het_white_female", "het_white_male") & H1YY %in% c(2016, 2017) ~ 2016,
+                              group %in% c("idu_black_female") & H1YY %in% c(2012, 2013) ~ 2012,
+                              group %in% c("idu_black_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
+                              group %in% c("idu_black_male") & H1YY %in% c(2016,2017) ~ 2016,
+                              group %in% c("idu_hisp_male") & H1YY %in% c(2012, 2013) ~ 2012,
+                              group %in% c("idu_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
                               group %in% c("idu_hisp_female") ~ 2009,
+                              group %in% c("idu_white_female") & H1YY %in% c(2009,2010,2011) ~ 2009,
+                              group %in% c("idu_white_female") & H1YY %in% c(2012,2013) ~ 2012,
+                              group %in% c("idu_white_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
+                              group %in% c("idu_white_male") & H1YY %in% c(2016,2017) ~ 2016,
                               TRUE ~ H1YY))
-  
+
   inipop2 <- inipop %>%
     arrange(period) %>%
     group_by(period) %>%

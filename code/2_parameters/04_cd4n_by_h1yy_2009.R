@@ -6,8 +6,8 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -37,10 +37,7 @@ get_cd4n_by_h1yy <- function(group, NAACCORD) {
               sqrtcd4n_sd = sd(sqrtcd4n),
               sqrtcd4n_n = n()) %>%
     ungroup
-  #print(outdat)
-  #print(group)
-  #write_csv(outdat, paste0('temp/', group, '.csv'))
-  
+
   # FIT GLM TO MEAN AND SD OF SQRTCD4N
   meandat <- glm(outdat$sqrtcd4n_mean ~ outdat$H1YY)
   stddat <- glm(outdat$sqrtcd4n_sd ~ outdat$H1YY)

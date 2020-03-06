@@ -8,8 +8,8 @@ pd.set_option("display.max_rows", 1001)
 
 # Define directories
 cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/stage_0'
-out_dir = cwd + '/../../data/parameters/stage_0'
+in_dir = cwd + '/../../data/input/aim_2/stage_0'
+out_dir = cwd + '/../../data/parameters/aim_2/stage_0'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',

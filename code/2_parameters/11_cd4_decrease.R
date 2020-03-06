@@ -5,8 +5,8 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
 suppressMessages(library(feather))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -24,7 +24,7 @@ get_coeff <- function(DF) {
   return(coeffs)
 }
 
-pop1 <- read_sas(filePath(input_dir, 'pop_cd4_decrease_190508.sas7bdat'))
+pop1 <- read_sas(filePath(input_dir, 'pop_cd4_decrease.sas7bdat'))
 colnames(pop1) <- tolower(colnames(pop1))
 
 model <- glm(diff ~ time_out_of_naaccord + sqrtcd4_exit,

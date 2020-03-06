@@ -5,8 +5,8 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
 suppressMessages(library(feather))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -15,7 +15,7 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
 #####################################################################################
 # Model 2: Mortality among those not in care
 #####################################################################################
-pop1 <- read_sas(filePath(input_dir, 'pop_mortality_190508.sas7bdat'))
+pop1 <- read_sas(filePath(input_dir, 'pop_mortality.sas7bdat'))
 colnames(pop1) <- tolower(colnames(pop1))
 pop1$pop2 <- tolower(pop1$pop2)
 
@@ -29,7 +29,7 @@ model2fx <- function(DF) {
   mylogit <- geeglm(realdeath ~ year + agecat + tv_sqrtcd4n, 
                     id = naid, 
                     data = DF, 
-                    corstr = "unstructured", 
+                    corstr = "exchangeable", 
                     family=binomial(link='logit'))
 }
 
