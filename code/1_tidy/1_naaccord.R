@@ -4,7 +4,7 @@ suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 
-input_dir <- filePath(getwd(), '/../../data/input')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -21,16 +21,13 @@ collapse_groups <- function(df) {
 }
 
 # Read in and format NAACCORD data --------------------------------------------
-naaccord <- read_sas(filePath(input_dir, 'popu16.sas7bdat')) %>%
+naaccord <- read_sas(filePath(input_dir, 'popu17.sas7bdat')) %>%
   rename_all(tolower) %>%
   collapse_groups() %>%
   mutate(obs_entry = as.Date(obs_entry, origin="1960-01-01"),
          obs_exit = as.Date(obs_exit, origin="1960-01-01"),
          cd4n = replace(cd4n, cd4n < 0, NA)) %>%
   select(-c(risk, race, pop1))
-
-# Recode study exit to be min(deathdate, cohort_closedate)
-naaccord <- mutate(naaccord, obs_exit = pmin(deathdate, cohort_closedate, na.rm = T))
 
 # Set deathdate to missing if reason for exit is not death
 naaccord <- mutate(naaccord, deathdate = replace(deathdate, deathdate!=obs_exit, NA))

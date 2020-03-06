@@ -5,8 +5,8 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
 suppressMessages(library(feather))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -17,7 +17,7 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
 #####################################################################################
 # Read in analysis population
 
-pop1 <- read_sas(filePath(input_dir, 'pop_mortality_190508.sas7bdat'))
+pop1 <- read_sas(filePath(input_dir, 'pop_mortality.sas7bdat'))
 colnames(pop1) <- tolower(colnames(pop1))
 pop1$pop2 <- tolower(pop1$pop2)
 
@@ -26,7 +26,7 @@ yearly <- pop1 %>%
          ageby10 = replace(ageby10, ageby10==1, 2),
          ageby10 = replace(ageby10, ageby10 > 7, 7)) %>%
   filter(year >= 2009, # modified 9/26/18
-         year <= 2015) %>% # added 09/11/18
+         year <= 2017) %>% # added 09/11/18
   select(pop2, sex, naid, realdeath, year, ageby10, sqrtcd4n, h1yy) %>%  
   na.omit() %>%
   group_by(pop2, sex) %>% 
@@ -37,7 +37,7 @@ modelfx <- function(df) {
   mylogit <- geeglm(realdeath ~ year + ageby10 + sqrtcd4n + h1yy, 
                     id = naid, 
                     data = df, 
-                    corstr = "unstructured", 
+                    corstr = "exchangeable",
                     family=binomial(link='logit'))
 }
 

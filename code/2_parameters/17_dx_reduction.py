@@ -9,7 +9,7 @@ pd.set_option("display.max_rows", 1001)
 
 # Define directories
 cwd = os.getcwd()
-param_dir = cwd + '/../../data/parameters'
+param_dir = cwd + '/../../data/parameters/aim_1'
 fig_dir   = os.getcwd() + '/../../out/fig/new_dx_reduce'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',

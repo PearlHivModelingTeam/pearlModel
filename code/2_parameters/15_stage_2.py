@@ -17,8 +17,8 @@ group_names.sort()
 
 # Define directories
 cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/stage_2'
-out_dir = cwd + '/../../data/parameters/stage_2'
+in_dir = cwd + '/../../data/input/aim_2/stage_2'
+out_dir = cwd + '/../../data/parameters/aim_2/stage_2'
 
 # Load ckd coeff csv file
 ckd_coeff = pd.read_csv(f'{in_dir}/ckd_coeff.csv')

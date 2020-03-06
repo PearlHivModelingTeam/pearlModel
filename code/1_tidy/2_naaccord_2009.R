@@ -6,7 +6,7 @@ suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 suppressMessages(library(feather))
 
-input_dir <- filePath(getwd(), '/../../data/input')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -22,7 +22,7 @@ get_2009 <- function(df, dir) {
     filter(startYY <= 2009, 2009 <= stopYY)
   
   # Updated 04/24/19
-  carestat <- read_sas(filePath(dir, 'popu16_carestatus.sas7bdat'))
+  carestat <- read_sas(filePath(dir, 'popu17_carestatus.sas7bdat'))
   colnames(carestat) <- tolower(colnames(carestat))
   
   carestat <- carestat %>%

@@ -7,8 +7,8 @@ suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
-input_dir <- filePath(getwd(), '/../../data/input')
-param_dir <- filePath(getwd(), '/../../data/parameters')
+input_dir <- filePath(getwd(), '/../../data/input/aim_1')
+param_dir <- filePath(getwd(), '/../../data/parameters/aim_1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -19,7 +19,7 @@ test <- read_feather(filePath(input_dir, 'naaccord_2009.feather'))
 # Nest by group 
 test <- test %>%
   group_by(group) %>%
-  nest(.key = "naaccord_2009")
+  nest()
 
 mixed_normal <- function(DF) {
   
@@ -60,7 +60,7 @@ mixed_normal <- function(DF) {
 }
 
 age_in_2009 <- test %>% 
-  mutate(age_in_2009 = map(naaccord_2009, mixed_normal))  %>%
+  mutate(age_in_2009 = map(data, mixed_normal))  %>%
   select(c(group, age_in_2009)) %>%
   unnest() %>% 
   rename_all(tolower)
