@@ -73,7 +73,7 @@ predict_new_dx <- function(DF) {
   }
   
   predict_it <- function(x,y) {
-    preds2 <- data.frame(year=seq(2009,2030), pred = predict(y, type="response", newdata=x, se.fit = T))
+    preds2 <- data.frame(year=seq(2006,2030), pred = predict(y, type="response", newdata=x, se.fit = T))
     
     preds2 <- preds2 %>%
       mutate(lower = pred.fit - 1.96*pred.se.fit,
@@ -84,7 +84,7 @@ predict_new_dx <- function(DF) {
   # Create expanded dataset to 2030 to use for predictions
   ####################################################
   groups <- unique(surv$group)
-  years <- seq(2009, 2030)
+  years <- seq(2006, 2030)
   
   simulated <- expand.grid(year = years, group = groups, stringsAsFactors = F)
   
