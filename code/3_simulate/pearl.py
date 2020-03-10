@@ -558,11 +558,10 @@ def output_reindex(df):
 ###############################################################################
 
 class Pearl:
-    def __init__(self, parameters, group_name, replication, verbose=False, cd4_reset=True):
+    def __init__(self, parameters, group_name, replication, verbose=False):
         self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/raw')
         self.group_name = group_name
         self.replication = replication
-        self.cd4_reset = cd4_reset
         self.verbose = verbose
         self.year = 2009
         self.parameters = parameters
@@ -702,10 +701,9 @@ class Pearl:
         self.population.loc[reengaged, 'status'] = REENGAGED
 
         # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
-        if self.cd4_reset:
-            self.population = set_cd4_cat(self.population)
-            self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
-            self.population.loc[reengaged, 'h1yy'] = self.year
+        self.population = set_cd4_cat(self.population)
+        self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
+        self.population.loc[reengaged, 'h1yy'] = self.year
 
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED

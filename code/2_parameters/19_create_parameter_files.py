@@ -64,11 +64,12 @@ age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx.feather').set_index(['group', 'year'])
 new_dx_interval = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
 new_dx_interval_reduce = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval_reduce.feather').set_index(['group', 'year'])
+print(new_dx.loc['msm_white_male'])
+print(new_dx_interval.loc['msm_white_male'])
 
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/age_by_h1yy.feather')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
-
 
 # No values less than 0 and no lambda1 greater than 1
 age_by_h1yy.loc[age_by_h1yy['pred'] < 0, 'pred'] = 0
@@ -170,9 +171,9 @@ lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/lipid_coeff.feather').set_in
 diabetes_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
 hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
 
-# Comortality
-mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/comortality/mortality_in_care.feather').set_index('group')
-mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/comortality/mortality_out_care.feather').set_index('group')
+# mortality with comorbidity
+mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
+mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index('group')
 
 
 # Save everything
