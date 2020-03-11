@@ -207,8 +207,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
 
 
     # Count those not starting art 2006 - 2009 as initial ART nonusers
-    #n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
-    n_initial_nonusers = 0
+    n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
 
     # Compile list of number of new agents to be introduced in the model
     new_agents = new_dx.loc[np.arange(2010, 2031), ['art_users', 'art_nonusers']]
@@ -292,13 +291,13 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
                                                                  parameters.cd4_increase_flag,
                                                                  parameters.cd4_increase_rand)
     # Set status
-    population['status'] = -1
     population['status'] = ART_USER
-    #population.loc[:n_initial_nonusers, 'status'] = ART_NONUSER
-    #population.loc[n_initial_nonusers:, 'status'] = ART_USER
-    #population.loc[:n_initial_nonusers, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
-    #population.loc[:n_initial_nonusers, 'ltfu_year'] = 2009
-    #population.loc[:n_initial_nonusers, 'n_lost'] += 1
+    rand = np.random.choice(len(population.index), n_initial_nonusers)
+
+    population.loc[rand, 'status'] = ART_NONUSER
+    population.loc[rand, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
+    population.loc[rand, 'ltfu_year'] = 2009
+    population.loc[rand, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -336,9 +335,9 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
         n_nonusers = n_new_agents.loc[h1yy, 'art_nonusers']
         grouped_pop = simulate_ages(parameters.age_by_h1yy.loc[h1yy], n_users + n_nonusers)
         grouped_pop['h1yy'] = h1yy
-        grouped_pop['status'] = -1
-        grouped_pop.loc[:n_nonusers, 'status'] = UNINITIATED_NONUSER
-        grouped_pop.loc[n_nonusers:, 'status'] = UNINITIATED_USER
+        grouped_pop['status'] = UNINITIATED_USER
+        rand = np.random.choice(len(grouped_pop.index), n_nonusers)
+        grouped_pop.loc[rand, 'status'] = UNINITIATED_NONUSER
         population = pd.concat([population, grouped_pop])
 
     population['age'] = np.floor(population['age'])
@@ -381,12 +380,6 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population['ltfu_year'] = 0
     population['intercept'] = 1.0
     population['year'] = population['h1yy_orig']
-
-    # Set initial data for nonusers
-    uninitiated_nonusers = population['status'] == UNINITIATED_NONUSER
-    population.loc[uninitiated_nonusers, 'sqrtcd4n_exit'] = population.loc[uninitiated_nonusers, 'time_varying_sqrtcd4n']
-    population.loc[uninitiated_nonusers, 'ltfu_year'] = population.loc[uninitiated_nonusers, 'h1yy_orig']
-    population.loc[uninitiated_nonusers, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -1052,7 +1045,7 @@ class Pearl:
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
-            self.lose_to_follow_up()
+            #self.lose_to_follow_up()
 
             # Record output statistics
             self.record_stats()
