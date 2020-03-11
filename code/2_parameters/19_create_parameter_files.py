@@ -141,9 +141,9 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 # Probability to reengage in care for each group
 prob_reengage = pd.read_csv(f'{aim_1_dir}/prob_reengage.csv').set_index(['group'])
 print(prob_reengage)
-prob_reengage = pd.DataFrame({'group': group_names,
-                              'prob': len(group_names)*[0.1]}).set_index('group')
-print(prob_reengage)
+#prob_reengage = pd.DataFrame({'group': group_names,
+#                              'prob': len(group_names)*[0.1]}).set_index('group')
+#print(prob_reengage)
 
 # Stage 0 comorbidities
 hcv_prev_users = pd.read_feather(f'{aim_2_dir}/stage_0/hcv_prev_users.feather').set_index('group')

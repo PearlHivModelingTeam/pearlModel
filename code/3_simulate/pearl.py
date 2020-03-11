@@ -207,6 +207,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
 
     # Count those not starting art 2006 - 2009 as initial ART nonusers
     n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
+    n_initial_nonusers = 0
 
     # Compile list of number of new agents to be introduced in the model
     new_agents = new_dx.loc[np.arange(2010, 2031), ['art_users', 'art_nonusers']]

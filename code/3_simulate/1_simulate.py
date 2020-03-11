@@ -25,7 +25,7 @@ group_names = ['msm_hisp_male']
 
 for group_name in group_names:
     print(group_name)
-    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=0, dx_reduce_flag=1,
+    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=0, dx_reduce_flag=0,
                                            sensitivity_analysis_list=[0, 0, 0, 0, 0, 0]), group_name, replication)
                for replication in replications]
     ray.get(futures)
