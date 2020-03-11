@@ -60,12 +60,12 @@ age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] >
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
-# New dx and dx prediction intervals
-new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx.feather').set_index(['group', 'year'])
-new_dx_interval = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
-new_dx_interval_reduce = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval_reduce.feather').set_index(['group', 'year'])
-print(new_dx.loc['msm_white_male'])
-print(new_dx_interval.loc['msm_white_male'])
+# New dx prediction intervals
+new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
+new_dx_ehe = feather.read_dataframe(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
+
+# Linkage to care
+linkage_to_care = feather.read_dataframe(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
 age_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/age_by_h1yy.feather')
@@ -175,16 +175,20 @@ hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/hypertension_coeff.fe
 mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
 mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index('group')
 
-
 # Save everything
+try:
+    os.remove(f'{param_dir}/parameters.h5')
+except:
+    print('Error while deleting old parameter file')
+
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['on_art_2009'] = on_art_2009
     store['h1yy_by_age_2009'] = h1yy_by_age_2009 
     store['cd4n_by_h1yy_2009'] = cd4n_by_h1yy_2009
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
-    store['new_dx_interval'] = new_dx_interval
-    store['new_dx_interval_reduce'] = new_dx_interval_reduce
+    store['new_dx_ehe'] = new_dx_ehe
+    store['linkage_to_care'] = linkage_to_care
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy
     store['mortality_in_care'] = mortality_in_care
@@ -231,7 +235,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['diabetes_coeff'] = diabetes_coeff
     store['hypertension_coeff'] = hypertension_coeff
 
-    # Comortality
+    # Comorbidity modified mortality
     store['mortality_in_care_co'] = mortality_in_care_co
     store['mortality_out_care_co'] = mortality_out_care_co
 
