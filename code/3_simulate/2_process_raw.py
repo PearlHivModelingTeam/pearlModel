@@ -9,9 +9,9 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
-feather_dir = cwd + '/../../out/processed/comorbid'
+feather_dir = cwd + '/../../out/processed/bug'
 
-comorbidity = True
+comorbidity = False
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
