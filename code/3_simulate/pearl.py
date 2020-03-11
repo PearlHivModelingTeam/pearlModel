@@ -1050,6 +1050,8 @@ class Pearl:
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
+            self.lose_to_follow_up()
+
             # Record output statistics
             self.record_stats()
 

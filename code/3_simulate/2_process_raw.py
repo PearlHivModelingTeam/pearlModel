@@ -18,9 +18,9 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
 #group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
-#group_names = ['idu_white_female']
+group_names = ['msm_white_male']
 
-replications = 100
+replications = 50
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
