@@ -5,16 +5,16 @@ import pandas as pd
 import scipy.stats as stats
 import feather
 
-pd.set_option("display.max_rows", 1001)
 
 # Status Constants
-UNINITIATED = 0
-IN_CARE = 1
-OUT_CARE = 2
-REENGAGED = 3
-LTFU = 4
-DEAD_IN_CARE = 5
-DEAD_OUT_CARE = 6
+UNINITIATED_USER = 0
+UNINITIATED_NONUSER = 1
+ART_USER = 2
+ART_NONUSER = 3
+REENGAGED = 4
+LTFU = 5
+DEAD_ART_USER = 6
+DEAD_ART_NONUSER = 7
 
 
 ###############################################################################
@@ -133,7 +133,7 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
 
 def create_comorbidity_pop_matrix(pop, condition):
     pop['time_since_art'] = pop['year'] - pop['h1yy_orig']
-    pop['out_care'] = (pop['status'] == OUT_CARE).astype(int)
+    pop['out_care'] = (pop['status'] == ART_NONUSER).astype(int)
 
     if condition=='anxiety':
         return pop[['age', 'init_sqrtcd4n_orig', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
@@ -182,14 +182,49 @@ def calculate_prob(pop, coeffs, flag, vcov, rand):
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
 
-def make_pop_2009(parameters, out_dir, group_name, replication):
+def simulate_new_dx(new_dx_param, linkage_to_care):
+    """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of
+    new art initiators by assuming 75% link in the first year, then another 10% over the next three years. Assume 75%
+    of these initiate art """
+
+    new_dx = new_dx_param.copy()
+
+    # Draw new dx from a uniform distribution between upper and lower for 2016-2030
+    new_dx['n_dx'] = new_dx['lower'] + (new_dx['upper'] - new_dx['lower']) * np.random.uniform()
+
+    # Only a proportion of new diagnoses link to care and 40% of the remaining link in the next 3 years
+    new_dx['unlinked'] = new_dx['n_dx'] * (1 - linkage_to_care['link_prob'])
+    new_dx['gardner_per_year'] = new_dx['unlinked'] * 0.4 / 3.0
+    new_dx['year0'] = new_dx['n_dx'] * linkage_to_care['link_prob']
+    new_dx['year1'] = new_dx['gardner_per_year'].shift(1, fill_value=0)
+    new_dx['year2'] = new_dx['gardner_per_year'].shift(2, fill_value=0)
+    new_dx['year3'] = new_dx['gardner_per_year'].shift(3, fill_value=0)
+    new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
+
+    # Proportion of those linked to care start ART
+    new_dx['art_users'] = (new_dx['total_linked'] * linkage_to_care['art_prob']).astype(int)
+    new_dx['art_nonusers'] = (new_dx['total_linked'] * (1 - linkage_to_care['art_prob'])).astype(int)
+
+    # Count those not starting art 2006 - 2009 as initial ART nonusers
+    n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
+
+    # Compile list of number of new agents to be introduced in the model
+    new_agents = new_dx.loc[np.arange(2010, 2031), ['art_users', 'art_nonusers']]
+    new_agents['total'] = new_agents['art_users'] + new_agents['art_nonusers']
+
+    return n_initial_nonusers, new_agents
+
+def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replication):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
 
     # Draw ages from the truncated mixed gaussian
-    pop_size = parameters.on_art_2009[0].astype('int')
+    pop_size = parameters.on_art_2009[0].astype('int') + n_initial_nonusers
     population = simulate_ages(parameters.age_in_2009, pop_size)
+
+    #print(parameters.on_art_2009[0].astype('int'))
+    #print(n_initial_nonusers)
 
     # Create age categories
     population['age'] = np.floor(population['age'])
@@ -255,8 +290,13 @@ def make_pop_2009(parameters, out_dir, group_name, replication):
                                                                  parameters.cd4_increase_vcov.to_numpy(),
                                                                  parameters.cd4_increase_flag,
                                                                  parameters.cd4_increase_rand)
-    # Set status to 1 = 'in_care'
-    population['status'] = IN_CARE
+    # Set status
+    population['status'] = -1
+    population.loc[:n_initial_nonusers, 'status'] = ART_NONUSER
+    population.loc[n_initial_nonusers:, 'status'] = ART_USER
+    population.loc[:n_initial_nonusers, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
+    population.loc[:n_initial_nonusers, 'ltfu_year'] = 2009
+    population.loc[:n_initial_nonusers, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -276,53 +316,27 @@ def make_pop_2009(parameters, out_dir, group_name, replication):
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
 
-
-
     return population
 
-
-def simulate_new_dx(new_dx, dx_interval):
-    """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of
-    new art initiators by assuming 75% link in the first year, then another 10% over the next three years. Assume 75%
-    of these initiate art """
-
-    # Draw new dx from a uniform distribution between upper and lower for 2016-2030 
-    dx_interval = dx_interval[dx_interval.index > 2015].copy()
-    dx_interval['rand'] = np.random.uniform(size=len(dx_interval.index))
-    dx_interval['n_dx'] = dx_interval['lower'] + (dx_interval['upper'] - dx_interval['lower']) * dx_interval['rand']
-    new_dx = pd.concat([new_dx, dx_interval.filter(items=['n_dx'])])
-    new_dx = np.floor(new_dx)
-
-    # We assume 75% link to care in the first year and a further 10% link in the next 3 years with equal probability
-    new_dx['lag_step'] = new_dx['n_dx'] * 0.1 / 3.0
-    new_dx['year0'] = new_dx['n_dx'] * 0.75
-    new_dx['year1'] = new_dx['lag_step'].shift(1, fill_value=0)
-    new_dx['year2'] = new_dx['lag_step'].shift(2, fill_value=0)
-    new_dx['year3'] = new_dx['lag_step'].shift(3, fill_value=0)
-    new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
-
-    # Reflect treat all era in 2012
-    year_multiplier = np.concatenate((4*[0.75],18*[1.0] ))
-
-    new_dx['n_art_init'] = (new_dx['total_linked'] * year_multiplier).astype(int)
-
-    return new_dx.filter(items=['n_art_init'])
-
-
-def make_new_population(parameters, art_init_sim, pop_size_2009, out_dir, group_name, replication):
+def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_name, replication):
     """ Draw ages for new art initiators """
 
     # Draw a random value between predicted and 2018 predicted value for years greater than 2018
     rand = np.random.rand(len(parameters.age_by_h1yy.index))
     parameters.age_by_h1yy['estimate'] = rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
 
-    out = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
+    #out = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
 
     # Create population
     population = pd.DataFrame()
     for h1yy in parameters.age_by_h1yy.index.levels[0]:
-        grouped_pop = simulate_ages(parameters.age_by_h1yy.loc[h1yy], art_init_sim.loc[h1yy, 'n_art_init'])
+        n_users = n_new_agents.loc[h1yy, 'art_users']
+        n_nonusers = n_new_agents.loc[h1yy, 'art_nonusers']
+        grouped_pop = simulate_ages(parameters.age_by_h1yy.loc[h1yy], n_users + n_nonusers)
         grouped_pop['h1yy'] = h1yy
+        grouped_pop['status'] = -1
+        grouped_pop.loc[:n_nonusers, 'status'] = UNINITIATED_NONUSER
+        grouped_pop.loc[n_nonusers:, 'status'] = UNINITIATED_USER
         population = pd.concat([population, grouped_pop])
 
     population['age'] = np.floor(population['age'])
@@ -365,9 +379,6 @@ def make_new_population(parameters, art_init_sim, pop_size_2009, out_dir, group_
     population['ltfu_year'] = 0
     population['intercept'] = 1.0
     population['year'] = population['h1yy_orig']
-
-    # Set status to UNINITIATED
-    population['status'] = UNINITIATED
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -432,9 +443,10 @@ class Parameters:
             # New ART initiators
             self.new_dx = store['new_dx'].loc[group_name]
             if dx_reduce_flag:
-                self.new_dx_interval = store['new_dx_interval_reduce'].loc[group_name]
+                self.new_dx = store['new_dx_ehe'].loc[group_name]
             else:
-                self.new_dx_interval = store['new_dx_interval'].loc[group_name]
+                self.new_dx = store['new_dx'].loc[group_name]
+            self.linkage_to_care = store['linkage_to_care'].loc[group_name]
             self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
             self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
 
@@ -567,17 +579,14 @@ class Pearl:
         self.parameters = parameters
 
         # Simulate number of new art initiators
-        art_init_sim = simulate_new_dx(parameters.new_dx, parameters.new_dx_interval)
+        n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx, parameters.linkage_to_care)
 
         # Create 2009 population
-        self.population = make_pop_2009(parameters, self.out_dir, self.group_name, self.replication)
+        self.population = make_pop_2009(parameters, n_initial_nonusers, self.out_dir, self.group_name, self.replication)
 
         # Create population of new art initiators
         self.population = self.population.append(
-            make_new_population(parameters, art_init_sim, len(self.population.index), self.out_dir, self.group_name, self.replication))
-
-        # Allow loss to follow up to occur in initial year
-        self.lose_to_follow_up()
+            make_new_population(parameters, n_new_agents, len(self.population.index), self.out_dir, self.group_name, self.replication))
 
         # Initiate output class
         self.stats = Statistics()
@@ -585,9 +594,7 @@ class Pearl:
         # First recording of stats
         self.record_stats()
 
-        # Move populations
-        self.append_new()
-
+        # Print populations
         if self.verbose:
             print(self)
 
@@ -599,11 +606,11 @@ class Pearl:
 
     def __str__(self):
         total = len(self.population.index)
-        in_care = len(self.population.loc[self.population['status'] == IN_CARE])
-        out_care = len(self.population.loc[self.population['status'] == OUT_CARE])
-        dead_in_care = len(self.population.loc[self.population['status'] == DEAD_IN_CARE])
-        dead_out_care = len(self.population.loc[self.population['status'] == DEAD_OUT_CARE])
-        uninitiated = len(self.population.loc[self.population['status'] == UNINITIATED])
+        in_care = len(self.population.loc[self.population['status'] == ART_USER])
+        out_care = len(self.population.loc[self.population['status'] == ART_NONUSER])
+        dead_in_care = len(self.population.loc[self.population['status'] == DEAD_ART_USER])
+        dead_out_care = len(self.population.loc[self.population['status'] == DEAD_ART_NONUSER])
+        uninitiated = len(self.population.loc[self.population['status'].isin([UNINITIATED_USER, UNINITIATED_NONUSER])])
 
         string = 'Year End: ' + str(self.year) + '\n'
         string += 'Total Population Size: ' + str(total) + '\n'
@@ -617,18 +624,18 @@ class Pearl:
     def increment_age(self):
         """ Increment age for those alive in the model """
         self.population['year'] = self.year
-        alive_and_initiated = self.population['status'].isin([IN_CARE, OUT_CARE])
+        alive_and_initiated = self.population['status'].isin([ART_USER, ART_NONUSER])
         self.population.loc[alive_and_initiated, 'age'] += 1
         self.population['age_cat'] = np.floor(self.population['age'] / 10)
         self.population.loc[self.population['age_cat'] < 2, 'age_cat'] = 2
         self.population.loc[self.population['age_cat'] > 7, 'age_cat'] = 7
 
         # Increment number of years out
-        out_care = self.population['status'] == OUT_CARE
+        out_care = self.population['status'] == ART_NONUSER
         self.population.loc[out_care, 'years_out'] += 1
 
     def increase_cd4_count(self):
-        in_care = self.population['status'] == IN_CARE
+        in_care = self.population['status'] == ART_USER
         self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_cd4_increase(
             self.population.loc[in_care].copy(),
             self.parameters.cd4_increase_knots,
@@ -640,7 +647,7 @@ class Pearl:
 
 
     def decrease_cd4_count(self):
-        out_care = self.population['status'] == OUT_CARE
+        out_care = self.population['status'] == ART_NONUSER
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_cd4_decrease(
             self.population.loc[out_care].copy(),
             self.parameters.cd4_decrease.to_numpy(),
@@ -650,11 +657,17 @@ class Pearl:
 
 
     def add_new_dx(self):
-        new_dx = (self.population['status'] == UNINITIATED) & (self.population['h1yy_orig'] == self.year)
-        self.population.loc[new_dx, 'status'] = IN_CARE
+        new_user = (self.population['status'] == UNINITIATED_USER) & (self.population['h1yy_orig'] == self.year)
+        self.population.loc[new_user, 'status'] = ART_USER
+
+        new_nonuser = (self.population['status'] == UNINITIATED_NONUSER) & (self.population['h1yy_orig'] == self.year)
+        self.population.loc[new_nonuser, 'status'] = ART_NONUSER
+        self.population.loc[new_nonuser, 'sqrtcd4n_exit'] = self.population.loc[new_nonuser, 'time_varying_sqrtcd4n']
+        self.population.loc[new_nonuser, 'ltfu_year'] = self.year
+        self.population.loc[new_nonuser, 'n_lost'] += 1
 
     def kill_in_care(self):
-        in_care = self.population['status'] == IN_CARE
+        in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.mortality_in_care.to_numpy()
         if self.parameters.comorbidity_flag:
             pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy', 'smoking', 'hcv', 'anxiety', 'depression', 'hypertension', 'diabetes', 'ckd', 'lipid']].to_numpy()
@@ -664,11 +677,11 @@ class Pearl:
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag,
                                     vcov_matrix, self.parameters.mortality_in_care_rand)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
-        self.population.loc[died, 'status'] = DEAD_IN_CARE
+        self.population.loc[died, 'status'] = DEAD_ART_USER
         self.population.loc[died, 'year_died'] = self.year
 
     def kill_out_care(self):
-        out_care = self.population['status'] == OUT_CARE
+        out_care = self.population['status'] == ART_NONUSER
         coeff_matrix = self.parameters.mortality_out_care.to_numpy()
         if self.parameters.comorbidity_flag:
             pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n', 'smoking', 'hcv', 'anxiety', 'depression', 'hypertension', 'diabetes', 'ckd', 'lipid']].to_numpy()
@@ -678,11 +691,11 @@ class Pearl:
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag,
                                     vcov_matrix, self.parameters.mortality_out_care_rand)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
-        self.population.loc[died, 'status'] = DEAD_OUT_CARE
+        self.population.loc[died, 'status'] = DEAD_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
 
     def lose_to_follow_up(self):
-        in_care = self.population['status'] == IN_CARE
+        in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy()
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy()
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
@@ -695,7 +708,7 @@ class Pearl:
         self.population.loc[lost, 'n_lost'] += 1
 
     def reengage(self):
-        out_care = self.population['status'] == OUT_CARE
+        out_care = self.population['status'] == ART_NONUSER
         reengaged = (np.random.rand(len(self.population.index)) < np.full(len(self.population.index),
                                                                           self.parameters.prob_reengage)) & out_care
         self.population.loc[reengaged, 'status'] = REENGAGED
@@ -709,12 +722,12 @@ class Pearl:
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
 
-        self.population.loc[reengaged, 'status'] = IN_CARE
-        self.population.loc[ltfu, 'status'] = OUT_CARE
+        self.population.loc[reengaged, 'status'] = ART_USER
+        self.population.loc[ltfu, 'status'] = ART_NONUSER
 
     def apply_stage_1(self):
-        in_care = self.population['status'] == IN_CARE
-        out_care = self.population['status'] == OUT_CARE
+        in_care = self.population['status'] == ART_USER
+        out_care = self.population['status'] == ART_NONUSER
 
         # Use matrix multiplication to calculate probability of anxiety incidence
         anxiety_coeff_matrix = self.parameters.anxiety_coeff.to_numpy()
@@ -758,8 +771,8 @@ class Pearl:
         self.population['depression'] = (old_depression | new_depression).astype(int)
 
     def apply_stage_2(self):
-        in_care = self.population['status'] == IN_CARE
-        out_care = self.population['status'] == OUT_CARE
+        in_care = self.population['status'] == ART_USER
+        out_care = self.population['status'] == ART_NONUSER
 
         # ckd
         ckd_coeff_matrix = self.parameters.ckd_coeff.to_numpy()
@@ -836,12 +849,12 @@ class Pearl:
         self.population['hypertension'] = (old_hypertension | new_hypertension).astype(int)
 
     def record_stats(self):
-        uninitiated = self.population['status'] == UNINITIATED
-        in_care = self.population['status'] == IN_CARE
-        out_care = self.population['status'] == OUT_CARE
+        uninitiated = self.population['status'].isin([UNINITIATED_USER, UNINITIATED_NONUSER])
+        in_care = self.population['status'] == ART_USER
+        out_care = self.population['status'] == ART_NONUSER
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
-        alive = self.population['status'].isin([IN_CARE, OUT_CARE, REENGAGED, LTFU])
+        alive = self.population['status'].isin([ART_USER, ART_NONUSER, REENGAGED, LTFU])
 
         # Count of new initiators by year
         if self.year == 2009:
@@ -911,8 +924,8 @@ class Pearl:
             self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
 
     def record_final_stats(self):
-        dead_in_care = self.population['status'] == DEAD_IN_CARE
-        dead_out_care = self.population['status'] == DEAD_OUT_CARE
+        dead_in_care = self.population['status'] == DEAD_ART_USER
+        dead_out_care = self.population['status'] == DEAD_ART_NONUSER
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()

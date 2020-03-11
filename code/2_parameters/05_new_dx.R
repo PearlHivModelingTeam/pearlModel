@@ -159,7 +159,13 @@ predict_new_dx <- function(DF) {
   
   fit_all <- fit_all %>%
     anti_join(remove, by=c("group", "model"))
-  
+
+  remove <- fit_all %>%
+    filter(grepl("idu_black", group), model %in% c("Gamma"))
+
+  fit_all <- fit_all %>%
+    anti_join(remove, by=c("group", "model"))
+
   fit_all2a <- fit_all %>%
     arrange(group, year, lower) %>%
     group_by(group, year) %>%
@@ -184,7 +190,7 @@ cdc_estimates <- read.csv(filePath(input_dir, 'dx_estimates_cdc_table1.csv'), st
   rename_all(tolower)
 
 new_dx <- surv_fx1(cdc_estimates)
-write_feather(new_dx, filePath(param_dir, 'new_dx.feather'))
+#write_feather(new_dx, filePath(param_dir, 'new_dx.feather'))
 
 new_dx_interval <- predict_new_dx(new_dx)
 write_feather(new_dx_interval, filePath(param_dir, 'new_dx_interval.feather'))
