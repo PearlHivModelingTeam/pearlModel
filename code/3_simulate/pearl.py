@@ -207,7 +207,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
 
     # Count those not starting art 2006 - 2009 as initial ART nonusers
     n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
-    n_initial_nonusers = 0
+    #n_initial_nonusers = 0
 
     # Compile list of number of new agents to be introduced in the model
     new_agents = new_dx.loc[np.arange(2010, 2031), ['art_users', 'art_nonusers']]
@@ -292,11 +292,12 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
                                                                  parameters.cd4_increase_rand)
     # Set status
     population['status'] = -1
-    population.loc[:n_initial_nonusers, 'status'] = ART_NONUSER
-    population.loc[n_initial_nonusers:, 'status'] = ART_USER
-    population.loc[:n_initial_nonusers, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
-    population.loc[:n_initial_nonusers, 'ltfu_year'] = 2009
-    population.loc[:n_initial_nonusers, 'n_lost'] += 1
+    population['status'] = ART_USER
+    #population.loc[:n_initial_nonusers, 'status'] = ART_NONUSER
+    #population.loc[n_initial_nonusers:, 'status'] = ART_USER
+    #population.loc[:n_initial_nonusers, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
+    #population.loc[:n_initial_nonusers, 'ltfu_year'] = 2009
+    #population.loc[:n_initial_nonusers, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -1050,7 +1051,7 @@ class Pearl:
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
-            self.lose_to_follow_up()
+            #self.lose_to_follow_up()
 
             # Record output statistics
             self.record_stats()
