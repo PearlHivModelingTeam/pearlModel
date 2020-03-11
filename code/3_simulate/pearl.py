@@ -274,7 +274,6 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
     #cd4n_out = population[['init_sqrtcd4n', 'h1yy']].assign(group=group_name, replication=replication).copy().reset_index()
     #print(cd4n_out)
     #cd4n_out.to_feather(f'{out_dir}/{group_name}_cd4n_out_{replication}.feather')
-    #exit(1)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -379,6 +378,12 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population['ltfu_year'] = 0
     population['intercept'] = 1.0
     population['year'] = population['h1yy_orig']
+
+    # Set initial data for nonusers
+    uninitiated_nonusers = population['status'] == UNINITIATED_NONUSER
+    population.loc[uninitiated_nonusers, 'sqrtcd4n_exit'] = population.loc[uninitiated_nonusers, 'time_varying_sqrtcd4n']
+    population.loc[uninitiated_nonusers, 'ltfu_year'] = population.loc[uninitiated_nonusers, 'h1yy_orig']
+    population.loc[uninitiated_nonusers, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
