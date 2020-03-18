@@ -282,6 +282,7 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
     population['year_died'] = np.nan
     population['sqrtcd4n_exit'] = 0
     population['ltfu_year'] = 0
+    population['return_year'] = 0
     population['intercept'] = 1.0
     population['year'] = 2009
 
@@ -290,14 +291,15 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
                                                                  parameters.cd4_increase_vcov.to_numpy(),
                                                                  parameters.cd4_increase_flag,
                                                                  parameters.cd4_increase_rand)
-    # Set status
+    # Set status and initiate out of care variables
     population['status'] = ART_USER
-    rand = np.random.choice(len(population.index), n_initial_nonusers)
-
-    population.loc[rand, 'status'] = ART_NONUSER
-    population.loc[rand, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
-    population.loc[rand, 'ltfu_year'] = 2009
-    population.loc[rand, 'n_lost'] += 1
+    non_user = np.random.choice(a=len(population.index), size=n_initial_nonusers, replace=False)
+    years_out_of_care = np.random.choice(a=parameters.years_out_of_care['years'], size=n_initial_nonusers, p=parameters.years_out_of_care['probability'])
+    population.loc[non_user, 'status'] = ART_NONUSER
+    population.loc[non_user, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
+    population.loc[non_user, 'ltfu_year'] = 2009
+    population.loc[non_user, 'return_year'] = 2009 + years_out_of_care
+    population.loc[non_user, 'n_lost'] += 1
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -336,8 +338,9 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
         grouped_pop = simulate_ages(parameters.age_by_h1yy.loc[h1yy], n_users + n_nonusers)
         grouped_pop['h1yy'] = h1yy
         grouped_pop['status'] = UNINITIATED_USER
-        rand = np.random.choice(len(grouped_pop.index), n_nonusers)
-        grouped_pop.loc[rand, 'status'] = UNINITIATED_NONUSER
+        non_users = np.random.choice(a=len(grouped_pop.index), size=n_nonusers, replace=False)
+        grouped_pop.loc[non_users, 'status'] = UNINITIATED_NONUSER
+
         population = pd.concat([population, grouped_pop])
 
     population['age'] = np.floor(population['age'])
@@ -378,6 +381,7 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population['year_died'] = np.nan
     population['sqrtcd4n_exit'] = 0
     population['ltfu_year'] = 0
+    population['return_year'] = 0
     population['intercept'] = 1.0
     population['year'] = population['h1yy_orig']
 
@@ -483,8 +487,8 @@ class Parameters:
             self.cd4_decrease_flag = cd4_decrease_flag
             self.cd4_decrease_rand = np.random.rand()
 
-            # Reengagement probability
-            self.prob_reengage = store['prob_reengage'].loc[group_name]
+            # Years out of Care
+            self.years_out_of_care = store['years_out_of_care']
 
             # Stage 0 Comorbidities
             self.hcv_prev_users = store['hcv_prev_users'].loc[group_name]
@@ -694,6 +698,7 @@ class Pearl:
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
+        self.population.loc[died, 'return_year'] = 0
 
     def lose_to_follow_up(self):
         in_care = self.population['status'] == ART_USER
@@ -703,6 +708,10 @@ class Pearl:
         ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_flag,
                                    vcov_matrix, self.parameters.loss_to_follow_up_rand)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
+        n_lost = len(self.population.loc[lost])
+        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost,
+                                             p=self.parameters.years_out_of_care['probability'])
+        self.population.loc[lost, 'return_year'] = self.year + years_out_of_care
         self.population.loc[lost, 'status'] = LTFU
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n']
         self.population.loc[lost, 'ltfu_year'] = self.year
@@ -710,14 +719,15 @@ class Pearl:
 
     def reengage(self):
         out_care = self.population['status'] == ART_NONUSER
-        reengaged = (np.random.rand(len(self.population.index)) < np.full(len(self.population.index),
-                                                                          self.parameters.prob_reengage)) & out_care
+        reengaged = (self.year == self.population['return_year']) & out_care
+
         self.population.loc[reengaged, 'status'] = REENGAGED
 
         # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
         self.population = set_cd4_cat(self.population)
         self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
         self.population.loc[reengaged, 'h1yy'] = self.year
+        self.population.loc[reengaged, 'return_year'] = 0
 
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED
