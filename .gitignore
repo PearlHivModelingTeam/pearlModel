@@ -3,6 +3,8 @@ data/input/*
 data/processed/*
 data/param/*
 data/parameters/*
+data/ibk/*
+data/pbk/*
 !data/param/prob_reengage.csv
 *.swp
 code/test/*

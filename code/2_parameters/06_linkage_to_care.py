@@ -6,8 +6,8 @@ import feather
 import statsmodels.formula.api as sm
 
 # Define directories
-input_dir = f'{os.getcwd()}/../../data/input/aim_1'
-param_dir = f'{os.getcwd()}/../../data/parameters/aim_1'
+input_dir = f'{os.getcwd()}/../../data/input/aim1'
+param_dir = f'{os.getcwd()}/../../data/parameters/aim1'
 
 years = np.arange(2006, 2031)
 linkage_obs = pd.read_csv(f'{input_dir}/linkage_to_care.csv')

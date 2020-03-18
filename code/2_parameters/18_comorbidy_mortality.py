@@ -17,8 +17,8 @@ group_names.sort()
 
 # Define directories
 cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/aim_2/mortality'
-out_dir = cwd + '/../../data/parameters/aim_2/mortality'
+in_dir = cwd + '/../../data/input/aim2/mortality'
+out_dir = cwd + '/../../data/parameters/aim2/mortality'
 
 # Clean in care coefficients
 mortality_in_care = pd.read_csv(f'{in_dir}/mortality_coeff_in_care.csv')

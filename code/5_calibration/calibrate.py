@@ -21,7 +21,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 #group_names = group_names[:1]
-group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
+#group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 
 plots = {'msm': ['msm_black_male', 'msm_hisp_male', 'msm_white_male'],
          'het_female': ['het_black_female', 'het_hisp_female', 'het_white_female'],
@@ -29,7 +29,7 @@ plots = {'msm': ['msm_black_male', 'msm_hisp_male', 'msm_white_male'],
          'idu_female': ['idu_black_female', 'idu_hisp_female', 'idu_white_female'],
          'idu_male': ['idu_black_male', 'idu_hisp_male', 'idu_white_male']}
 
-plots = {'msm': ['msm_black_male', 'msm_hisp_male', 'msm_white_male']}
+#plots = {'msm': ['msm_black_male', 'msm_hisp_male', 'msm_white_male']}
 titles = ['Black', 'Hispanic', 'White']
 
 folder_names = ['10', '30', '50', '70', '90']
@@ -44,6 +44,7 @@ targets.loc[targets['sex']==2, 'sex'] = '_female'
 targets['group'] = targets['pop2'] + targets['sex']
 targets['prop'] = targets['pct']/100
 targets = targets[['group', 'prop']]
+print(targets)
 
 #rates = rates[:1]
 
@@ -71,6 +72,7 @@ sns.set(style='ticks')
 sns.set_context('paper', font_scale = 1.8, rc={'lines.linewidth':3})
 output_table = pd.DataFrame()
 for plot_name in plots:
+    print(plot_name)
     group_names = plots[plot_name]
     fig, axes = plt.subplots(nrows=1, ncols=3, sharey='all', figsize=(16.0, 9.0))
     for i, (group_name, ax) in enumerate(zip(group_names, axes.flat)):
@@ -95,9 +97,9 @@ for plot_name in plots:
         else:
             ax.axhline(y=y2, color='k', label='Target')
 
-        if group_name!='het_white_male':
+        try:
             idx = np.argwhere(np.diff(np.sign(y2s - y_fit))).flatten()[0]
-        else:
+        except:
             idx = -1
         ax.plot(x_fit[idx], y_fit[idx], 'ro', markersize=10, label='Intersection')
         output_table = output_table.append(pd.DataFrame({'group': group_name, 'prob': x_fit[idx]}, index=[0]), ignore_index=True)

@@ -9,8 +9,8 @@ pd.set_option("display.max_rows", 1001)
 # Define directories
 cwd = os.getcwd()
 param_dir = cwd + '/../../data/parameters/'
-aim_1_dir = cwd + '/../../data/parameters/aim_1'
-aim_2_dir = cwd + '/../../data/parameters/aim_2'
+aim_1_dir = cwd + '/../../data/parameters/aim1'
+aim_2_dir = cwd + '/../../data/parameters/aim2'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
@@ -139,41 +139,44 @@ cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[4.0], 'p65': 15*[7.0], 'p95': 15*[13.0]}).set_index('group')
 
 # Probability to reengage in care for each group
-prob_reengage = pd.read_csv(f'{aim_1_dir}/prob_reengage.csv').set_index(['group'])
-print(prob_reengage)
+#prob_reengage = pd.read_csv(f'{aim_1_dir}/prob_reengage.csv').set_index(['group'])
+#print(prob_reengage)
 #prob_reengage = pd.DataFrame({'group': group_names,
-#                              'prob': len(group_names)*[0.1]}).set_index('group')
+#                              'prob': len(group_names)*[0.9]}).set_index('group')
 #print(prob_reengage)
 
+# Number of years spent out of care
+years_out_of_care = pd.read_feather(f'{aim_1_dir}/years_out_of_care.feather')
+
 # Stage 0 comorbidities
-hcv_prev_users = pd.read_feather(f'{aim_2_dir}/stage_0/hcv_prev_users.feather').set_index('group')
-hcv_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_0/hcv_prev_inits.feather').set_index('group')
-smoking_prev_users = pd.read_feather(f'{aim_2_dir}/stage_0/smoking_prev_users.feather').set_index('group')
-smoking_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_0/smoking_prev_inits.feather').set_index('group')
+hcv_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_users.feather').set_index('group')
+hcv_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_inits.feather').set_index('group')
+smoking_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_users.feather').set_index('group')
+smoking_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_inits.feather').set_index('group')
 
 # Stage 1 comorbidities
-anxiety_prev_users = pd.read_feather(f'{aim_2_dir}/stage_1/anxiety_prev_users.feather').set_index('group')
-depression_prev_users = pd.read_feather(f'{aim_2_dir}/stage_1/depression_prev_users.feather').set_index('group')
-anxiety_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_1/anxiety_prev_inits.feather').set_index('group')
-depression_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_1/depression_prev_inits.feather').set_index('group')
-anxiety_coeff = pd.read_feather(f'{aim_2_dir}/stage_1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
-depression_coeff = pd.read_feather(f'{aim_2_dir}/stage_1/depression_coeff.feather').set_index(['group', 'param']).unstack()
+anxiety_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_users.feather').set_index('group')
+depression_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_users.feather').set_index('group')
+anxiety_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_inits.feather').set_index('group')
+depression_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_inits.feather').set_index('group')
+anxiety_coeff = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
+depression_coeff = pd.read_feather(f'{aim_2_dir}/stage1/depression_coeff.feather').set_index(['group', 'param']).unstack()
 
 # Stage 2 comorbidities
-ckd_prev_users = pd.read_feather(f'{aim_2_dir}/stage_2/ckd_prev_users.feather').set_index('group')
-lipid_prev_users = pd.read_feather(f'{aim_2_dir}/stage_2/lipid_prev_users.feather').set_index('group')
-diabetes_prev_users = pd.read_feather(f'{aim_2_dir}/stage_2/diabetes_prev_users.feather').set_index('group')
-hypertension_prev_users = pd.read_feather(f'{aim_2_dir}/stage_2/hypertension_prev_users.feather').set_index('group')
+ckd_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_users.feather').set_index('group')
+lipid_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_users.feather').set_index('group')
+diabetes_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_prev_users.feather').set_index('group')
+hypertension_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_prev_users.feather').set_index('group')
 
-ckd_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_2/ckd_prev_inits.feather').set_index('group')
-lipid_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_2/lipid_prev_inits.feather').set_index('group')
-diabetes_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_2/diabetes_prev_inits.feather').set_index('group')
-hypertension_prev_inits = pd.read_feather(f'{aim_2_dir}/stage_2/hypertension_prev_inits.feather').set_index('group')
+ckd_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_inits.feather').set_index('group')
+lipid_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_inits.feather').set_index('group')
+diabetes_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_prev_inits.feather').set_index('group')
+hypertension_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_prev_inits.feather').set_index('group')
 
-ckd_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/ckd_coeff.feather').set_index(['group', 'param']).unstack()
-lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
-diabetes_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
-hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage_2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
+ckd_coeff = pd.read_feather(f'{aim_2_dir}/stage2/ckd_coeff.feather').set_index(['group', 'param']).unstack()
+lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
+diabetes_coeff = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
+hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
 
 # mortality with comorbidity
 mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
@@ -207,7 +210,8 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['cd4_increase'] = cd4_increase
     store['cd4_increase_vcov'] = cd4_increase_vcov
     store['cd4_increase_knots'] = cd4_increase_knots
-    store['prob_reengage'] = prob_reengage
+    #store['prob_reengage'] = prob_reengage
+    store['years_out_of_care'] = years_out_of_care
 
     # Stage 0 comorbidities
     store['hcv_prev_users'] = hcv_prev_users
