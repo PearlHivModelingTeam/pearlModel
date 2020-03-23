@@ -10,3 +10,4 @@ data/pbk/*
 code/test/*
 .idea/*
 *.pyc
+*.png

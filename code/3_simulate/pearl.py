@@ -365,15 +365,18 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
         sigma = std_intercept + (h1yy_mod * std_slope)
         size = group.shape[0]
         sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
-        population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+        population.loc[h1yy, 'time_varying_sqrtcd4n'] = sqrt_cd4n
 
     population = population.reset_index().set_index('id').sort_index()
 
     # Calculate time varying cd4 count
-    population = set_cd4_cat(population)
     population['h1yy_orig'] = population['h1yy']
+    population['init_sqrtcd4n'] = population['time_varying_sqrtcd4n']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
-    population['time_varying_sqrtcd4n'] = population['init_sqrtcd4n']
+    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n'] = -1.0
+    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n_orig'] = -1.0
+    population.loc[population['status'] == UNINITIATED_NONUSER, 'h1yy_orig'] = -1
+    population = set_cd4_cat(population)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -615,7 +618,8 @@ class Pearl:
         out_care = len(self.population.loc[self.population['status'] == ART_NONUSER])
         dead_in_care = len(self.population.loc[self.population['status'] == DEAD_ART_USER])
         dead_out_care = len(self.population.loc[self.population['status'] == DEAD_ART_NONUSER])
-        uninitiated = len(self.population.loc[self.population['status'].isin([UNINITIATED_USER, UNINITIATED_NONUSER])])
+        uninitiated_user = len(self.population.loc[self.population['status'].isin([UNINITIATED_USER])])
+        uninitiated_nonuser = len(self.population.loc[self.population['status'].isin([UNINITIATED_NONUSER])])
 
         string = 'Year End: ' + str(self.year) + '\n'
         string += 'Total Population Size: ' + str(total) + '\n'
@@ -623,7 +627,8 @@ class Pearl:
         string += 'Out Care Size: ' + str(out_care) + '\n'
         string += 'Dead In Care Size: ' + str(dead_in_care) + '\n'
         string += 'Dead Out Care Size: ' + str(dead_out_care) + '\n'
-        string += 'Uninitiated Size: ' + str(uninitiated) + '\n'
+        string += 'Uninitiated User Size: ' + str(uninitiated_user) + '\n'
+        string += 'Uninitiated Nonuser Size: ' + str(uninitiated_nonuser) + '\n'
         return string
 
     def increment_age(self):
@@ -661,15 +666,22 @@ class Pearl:
             self.parameters.cd4_decrease_rand)
 
 
-    def add_new_dx(self):
-        new_user = (self.population['status'] == UNINITIATED_USER) & (self.population['h1yy_orig'] == self.year)
+    def add_new_user(self):
+        new_user = (self.population['status'] == UNINITIATED_USER) & (self.population['h1yy'] == self.year)
         self.population.loc[new_user, 'status'] = ART_USER
 
-        new_nonuser = (self.population['status'] == UNINITIATED_NONUSER) & (self.population['h1yy_orig'] == self.year)
+    def add_new_nonuser(self):
+        new_nonuser = (self.population['status'] == UNINITIATED_NONUSER) & (self.population['h1yy'] == self.year)
         self.population.loc[new_nonuser, 'status'] = ART_NONUSER
         self.population.loc[new_nonuser, 'sqrtcd4n_exit'] = self.population.loc[new_nonuser, 'time_varying_sqrtcd4n']
         self.population.loc[new_nonuser, 'ltfu_year'] = self.year
         self.population.loc[new_nonuser, 'n_lost'] += 1
+
+        # Allow New Nonusers to enter care
+        n_new_nonusers = len(self.population.loc[new_nonuser])
+        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_new_nonusers,
+                                             p=self.parameters.years_out_of_care['probability'])
+        self.population.loc[new_nonuser, 'return_year'] = self.year + years_out_of_care
 
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
@@ -728,6 +740,11 @@ class Pearl:
         self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
         self.population.loc[reengaged, 'h1yy'] = self.year
         self.population.loc[reengaged, 'return_year'] = 0
+
+        # Set original values for first time engagers
+        first_time = (self.population['h1yy_orig'] == -1 ) & (self.population['status'] == REENGAGED)
+        self.population.loc[first_time, 'h1yy_orig'] = self.year
+        self.population.loc[first_time, 'init_sqrtcd4n_orig'] = self.population.loc[first_time, 'time_varying_sqrtcd4n']
 
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED
@@ -1046,16 +1063,15 @@ class Pearl:
 
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care
-            self.add_new_dx()  # Add in newly diagnosed ART initiators
+            self.add_new_user()  # Add in newly diagnosed ART initiators
             self.kill_in_care()  # Kill some people in care
             self.lose_to_follow_up()  # Lose some people to follow up
 
             # Out of care operations
             self.decrease_cd4_count()  # Decrease cd4n in people out of care
+            self.add_new_nonuser()  # Add in newly diagnosed ART initiators
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
-
-            #self.lose_to_follow_up()
 
             # Record output statistics
             self.record_stats()
