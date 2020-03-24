@@ -747,6 +747,13 @@ class Pearl:
         self.population.loc[first_time, 'init_sqrtcd4n_orig'] = self.population.loc[first_time, 'time_varying_sqrtcd4n']
         self.population.loc[first_time, 'init_age'] = self.population.loc[first_time, 'age']
 
+        # Save years out of care
+        years_out = (pd.DataFrame(self.population.loc[reengaged, 'years_out'].value_counts()).reindex(range(1, 8), fill_value=0).reset_index()
+                     .rename(columns={'index': 'years', 'years_out': 'n'})
+                     .assign(group= self.group_name, replication=self.replication, year=self.year))
+        self.stats.years_out = self.stats.years_out.append(years_out)
+        self.population.loc[reengaged, 'years_out'] = 0
+
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
@@ -984,11 +991,6 @@ class Pearl:
         self.stats.dead_out_care_age = (
             self.population.loc[dead_out_care].groupby(['year_died', 'age']).size().reset_index(name='n')
             .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
-
-        # Count how many years spent out of care and tally
-        self.stats.years_out = (pd.DataFrame(self.population['years_out'].value_counts()).reset_index()
-                                .rename(columns={'years_out': 'n', 'index': 'years_out'})
-                                .assign(replication=self.replication, group=self.group_name))
 
         # Number of unique people out of care 2010-2015
         n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
