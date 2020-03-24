@@ -224,9 +224,6 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
     pop_size = parameters.on_art_2009[0].astype('int') + n_initial_nonusers
     population = simulate_ages(parameters.age_in_2009, pop_size)
 
-    #print(parameters.on_art_2009[0].astype('int'))
-    #print(n_initial_nonusers)
-
     # Create age categories
     population['age'] = np.floor(population['age'])
     population['age_cat'] = np.floor(population['age'] / 10)
@@ -271,10 +268,11 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
     population = set_cd4_cat(population)
     population['h1yy_orig'] = population['h1yy']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
+    population['init_age'] = population['age'] - (2009 - population['h1yy_orig'])
 
     #cd4n_out = population[['init_sqrtcd4n', 'h1yy']].assign(group=group_name, replication=replication).copy().reset_index()
-    #print(cd4n_out)
     #cd4n_out.to_feather(f'{out_dir}/{group_name}_cd4n_out_{replication}.feather')
+    #exit(1)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -373,9 +371,11 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population['h1yy_orig'] = population['h1yy']
     population['init_sqrtcd4n'] = population['time_varying_sqrtcd4n']
     population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
+    population['init_age'] = population['age']
     population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n'] = -1.0
     population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n_orig'] = -1.0
     population.loc[population['status'] == UNINITIATED_NONUSER, 'h1yy_orig'] = -1
+    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_age'] = -1
     population = set_cd4_cat(population)
 
     # Add final columns used for calculations and output
@@ -386,7 +386,7 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population['ltfu_year'] = 0
     population['return_year'] = 0
     population['intercept'] = 1.0
-    population['year'] = population['h1yy_orig']
+    population['year'] = 2009
 
     if parameters.comorbidity_flag:
         # Stage 0 comorbidities
@@ -745,6 +745,7 @@ class Pearl:
         first_time = (self.population['h1yy_orig'] == -1 ) & (self.population['status'] == REENGAGED)
         self.population.loc[first_time, 'h1yy_orig'] = self.year
         self.population.loc[first_time, 'init_sqrtcd4n_orig'] = self.population.loc[first_time, 'time_varying_sqrtcd4n']
+        self.population.loc[first_time, 'init_age'] = self.population.loc[first_time, 'age']
 
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED
@@ -884,17 +885,6 @@ class Pearl:
         ltfu = self.population['status'] == LTFU
         alive = self.population['status'].isin([ART_USER, ART_NONUSER, REENGAGED, LTFU])
 
-        # Count of new initiators by year
-        if self.year == 2009:
-            # Count of new initiators by year
-            self.stats.new_init_count = (
-                self.population.loc[uninitiated].groupby(['h1yy_orig']).size().reset_index(name='n').
-                assign(replication=self.replication, group=self.group_name))
-
-            # Count of new initiators by year and age
-            self.stats.new_init_age = (
-                self.population.loc[uninitiated].groupby(['h1yy_orig', 'age']).size().reset_index(name='n').
-                assign(replication=self.replication, group=self.group_name))
 
         # Count of those in care by age_cat and year
         in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
@@ -954,6 +944,16 @@ class Pearl:
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
+
+        # Count of new initiators by year
+        self.stats.new_init_count = (
+            self.population.groupby(['h1yy_orig']).size().reset_index(name='n').
+                assign(replication=self.replication, group=self.group_name))
+
+        # Count of new initiators by year and age
+        self.stats.new_init_age = (
+            self.population.groupby(['h1yy_orig', 'init_age']).size().reset_index(name='n').
+                assign(replication=self.replication, group=self.group_name))
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
