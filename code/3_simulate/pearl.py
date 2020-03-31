@@ -16,6 +16,9 @@ LTFU = 5
 DEAD_ART_USER = 6
 DEAD_ART_NONUSER = 7
 
+# Smearing correction
+SMEARING = 1.4
+
 
 ###############################################################################
 # Functions                                                                   #
@@ -128,7 +131,7 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
         high = diff + 1.96 * se
         diff = (rand * (high - low)) + low
 
-    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * 1.5 )
+    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * SMEARING )
     return new_cd4
 
 def create_comorbidity_pop_matrix(pop, condition):
