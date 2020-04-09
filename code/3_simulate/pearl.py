@@ -64,10 +64,10 @@ def simulate_ages(coeffs, pop_size):
 
 def set_cd4_cat(pop):
     """ Given initial sqrtcd4n, add columns with categories used for cd4 increase function """
-    init_cd4_cat = np.select([pop['init_sqrtcd4n'].lt(np.sqrt(200.0)),
-                              pop['init_sqrtcd4n'].ge(np.sqrt(200.0)) & pop['init_sqrtcd4n'].lt(np.sqrt(350.0)),
-                              pop['init_sqrtcd4n'].ge(np.sqrt(350.0)) & pop['init_sqrtcd4n'].lt(np.sqrt(500.0)),
-                              pop['init_sqrtcd4n'].ge(np.sqrt(500.0))],
+    init_cd4_cat = np.select([pop['last_init_sqrtcd4n'].lt(np.sqrt(200.0)),
+                              pop['last_init_sqrtcd4n'].ge(np.sqrt(200.0)) & pop['last_init_sqrtcd4n'].lt(np.sqrt(350.0)),
+                              pop['last_init_sqrtcd4n'].ge(np.sqrt(350.0)) & pop['last_init_sqrtcd4n'].lt(np.sqrt(500.0)),
+                              pop['last_init_sqrtcd4n'].ge(np.sqrt(500.0))],
                              [1, 2, 3, 4])
     pop['cd4_cat_349'] = (init_cd4_cat == 2).astype(int)
     pop['cd4_cat_499'] = (init_cd4_cat == 3).astype(int)
@@ -81,7 +81,7 @@ def calculate_cd4_increase(pop, knots, year, coeffs, vcov, flag, rand):
         category and cross terms"""
 
     # Calculate spline variables
-    pop['time_from_h1yy'] = year - pop['h1yy']
+    pop['time_from_h1yy'] = year - pop['last_h1yy']
     pop['time_from_h1yy_'] = (np.maximum(0, pop['time_from_h1yy'] - knots['p5']) ** 2 -
                               np.maximum(0, pop['time_from_h1yy'] - knots['p95']) ** 2) / (knots['p95'] - knots['p5'])
     pop['time_from_h1yy__'] = (np.maximum(0, pop['time_from_h1yy'] - knots['p35']) ** 2 -
@@ -135,26 +135,26 @@ def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
     return new_cd4
 
 def create_comorbidity_pop_matrix(pop, condition):
-    pop['time_since_art'] = pop['year'] - pop['h1yy_orig']
+    pop['time_since_art'] = pop['year'] - pop['h1yy']
     pop['out_care'] = (pop['status'] == ART_NONUSER).astype(int)
 
     if condition=='anxiety':
-        return pop[['age', 'init_sqrtcd4n_orig', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'init_sqrtcd4n', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition=='depression':
-        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'anxiety', 'init_sqrtcd4n', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition=='ckd':
-        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'anxiety', 'init_sqrtcd4n', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition=='lipid':
-        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition=='diabetes':
-        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition=='hypertension':
-        return pop[['age', 'anxiety', 'init_sqrtcd4n_orig', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+        return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
@@ -268,14 +268,11 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
     population.loc[population['age_cat'] < 2, 'age_cat'] = 2
 
     # Calculate time varying cd4 count
+    population['last_h1yy'] = population['h1yy']
+    population['last_init_sqrtcd4n'] = population['init_sqrtcd4n']
     population = set_cd4_cat(population)
-    population['h1yy_orig'] = population['h1yy']
-    population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
-    population['init_age'] = population['age'] - (2009 - population['h1yy_orig'])
+    population['init_age'] = population['age'] - (2009 - population['h1yy'])
 
-    #cd4n_out = population[['init_sqrtcd4n', 'h1yy']].assign(group=group_name, replication=replication).copy().reset_index()
-    #cd4n_out.to_feather(f'{out_dir}/{group_name}_cd4n_out_{replication}.feather')
-    #exit(1)
 
     # Add final columns used for calculations and output
     population['n_lost'] = 0
@@ -371,14 +368,10 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_
     population = population.reset_index().set_index('id').sort_index()
 
     # Calculate time varying cd4 count
-    population['h1yy_orig'] = population['h1yy']
+    population['last_h1yy'] = population['h1yy']
     population['init_sqrtcd4n'] = population['time_varying_sqrtcd4n']
-    population['init_sqrtcd4n_orig'] = population['init_sqrtcd4n']
+    population['last_init_sqrtcd4n'] = population['init_sqrtcd4n']
     population['init_age'] = population['age']
-    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n'] = -1.0
-    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_sqrtcd4n_orig'] = -1.0
-    population.loc[population['status'] == UNINITIATED_NONUSER, 'h1yy_orig'] = -1
-    population.loc[population['status'] == UNINITIATED_NONUSER, 'init_age'] = -1
     population = set_cd4_cat(population)
 
     # Add final columns used for calculations and output
@@ -739,16 +732,11 @@ class Pearl:
         self.population.loc[reengaged, 'status'] = REENGAGED
 
         # Set new initial sqrtcd4n to current time varying cd4n and h1yy to current year
+        self.population.loc[reengaged, 'last_init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
+        self.population.loc[reengaged, 'last_h1yy'] = self.year
         self.population = set_cd4_cat(self.population)
-        self.population.loc[reengaged, 'init_sqrtcd4n'] = self.population.loc[reengaged, 'time_varying_sqrtcd4n']
-        self.population.loc[reengaged, 'h1yy'] = self.year
         self.population.loc[reengaged, 'return_year'] = 0
 
-        # Set original values for first time engagers
-        first_time = (self.population['h1yy_orig'] == -1 ) & (self.population['status'] == REENGAGED)
-        self.population.loc[first_time, 'h1yy_orig'] = self.year
-        self.population.loc[first_time, 'init_sqrtcd4n_orig'] = self.population.loc[first_time, 'time_varying_sqrtcd4n']
-        self.population.loc[first_time, 'init_age'] = self.population.loc[first_time, 'age']
 
         # Save years out of care
         years_out = (pd.DataFrame(self.population.loc[reengaged, 'years_out'].value_counts()).reindex(range(1, 8), fill_value=0).reset_index()
@@ -957,13 +945,16 @@ class Pearl:
 
         # Count of new initiators by year
         self.stats.new_init_count = (
-            self.population.groupby(['h1yy_orig']).size().reset_index(name='n').
+            self.population.groupby(['h1yy']).size().reset_index(name='n').
                 assign(replication=self.replication, group=self.group_name))
 
         # Count of new initiators by year and age
         self.stats.new_init_age = (
-            self.population.groupby(['h1yy_orig', 'init_age']).size().reset_index(name='n').
+            self.population.groupby(['h1yy', 'init_age']).size().reset_index(name='n').
                 assign(replication=self.replication, group=self.group_name))
+
+        # Record initial CD4 Counts
+        initial_cd4n = self.population[['init_sqrtcd4n', 'h1yy']].assign(group=self.group_name, replication=self.replication).copy()
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
@@ -1039,6 +1030,7 @@ class Pearl:
             store['new_init_age'] = self.stats.new_init_age
             store['years_out'] = self.stats.years_out
             store['n_times_lost'] = self.stats.n_times_lost
+            store['initial_cd4n'] = initial_cd4n
             store['n_unique_out_care'] = n_unique_out_care
             store['random_params'] = random_params
 
