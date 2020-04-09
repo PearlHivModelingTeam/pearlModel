@@ -39,6 +39,7 @@ for group_name in group_names:
     new_init_age = pd.DataFrame()
     n_unique_out_care = pd.DataFrame()
     years_out = pd.DataFrame()
+    initial_cd4 = pd.DataFrame()
     random_params = pd.DataFrame()
 
     multimorbidity_in_care = pd.DataFrame()
@@ -79,6 +80,7 @@ for group_name in group_names:
             n_unique_out_care = n_unique_out_care.append(store['n_unique_out_care'])
             years_out = years_out.append(store['years_out'])
 
+            initial_cd4 = initial_cd4.append(store['initial_cd4'])
             random_params = random_params.append(store['random_params'])
 
             if comorbidity:
@@ -119,6 +121,7 @@ for group_name in group_names:
     feather.write_dataframe(n_unique_out_care, f'{feather_dir}/{group_name}_n_unique_out_care.feather')
     feather.write_dataframe(years_out, f'{feather_dir}/{group_name}_years_out.feather')
 
+    feather.write_dataframe(initial_cd4, f'{feather_dir}/{group_name}_initial_cd4.feather')
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
 
     if comorbidity:
