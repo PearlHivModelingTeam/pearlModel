@@ -138,13 +138,6 @@ cd4_increase_vcov['covariate'] = 15*(cols[1:])
 cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[4.0], 'p65': 15*[7.0], 'p95': 15*[13.0]}).set_index('group')
 
-# Probability to reengage in care for each group
-#prob_reengage = pd.read_csv(f'{aim_1_dir}/prob_reengage.csv').set_index(['group'])
-#print(prob_reengage)
-#prob_reengage = pd.DataFrame({'group': group_names,
-#                              'prob': len(group_names)*[0.9]}).set_index('group')
-#print(prob_reengage)
-
 # Number of years spent out of care
 years_out_of_care = pd.read_feather(f'{aim_1_dir}/years_out_of_care.feather')
 

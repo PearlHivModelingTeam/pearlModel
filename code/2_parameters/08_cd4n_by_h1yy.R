@@ -37,8 +37,8 @@ get_cd4n_by_h1yy <- function(naaccord, group) {
                                group %in% c("idu_black_male") & H1YY %in% c(2016,2017) ~ 2016,
                                group %in% c("idu_hisp_male") & H1YY %in% c(2012, 2013) ~ 2012,
                                group %in% c("idu_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
-                               group %in% c("idu_hisp_female") ~ 2009,
-                               group %in% c("idu_white_female") & H1YY %in% c(2009,2010,2011) ~ 2009,
+                               group %in% c("idu_hisp_female") ~ 2010,
+                               group %in% c("idu_white_female") & H1YY %in% c(2010,2011) ~ 2009,
                                group %in% c("idu_white_female") & H1YY %in% c(2012,2013) ~ 2012,
                                group %in% c("idu_white_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
                                group %in% c("idu_white_male") & H1YY %in% c(2016,2017) ~ 2016,
@@ -51,6 +51,10 @@ get_cd4n_by_h1yy <- function(naaccord, group) {
     summarise(mean = mean(sqrtcd4n),
               sd = sd(sqrtcd4n)) %>%
     ungroup
+
+}
+
+fit_glm_to_cd4n_by_h1yy <- function(sumdat) {
 
   # Fit GLMs to the mean and SD (MODIFIED FOR IDU TO USE PERIOD INSTEAD OF H1YY)
   meandat <- glm(sumdat$mean ~ sumdat$period)
@@ -74,9 +78,15 @@ get_cd4n_by_h1yy <- function(naaccord, group) {
   return(params)
 }
 
-cd4n_by_h1yy <- test %>% 
-  mutate(cd4n_by_h1yy = pmap(list(naaccord, group), get_cd4n_by_h1yy)) %>%
-  select(c(group, cd4n_by_h1yy)) %>% 
+test <- test %>%
+  mutate(ini1 = pmap(list(naaccord, group), get_cd4n_by_h1yy))
+
+test1 <- unnest(test, ini1) %>% select(-'naaccord')
+write_feather(test1, filePath(param_dir, 'cd4n_by_h1yy_raw.feather'))
+
+cd4n_by_h1yy <- test %>%
+  mutate(cd4n_by_h1yy = map(ini1, fit_glm_to_cd4n_by_h1yy)) %>%
+  select(c(group, cd4n_by_h1yy)) %>%
   unnest() %>%
   rename_all(tolower)
 

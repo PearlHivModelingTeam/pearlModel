@@ -28,7 +28,8 @@ get_cd4n_by_h1yy <- function(group, NAACCORD) {
            H1YY = year(haart1date),
            sqrtcd4n = ifelse(cd4n >= 0, sqrt(cd4n), NA)) %>%
     filter(startYY <= 2009, 2009 <= stopYY)
-  
+
+
   # Get mean and SD sqrtcd4n by H1YY - changed from 2013 to 2009 8/24
   outdat <- popu2 %>%
     filter(H1YY >= 2000, H1YY <= 2009, sqrtcd4n >= 0) %>%
@@ -38,6 +39,9 @@ get_cd4n_by_h1yy <- function(group, NAACCORD) {
               sqrtcd4n_n = n()) %>%
     ungroup
 
+}
+
+fit_glm_to_cd4n_by_h1yy <- function(outdat) {
   # FIT GLM TO MEAN AND SD OF SQRTCD4N
   meandat <- glm(outdat$sqrtcd4n_mean ~ outdat$H1YY)
   stddat <- glm(outdat$sqrtcd4n_sd ~ outdat$H1YY)
@@ -48,9 +52,15 @@ get_cd4n_by_h1yy <- function(group, NAACCORD) {
                        stdslp = stddat$coefficients[2])
 }
 
+test <- test %>%
+  mutate(outdat = pmap(list(group, naaccord_2009), get_cd4n_by_h1yy))
+
+test1 <- unnest(test, outdat) %>% select(-'naaccord_2009')
+write_feather(test1, filePath(param_dir, 'cd4n_by_h1yy_2009_raw.feather'))
+
 
 cd4n_by_h1yy_2009 <- test %>% 
-  mutate(cd4n_by_h1yy_2009 = pmap(list(group, naaccord_2009), get_cd4n_by_h1yy)) %>%
+  mutate(cd4n_by_h1yy_2009 = map(outdat, fit_glm_to_cd4n_by_h1yy)) %>%
   select(c(group, cd4n_by_h1yy_2009)) %>%
   unnest() %>% 
   rename_all(tolower)
