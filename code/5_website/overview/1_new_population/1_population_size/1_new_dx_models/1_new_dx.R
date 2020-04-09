@@ -7,8 +7,8 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+input_dir <- filePath(getwd(), '/../../../../../../data/input/aim1')
+param_dir <- filePath(getwd(), '/../../../../../../data/parameters/aim1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -73,7 +73,7 @@ predict_new_dx <- function(DF) {
   }
   
   predict_it <- function(x,y) {
-    preds2 <- data.frame(year=seq(2006,2030), pred = predict(y, type="response", newdata=x, se.fit = T))
+    preds2 <- data.frame(year=seq(2006,2030, length.out = 1000), pred = predict(y, type="response", newdata=x, se.fit = T))
     
     preds2 <- preds2 %>%
       mutate(lower = pred.fit - 1.96*pred.se.fit,
@@ -84,7 +84,7 @@ predict_new_dx <- function(DF) {
   # Create expanded dataset to 2030 to use for predictions
   ####################################################
   groups <- unique(surv$group)
-  years <- seq(2006, 2030)
+  years <- seq(2006, 2030, length.out=1000)
   
   simulated <- expand.grid(year = years, group = groups, stringsAsFactors = F)
   
@@ -166,31 +166,17 @@ predict_new_dx <- function(DF) {
   fit_all <- fit_all %>%
     anti_join(remove, by=c("group", "model"))
 
-  fit_all2a <- fit_all %>%
-    arrange(group, year, lower) %>%
-    group_by(group, year) %>%
-    filter(row_number()==1) %>%
-    ungroup %>%
-    select(group, year, lower)
-  
-  fit_all2b <- fit_all %>%
-    arrange(group, year, desc(upper)) %>%
-    group_by(group, year) %>%
-    filter(row_number()==1) %>%
-    ungroup %>%
-    select(group, year, upper)
-  
-  fit_all2 <- fit_all2a %>%
-    full_join(fit_all2b, by=c("group", "year"))
-  
-  return(fit_all2)
+  return(fit_all)
 }
 
 cdc_estimates <- read.csv(filePath(input_dir, 'dx_estimates_cdc_table1.csv'), stringsAsFactors = FALSE) %>%
   rename_all(tolower)
 
 new_dx <- surv_fx1(cdc_estimates)
-write_feather(new_dx, filePath(param_dir, 'new_dx.feather'))
+write_feather(new_dx, filePath('out/new_dx.feather'))
 
 new_dx_interval <- predict_new_dx(new_dx)
-write_feather(new_dx_interval, filePath(param_dir, 'new_dx_interval.feather'))
+
+new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
+
+write_feather(new_dx_interval, filePath('out/new_dx_interval.feather'))

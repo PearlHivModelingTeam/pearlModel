@@ -11,3 +11,5 @@ code/test/*
 .idea/*
 *.pyc
 *.png
+*.xlsx
+*.feather
