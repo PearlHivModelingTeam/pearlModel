@@ -957,8 +957,9 @@ class Pearl:
         initial_cd4n = self.population[['init_sqrtcd4n', 'h1yy']].copy()
         initial_cd4n['init_sqrtcd4n'] = initial_cd4n['init_sqrtcd4n'].astype(int)
         initial_cd4n = initial_cd4n.groupby(['h1yy', 'init_sqrtcd4n']).size()
-        initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([np.arange(2000, 2030), np.arange(51)], names=['h1yy', 'init_sqrtcd4n'])).reset_index(name='n')
+        initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([np.arange(2000, 2030), np.arange(51)], names=['h1yy', 'init_sqrtcd4n']), fill_value=0).reset_index(name='n')
         initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication)
+        print(initial_cd4n)
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
