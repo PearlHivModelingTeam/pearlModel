@@ -920,12 +920,12 @@ class Pearl:
 
         # Count of those reengaging in care by age and year
         reengaged_age = (self.population.loc[reengaged].groupby(['age']).size().reset_index(name='n')
-                         .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+                         .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.reengaged_age = self.stats.reengaged_age.append(reengaged_age)
 
         # Count of those lost to care by age and year
         ltfu_age = (self.population.loc[ltfu].groupby(['age']).size().reset_index(name='n')
-                    .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+                    .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
         # Keep track of unique individuals lost to follow up 2010-2015
