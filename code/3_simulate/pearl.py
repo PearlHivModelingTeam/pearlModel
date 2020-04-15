@@ -218,7 +218,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
 
     return n_initial_nonusers, new_agents
 
-def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replication):
+def make_pop_2009(parameters, n_initial_nonusers, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
@@ -319,14 +319,14 @@ def make_pop_2009(parameters, n_initial_nonusers, out_dir, group_name, replicati
 
     return population
 
-def make_new_population(parameters, n_new_agents, pop_size_2009, out_dir, group_name, replication):
+def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, replication, stats):
     """ Draw ages for new art initiators """
 
     # Draw a random value between predicted and 2018 predicted value for years greater than 2018
     rand = np.random.rand(len(parameters.age_by_h1yy.index))
     parameters.age_by_h1yy['estimate'] = rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
 
-    #out = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
+    stats.art_coeffs = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
 
     # Create population
     population = pd.DataFrame()
@@ -548,6 +548,7 @@ class Statistics:
         self.years_out = pd.DataFrame()
         self.n_times_lost = pd.DataFrame()
         self.unique_out_care_ids = set()
+        self.art_coeffs = pd.DataFrame()
 
         # Multimorbidity
         self.multimorbidity_in_care = pd.DataFrame()
@@ -582,18 +583,19 @@ class Pearl:
         self.year = 2009
         self.parameters = parameters
 
+        # Initiate output class
+        self.stats = Statistics()
+
         # Simulate number of new art initiators
         n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx, parameters.linkage_to_care)
 
         # Create 2009 population
-        self.population = make_pop_2009(parameters, n_initial_nonusers, self.out_dir, self.group_name, self.replication)
+        self.population = make_pop_2009(parameters, n_initial_nonusers, self.group_name)
 
         # Create population of new art initiators
         self.population = self.population.append(
-            make_new_population(parameters, n_new_agents, len(self.population.index), self.out_dir, self.group_name, self.replication))
+            make_new_population(parameters, n_new_agents, len(self.population.index), self.group_name, self.replication, self.stats))
 
-        # Initiate output class
-        self.stats = Statistics()
 
         # First recording of stats
         self.record_stats()
@@ -1037,6 +1039,7 @@ class Pearl:
             store['initial_cd4n'] = initial_cd4n
             store['n_unique_out_care'] = n_unique_out_care
             store['random_params'] = random_params
+            store['art_coeffs'] = self.stats.art_coeffs
 
             if self.parameters.comorbidity_flag:
                 store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care

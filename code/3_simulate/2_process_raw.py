@@ -9,7 +9,7 @@ pd.options.display.max_rows = 6000
 # Define directories
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
-feather_dir = cwd + '/../../out/processed/bug'
+feather_dir = cwd + '/../../out/processed/4_15'
 
 comorbidity = False
 
@@ -18,9 +18,9 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
 #group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
-group_names = ['msm_black_male']
+#group_names = ['msm_black_male']
 
-replications = 50
+replications = 200
 
 for group_name in group_names:
     in_care_count = pd.DataFrame()
@@ -41,6 +41,7 @@ for group_name in group_names:
     years_out = pd.DataFrame()
     initial_cd4 = pd.DataFrame()
     random_params = pd.DataFrame()
+    art_coeffs = pd.DataFrame()
 
     multimorbidity_in_care = pd.DataFrame()
     multimorbidity_dead = pd.DataFrame()
@@ -83,6 +84,8 @@ for group_name in group_names:
             initial_cd4 = initial_cd4.append(store['initial_cd4'])
             random_params = random_params.append(store['random_params'])
 
+            art_coeffs = art_coeffs.append(store['art_coeffs'])
+
             if comorbidity:
                 multimorbidity_in_care = multimorbidity_in_care.append(store['multimorbidity_in_care'])
                 multimorbidity_dead = multimorbidity_dead.append(store['multimorbidity_dead'])
@@ -123,6 +126,8 @@ for group_name in group_names:
 
     feather.write_dataframe(initial_cd4, f'{feather_dir}/{group_name}_initial_cd4.feather')
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
+    
+    feather.write_dataframe(art_coeffs, f'{feather_dir}/{group_name}_art_coeffs.feather')
 
     if comorbidity:
 
