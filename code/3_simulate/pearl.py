@@ -328,6 +328,9 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
 
     stats.art_coeffs = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
 
+    rand = np.random.rand(len(parameters.cd4n_by_h1yy.index))
+    parameters.cd4n_by_h1yy['estimate'] = rand * (parameters.cd4n_by_h1yy['high_value'] - parameters.cd4n_by_h1yy['low_value']) + parameters.cd4n_by_h1yy['low_value']
+
     # Create population
     population = pd.DataFrame()
     for h1yy in parameters.age_by_h1yy.index.levels[0]:
@@ -349,18 +352,11 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
     # Add id number
     population['id'] = np.arange(pop_size_2009, (pop_size_2009 + population.index.size))
 
-    # Pull cd4 count coefficients
-    mean_intercept = parameters.cd4n_by_h1yy['meanint']
-    mean_slope = parameters.cd4n_by_h1yy['meanslp']
-    std_intercept = parameters.cd4n_by_h1yy['stdint']
-    std_slope = parameters.cd4n_by_h1yy['stdslp']
-
-    # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using 
+    # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using
     population = population.set_index('h1yy')
     for h1yy, group in population.groupby(level=0):
-        h1yy_mod = np.where(h1yy >= 2020, 2020, h1yy)  # Pin coefficients at 2020
-        mu = mean_intercept + (h1yy_mod * mean_slope)
-        sigma = std_intercept + (h1yy_mod * std_slope)
+        mu = parameters.cd4n_by_h1yy.loc[(h1yy, 'mu'), 'estimate']
+        sigma = parameters.cd4n_by_h1yy.loc[(h1yy, 'sigma'), 'estimate']
         size = group.shape[0]
         sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
         population.loc[h1yy, 'time_varying_sqrtcd4n'] = sqrt_cd4n
