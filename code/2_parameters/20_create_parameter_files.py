@@ -88,8 +88,37 @@ age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
 
 
+
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
+years = np.arange(2010, 2031)
+params = ['mu', 'sigma']
+
+df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years], names=['group', 'param', 'h1yy']), columns=['low_value', 'high_value']).sort_index()
+for group in group_names:
+    mu = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'meanint'] + cd4n_by_h1yy.loc[group, 'meanslp'] * years})
+    mu['high_value'] = mu['low_value']
+    mu_2018 = mu.loc[mu['h1yy']==2018, 'high_value'].to_numpy()
+    mu.loc[mu['h1yy'] >=2018, 'low_value'] = mu_2018
+    mu = mu.set_index('h1yy')
+
+    sigma = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'stdint'] + cd4n_by_h1yy.loc[group, 'stdslp'] * years})
+    sigma['high_value'] = sigma['low_value']
+    sigma_2018 = sigma.loc[sigma['h1yy']==2018, 'high_value'].to_numpy()
+    sigma.loc[sigma['h1yy'] >=2018, 'low_value'] = sigma_2018
+    sigma = sigma.set_index('h1yy')
+
+    df.loc[(group, 'mu'), 'low_value'] = mu['low_value'].to_numpy()
+    df.loc[(group, 'mu'), 'high_value'] = mu['high_value'].to_numpy()
+
+    df.loc[(group, 'sigma'), 'low_value'] = sigma['low_value'].to_numpy()
+    df.loc[(group, 'sigma'), 'high_value'] = sigma['high_value'].to_numpy()
+
+df = df.reset_index().sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
+df['low_value'] = df['low_value'].astype(float)
+df['high_value'] = df['high_value'].astype(float)
+cd4n_by_h1yy = df
+
 
 # Coefficients for mortality in care
 mortality_in_care = feather.read_dataframe(f'{aim_1_dir}/mortality_in_care.feather')

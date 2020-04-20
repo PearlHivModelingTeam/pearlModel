@@ -24,9 +24,10 @@ for group, df in linkage_obs.groupby('group'):
 
 linkage_to_care = pd.concat(linkage_list, ignore_index=True)
 linkage_to_care.loc[linkage_to_care['link_prob'] > 0.95, 'link_prob'] = 0.95
-linkage_to_care['art_prob'] = 1.0
+linkage_to_care['art_prob'] = 0.97
 linkage_to_care.loc[linkage_to_care['year'] < 2011, 'art_prob'] = 0.7
 linkage_to_care.loc[linkage_to_care['year'] == 2011, 'art_prob'] = 0.85
+
 
 linkage_to_care.to_feather(f'{param_dir}/linkage_to_care.feather')
 
