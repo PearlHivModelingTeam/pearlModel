@@ -545,6 +545,7 @@ class Statistics:
         self.n_times_lost = pd.DataFrame()
         self.unique_out_care_ids = set()
         self.art_coeffs = pd.DataFrame()
+        self.median_cd4s = pd.DataFrame()
 
         # Multimorbidity
         self.multimorbidity_in_care = pd.DataFrame()
@@ -930,9 +931,18 @@ class Pearl:
         if 2010 <= self.year <= 2015:
             self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
 
+        # Report median initial and varying cd4 count for in care population
+        median_init_cd4 = self.population.loc[in_care, 'init_sqrtcd4n'].median()
+        median_tv_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n'].median()
+        median_cd4s = pd.DataFrame({'init_cd4': median_init_cd4,
+                                    'tv_cd4': median_tv_cd4,
+                                    'year': self.year,
+                                    'replication': self.replication,
+                                    'group': self.group_name}, index=[0])
+        self.stats.median_cd4s = pd.concat([self.stats.median_cd4s, median_cd4s])
 
+        # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
-            # Encode set of comorbidities as an 8 bit integer
             multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
             multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
             self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
@@ -1036,6 +1046,7 @@ class Pearl:
             store['n_unique_out_care'] = n_unique_out_care
             store['random_params'] = random_params
             store['art_coeffs'] = self.stats.art_coeffs
+            store['median_cd4s'] = self.stats.median_cd4s
 
             if self.parameters.comorbidity_flag:
                 store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care

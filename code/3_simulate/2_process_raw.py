@@ -42,6 +42,7 @@ for group_name in group_names:
     initial_cd4n = pd.DataFrame()
     random_params = pd.DataFrame()
     art_coeffs = pd.DataFrame()
+    median_cd4s = pd.DataFrame()
 
     multimorbidity_in_care = pd.DataFrame()
     multimorbidity_dead = pd.DataFrame()
@@ -85,6 +86,7 @@ for group_name in group_names:
             random_params = random_params.append(store['random_params'])
 
             art_coeffs = art_coeffs.append(store['art_coeffs'])
+            median_cd4s = median_cd4s.append(store['median_cd4s'])
 
             if comorbidity:
                 multimorbidity_in_care = multimorbidity_in_care.append(store['multimorbidity_in_care'])
@@ -128,6 +130,7 @@ for group_name in group_names:
     feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
 
     feather.write_dataframe(art_coeffs, f'{feather_dir}/{group_name}_art_coeffs.feather')
+    feather.write_dataframe(median_cd4s, f'{feather_dir}/{group_name}_median_cd4s.feather')
 
     if comorbidity:
 
