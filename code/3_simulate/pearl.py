@@ -476,33 +476,28 @@ class Parameters:
             self.mortality_in_care = store['mortality_in_care'].loc[group_name]
             self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
             self.mortality_in_care_sa = sa_dict['mortality_in_care']
-            self.mortality_in_care_rand = np.random.rand()
 
             # Mortality Out Of Care
             self.mortality_out_care = store['mortality_out_care'].loc[group_name]
             self.mortality_out_care_vcov = store['mortality_out_care_vcov'].loc[group_name]
             self.mortality_out_care_sa = sa_dict['mortality_out_care']
-            self.mortality_out_care_rand = np.random.rand()
 
             # Loss To Follow Up
             self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
             self.loss_to_follow_up_vcov = store['loss_to_follow_up_vcov'].loc[group_name]
             self.loss_to_follow_up_sa = sa_dict['loss_to_follow_up']
-            self.loss_to_follow_up_rand = np.random.rand()
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
 
             # Cd4 Increase
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_vcov = store['cd4_increase_vcov'].loc[group_name]
             self.cd4_increase_sa = sa_dict['cd4_increase']
-            self.cd4_increase_rand = np.random.rand()
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
 
             # Cd4 Decrease
             self.cd4_decrease = store['cd4_decrease'].loc['all']
             self.cd4_decrease_vcov = store['cd4_decrease_vcov']
             self.cd4_decrease_sa = sa_dict['cd4_decrease']
-            self.cd4_decrease_rand = np.random.rand()
 
             # Years out of Care
             self.years_out_of_care = store['years_out_of_care']
@@ -1022,19 +1017,6 @@ class Pearl:
         n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
                              .assign(replication=self.replication, group = self.group_name))
 
-        # Record randomly generated numbers for sensitivity analysis
-        random_params = pd.DataFrame({'mortality_in_care': self.parameters.mortality_in_care_rand,
-                                      'mortality_out_care': self.parameters.mortality_out_care_rand,
-                                      'loss_to_follow_up': self.parameters.loss_to_follow_up_rand,
-                                      'cd4_increase': self.parameters.cd4_increase_rand,
-                                      'cd4_decrease': self.parameters.cd4_decrease_rand,
-                                      'lambda1_2009': self.parameters.age_in_2009_rand[0],
-                                      'mu1_2009': self.parameters.age_in_2009_rand[1],
-                                      'mu2_2009': self.parameters.age_in_2009_rand[2],
-                                      'sigma1_2009': self.parameters.age_in_2009_rand[3],
-                                      'sigma2_2009': self.parameters.age_in_2009_rand[4]}, index=[0]).assign(
-            replication=self.replication, group=self.group_name)
-
         if self.parameters.comorbidity_flag:
             # Encode set of comorbidities as an 8 bit integer
             multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dead_in_care | dead_out_care].copy())
@@ -1064,7 +1046,6 @@ class Pearl:
             store['n_times_lost'] = self.stats.n_times_lost
             store['initial_cd4n'] = initial_cd4n
             store['n_unique_out_care'] = n_unique_out_care
-            store['random_params'] = random_params
             store['art_coeffs'] = self.stats.art_coeffs
             store['median_cd4s'] = self.stats.median_cd4s
 
