@@ -118,6 +118,7 @@ df = df.reset_index().sort_values(['group', 'h1yy', 'param']).set_index(['group'
 df['low_value'] = df['low_value'].astype(float)
 df['high_value'] = df['high_value'].astype(float)
 cd4n_by_h1yy = df
+print(cd4n_by_h1yy['high_value'].max())
 
 
 # Coefficients for mortality in care

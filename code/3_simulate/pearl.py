@@ -76,7 +76,7 @@ def set_cd4_cat(pop):
     return pop
 
 
-def calculate_cd4_increase(pop, knots, year, coeffs, vcov, flag, rand):
+def calculate_cd4_increase(pop, knots, year, coeffs, vcov, sa):
     """ Calculate in care cd4 count via a linear function of time since art initiation, initial cd4 count, age
         category and cross terms"""
 
@@ -111,25 +111,25 @@ def calculate_cd4_increase(pop, knots, year, coeffs, vcov, flag, rand):
     # Perform matrix multiplication
     new_cd4 = np.matmul(pop_matrix, coeffs)
 
-    if flag:
+    if sa is not None:
         # Calculate variance of prediction using matrix multiplication
         se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
         low = new_cd4 - 1.96 * se
         high = new_cd4 + 1.96 * se
-        new_cd4 = (rand * (high - low)) + low
+        new_cd4 = (sa * (high - low)) + low
 
     return new_cd4
 
-def calculate_cd4_decrease(pop, coeffs, flag, vcov, rand):
+def calculate_cd4_decrease(pop, coeffs, sa, vcov):
     pop['time_out'] = pop['year'] - pop['ltfu_year']
     pop_matrix = pop[['intercept', 'time_out', 'sqrtcd4n_exit']].to_numpy()
     diff = np.matmul(pop_matrix, coeffs)
 
-    if flag:
+    if sa:
         se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
         low = diff - 1.96 * se
         high = diff + 1.96 * se
-        diff = (rand * (high - low)) + low
+        diff = (sa * (high - low)) + low
 
     new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * SMEARING )
     return new_cd4
@@ -170,16 +170,16 @@ def create_ltfu_pop_matrix(pop, knots):
     pop['haart_period'] = (pop['h1yy'].values > 2010).astype(int)
     return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy()
 
-def calculate_prob(pop, coeffs, flag, vcov, rand):
+def calculate_prob(pop, coeffs, sa, vcov):
     """ Calculate the individual probability from logistic regression """
 
     log_odds = np.matmul(pop, coeffs)
-    if flag:
+    if sa is not None:
         # Calculate variance of prediction using matrix multiplication
         se = np.sqrt(np.sum(np.matmul(pop, vcov) * pop, axis=1))
         low = log_odds - 1.96 * se
         high = log_odds + 1.96 * se
-        log_odds = (rand * (high - low)) + low
+        log_odds = (sa * (high - low)) + low
 
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
@@ -287,8 +287,7 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name):
     population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), parameters.cd4_increase_knots, 2009,
                                                                  parameters.cd4_increase.to_numpy(),
                                                                  parameters.cd4_increase_vcov.to_numpy(),
-                                                                 parameters.cd4_increase_flag,
-                                                                 parameters.cd4_increase_rand)
+                                                                 parameters.cd4_increase_sa)
     # Set status and initiate out of care variables
     population['status'] = ART_USER
     non_user = np.random.choice(a=len(population.index), size=n_initial_nonusers, replace=False)
@@ -421,14 +420,13 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sensitivity_analysis_list):
+    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sa_dict):
         # Unpack Sensitivity Analysis List
-        age_in_2009_flag=sensitivity_analysis_list[0]
-        mortality_in_care_flag=sensitivity_analysis_list[1]
-        mortality_out_care_flag=sensitivity_analysis_list[2]
-        loss_to_follow_up_flag=sensitivity_analysis_list[3]
-        cd4_increase_flag=sensitivity_analysis_list[4]
-        cd4_decrease_flag=sensitivity_analysis_list[5]
+        lambda1_sa = sa_dict['lambda1']
+        mu1_sa = sa_dict['mu1']
+        mu2_sa = sa_dict['mu2']
+        sigma1_sa = sa_dict['sigma1']
+        sigma2_sa = sa_dict['sigma2']
 
         with pd.HDFStore(path) as store:
             # 2009 population
@@ -437,8 +435,32 @@ class Parameters:
             self.age_in_2009_rand = np.random.rand(5)
             self.h1yy_by_age_2009 = store['h1yy_by_age_2009']
             self.cd4n_by_h1yy_2009 = store['cd4n_by_h1yy_2009'].loc[group_name]
-            if age_in_2009_flag:
-                self.age_in_2009['estimate'] = (self.age_in_2009_rand * (self.age_in_2009['conf_high'] - self.age_in_2009['conf_low'])) + self.age_in_2009['conf_low']
+
+            # Age in 2009 sensitivity analysis
+            if lambda1_sa==0:
+                self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_low']
+            elif lambda1_sa==1:
+                self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_high']
+
+            if mu1_sa==0:
+                self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_low']
+            elif mu1_sa==1:
+                self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_high']
+
+            if mu2_sa==0:
+                self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_low']
+            elif mu2_sa==1:
+                self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_high']
+
+            if sigma1_sa==0:
+                self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_low']
+            elif sigma1_sa==1:
+                self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_high']
+
+            if sigma2_sa==0:
+                self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_low']
+            elif sigma2_sa==1:
+                self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_high']
 
             # New ART initiators
             self.new_dx = store['new_dx'].loc[group_name]
@@ -453,33 +475,33 @@ class Parameters:
             # Mortality In Care
             self.mortality_in_care = store['mortality_in_care'].loc[group_name]
             self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
-            self.mortality_in_care_flag = mortality_in_care_flag
+            self.mortality_in_care_sa = sa_dict['mortality_in_care']
             self.mortality_in_care_rand = np.random.rand()
 
             # Mortality Out Of Care
             self.mortality_out_care = store['mortality_out_care'].loc[group_name]
             self.mortality_out_care_vcov = store['mortality_out_care_vcov'].loc[group_name]
-            self.mortality_out_care_flag = mortality_out_care_flag
+            self.mortality_out_care_sa = sa_dict['mortality_out_care']
             self.mortality_out_care_rand = np.random.rand()
 
             # Loss To Follow Up
             self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
             self.loss_to_follow_up_vcov = store['loss_to_follow_up_vcov'].loc[group_name]
-            self.loss_to_follow_up_flag = loss_to_follow_up_flag
+            self.loss_to_follow_up_sa = sa_dict['loss_to_follow_up']
             self.loss_to_follow_up_rand = np.random.rand()
             self.ltfu_knots = store['ltfu_knots'].loc[group_name]
 
             # Cd4 Increase
             self.cd4_increase = store['cd4_increase'].loc[group_name]
             self.cd4_increase_vcov = store['cd4_increase_vcov'].loc[group_name]
-            self.cd4_increase_flag = cd4_increase_flag
+            self.cd4_increase_sa = sa_dict['cd4_increase']
             self.cd4_increase_rand = np.random.rand()
             self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
 
             # Cd4 Decrease
             self.cd4_decrease = store['cd4_decrease'].loc['all']
             self.cd4_decrease_vcov = store['cd4_decrease_vcov']
-            self.cd4_decrease_flag = cd4_decrease_flag
+            self.cd4_decrease_sa = sa_dict['cd4_decrease']
             self.cd4_decrease_rand = np.random.rand()
 
             # Years out of Care
@@ -647,8 +669,7 @@ class Pearl:
             self.year,
             self.parameters.cd4_increase.to_numpy(),
             self.parameters.cd4_increase_vcov.to_numpy(),
-            self.parameters.cd4_increase_flag,
-            self.parameters.cd4_increase_rand)
+            self.parameters.cd4_increase_sa)
 
 
     def decrease_cd4_count(self):
@@ -656,9 +677,8 @@ class Pearl:
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_cd4_decrease(
             self.population.loc[out_care].copy(),
             self.parameters.cd4_decrease.to_numpy(),
-            self.parameters.cd4_decrease_flag,
-            self.parameters.cd4_decrease_vcov.to_numpy(),
-            self.parameters.cd4_decrease_rand)
+            self.parameters.cd4_decrease_sa,
+            self.parameters.cd4_decrease_vcov.to_numpy())
 
 
     def add_new_user(self):
@@ -686,8 +706,8 @@ class Pearl:
         else:
             pop_matrix = self.population[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy()
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy()
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_flag,
-                                    vcov_matrix, self.parameters.mortality_in_care_rand)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa,
+                                    vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DEAD_ART_USER
         self.population.loc[died, 'year_died'] = self.year
@@ -700,8 +720,8 @@ class Pearl:
         else:
             pop_matrix = self.population[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy()
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy()
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_flag,
-                                    vcov_matrix, self.parameters.mortality_out_care_rand)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa,
+                                    vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DEAD_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
@@ -712,8 +732,8 @@ class Pearl:
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy()
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy()
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
-        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_flag,
-                                   vcov_matrix, self.parameters.loss_to_follow_up_rand)
+        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa,
+                                   vcov_matrix)
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         n_lost = len(self.population.loc[lost])
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost,
@@ -758,7 +778,7 @@ class Pearl:
         # Use matrix multiplication to calculate probability of anxiety incidence
         anxiety_coeff_matrix = self.parameters.anxiety_coeff.to_numpy()
         anxiety_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition ='anxiety')
-        anxiety_prob = calculate_prob(anxiety_pop_matrix, anxiety_coeff_matrix, False, 0, 0)
+        anxiety_prob = calculate_prob(anxiety_pop_matrix, anxiety_coeff_matrix, None, None)
         anxiety_rand = anxiety_prob > np.random.rand(len(self.population.index))
         old_anxiety = self.population['anxiety']
         new_anxiety = anxiety_rand & (in_care | out_care) & ~old_anxiety
@@ -779,7 +799,7 @@ class Pearl:
         # Use matrix multiplication to calculate probability of depression incidence
         depression_coeff_matrix = self.parameters.depression_coeff.to_numpy()
         depression_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='depression')
-        depression_prob = calculate_prob(depression_pop_matrix, depression_coeff_matrix, False, 0, 0)
+        depression_prob = calculate_prob(depression_pop_matrix, depression_coeff_matrix, None, None)
         depression_rand = depression_prob > np.random.rand(len(self.population.index))
         old_depression = self.population['depression']
         new_depression = depression_rand & (in_care | out_care) & ~old_depression
@@ -803,7 +823,7 @@ class Pearl:
         # ckd
         ckd_coeff_matrix = self.parameters.ckd_coeff.to_numpy()
         ckd_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='ckd')
-        ckd_prob = calculate_prob(ckd_pop_matrix, ckd_coeff_matrix, False, 0, 0)
+        ckd_prob = calculate_prob(ckd_pop_matrix, ckd_coeff_matrix, None, None)
         ckd_rand = ckd_prob > np.random.rand(len(self.population.index))
         old_ckd = self.population['ckd']
         new_ckd = ckd_rand & (in_care | out_care) & ~old_ckd
@@ -823,7 +843,7 @@ class Pearl:
         # lipid
         lipid_coeff_matrix = self.parameters.lipid_coeff.to_numpy()
         lipid_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='lipid')
-        lipid_prob = calculate_prob(lipid_pop_matrix, lipid_coeff_matrix, False, 0, 0)
+        lipid_prob = calculate_prob(lipid_pop_matrix, lipid_coeff_matrix, None, None)
         lipid_rand = lipid_prob > np.random.rand(len(self.population.index))
         old_lipid = self.population['lipid']
         new_lipid = lipid_rand & (in_care | out_care) & ~old_lipid
@@ -841,7 +861,7 @@ class Pearl:
         # diabetes
         diabetes_coeff_matrix = self.parameters.diabetes_coeff.to_numpy()
         diabetes_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='diabetes')
-        diabetes_prob = calculate_prob(diabetes_pop_matrix, diabetes_coeff_matrix, False, 0, 0)
+        diabetes_prob = calculate_prob(diabetes_pop_matrix, diabetes_coeff_matrix, None, None)
         diabetes_rand = diabetes_prob > np.random.rand(len(self.population.index))
         old_diabetes = self.population['diabetes']
         new_diabetes = diabetes_rand & (in_care | out_care) & ~old_diabetes
@@ -859,7 +879,7 @@ class Pearl:
         # hypertension
         hypertension_coeff_matrix = self.parameters.hypertension_coeff.to_numpy()
         hypertension_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='hypertension')
-        hypertension_prob = calculate_prob(hypertension_pop_matrix, hypertension_coeff_matrix, False, 0, 0)
+        hypertension_prob = calculate_prob(hypertension_pop_matrix, hypertension_coeff_matrix, None, None)
         hypertension_rand = hypertension_prob > np.random.rand(len(self.population.index))
         old_hypertension = self.population['hypertension']
         new_hypertension = hypertension_rand & (in_care | out_care) & ~old_hypertension
