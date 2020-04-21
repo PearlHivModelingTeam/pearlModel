@@ -40,7 +40,6 @@ for group_name in group_names:
     n_unique_out_care = pd.DataFrame()
     years_out = pd.DataFrame()
     initial_cd4n = pd.DataFrame()
-    random_params = pd.DataFrame()
     art_coeffs = pd.DataFrame()
     median_cd4s = pd.DataFrame()
 
@@ -83,7 +82,6 @@ for group_name in group_names:
             years_out = years_out.append(store['years_out'])
 
             initial_cd4n = initial_cd4n.append(store['initial_cd4n'])
-            random_params = random_params.append(store['random_params'])
 
             art_coeffs = art_coeffs.append(store['art_coeffs'])
             median_cd4s = median_cd4s.append(store['median_cd4s'])
@@ -127,7 +125,6 @@ for group_name in group_names:
     feather.write_dataframe(years_out, f'{feather_dir}/{group_name}_years_out.feather')
 
     feather.write_dataframe(initial_cd4n, f'{feather_dir}/{group_name}_initial_cd4n.feather')
-    feather.write_dataframe(random_params, f'{feather_dir}/{group_name}_random_params.feather')
 
     feather.write_dataframe(art_coeffs, f'{feather_dir}/{group_name}_art_coeffs.feather')
     feather.write_dataframe(median_cd4s, f'{feather_dir}/{group_name}_median_cd4s.feather')
