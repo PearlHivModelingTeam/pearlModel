@@ -429,118 +429,117 @@ class Parameters:
         sigma1_sa = sa_dict['sigma1']
         sigma2_sa = sa_dict['sigma2']
 
-        with pd.HDFStore(path) as store:
-            # 2009 population
-            self.on_art_2009 = store['on_art_2009'].loc[group_name]
-            self.age_in_2009 = store['age_in_2009'].loc[group_name]
-            self.age_in_2009_rand = np.random.rand(5)
-            self.h1yy_by_age_2009 = store['h1yy_by_age_2009']
-            self.cd4n_by_h1yy_2009 = store['cd4n_by_h1yy_2009'].loc[group_name]
+        # 2009 population
+        self.on_art_2009 = pd.read_hdf(path, 'on_art_2009').loc[group_name]
+        self.age_in_2009 = pd.read_hdf(path, 'age_in_2009').loc[group_name]
+        self.h1yy_by_age_2009 = pd.read_hdf(path, 'h1yy_by_age_2009')
+        self.cd4n_by_h1yy_2009 = pd.read_hdf(path, 'cd4n_by_h1yy_2009').loc[group_name]
 
-            # Age in 2009 sensitivity analysis
-            if lambda1_sa==0:
-                self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_low']
-            elif lambda1_sa==1:
-                self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_high']
+        # Age in 2009 sensitivity analysis
+        if lambda1_sa==0:
+            self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_low']
+        elif lambda1_sa==1:
+            self.age_in_2009.loc['lambda1', 'estimate'] = self.age_in_2009.loc['lambda1', 'conf_high']
 
-            if mu1_sa==0:
-                self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_low']
-            elif mu1_sa==1:
-                self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_high']
+        if mu1_sa==0:
+            self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_low']
+        elif mu1_sa==1:
+            self.age_in_2009.loc['mu1', 'estimate'] = self.age_in_2009.loc['mu1', 'conf_high']
 
-            if mu2_sa==0:
-                self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_low']
-            elif mu2_sa==1:
-                self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_high']
+        if mu2_sa==0:
+            self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_low']
+        elif mu2_sa==1:
+            self.age_in_2009.loc['mu2', 'estimate'] = self.age_in_2009.loc['mu2', 'conf_high']
 
-            if sigma1_sa==0:
-                self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_low']
-            elif sigma1_sa==1:
-                self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_high']
+        if sigma1_sa==0:
+            self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_low']
+        elif sigma1_sa==1:
+            self.age_in_2009.loc['sigma1', 'estimate'] = self.age_in_2009.loc['sigma1', 'conf_high']
 
-            if sigma2_sa==0:
-                self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_low']
-            elif sigma2_sa==1:
-                self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_high']
+        if sigma2_sa==0:
+            self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_low']
+        elif sigma2_sa==1:
+            self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_high']
 
-            # New ART initiators
-            self.new_dx = store['new_dx'].loc[group_name]
-            if dx_reduce_flag:
-                self.new_dx = store['new_dx_ehe'].loc[group_name]
-            else:
-                self.new_dx = store['new_dx'].loc[group_name]
-            self.linkage_to_care = store['linkage_to_care'].loc[group_name]
-            self.age_by_h1yy = store['age_by_h1yy'].loc[group_name]
-            self.cd4n_by_h1yy = store['cd4n_by_h1yy'].loc[group_name]
+        # New ART initiators
+        self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
+        if dx_reduce_flag:
+            self.new_dx = pd.read_hdf(path, 'new_dx_ehe').loc[group_name]
+        else:
+            self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
+        self.linkage_to_care = pd.read_hdf(path, 'linkage_to_care').loc[group_name]
+        self.age_by_h1yy = pd.read_hdf(path, 'age_by_h1yy').loc[group_name]
+        self.cd4n_by_h1yy = pd.read_hdf(path, 'cd4n_by_h1yy').loc[group_name]
 
-            # Mortality In Care
-            self.mortality_in_care = store['mortality_in_care'].loc[group_name]
-            self.mortality_in_care_vcov = store['mortality_in_care_vcov'].loc[group_name]
-            self.mortality_in_care_sa = sa_dict['mortality_in_care']
+        # Mortality In Care
+        self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
+        self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
+        self.mortality_in_care_sa = sa_dict['mortality_in_care']
 
-            # Mortality Out Of Care
-            self.mortality_out_care = store['mortality_out_care'].loc[group_name]
-            self.mortality_out_care_vcov = store['mortality_out_care_vcov'].loc[group_name]
-            self.mortality_out_care_sa = sa_dict['mortality_out_care']
+        # Mortality Out Of Care
+        self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
+        self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
+        self.mortality_out_care_sa = sa_dict['mortality_out_care']
 
-            # Loss To Follow Up
-            self.loss_to_follow_up = store['loss_to_follow_up'].loc[group_name]
-            self.loss_to_follow_up_vcov = store['loss_to_follow_up_vcov'].loc[group_name]
-            self.loss_to_follow_up_sa = sa_dict['loss_to_follow_up']
-            self.ltfu_knots = store['ltfu_knots'].loc[group_name]
+        # Loss To Follow Up
+        self.loss_to_follow_up = pd.read_hdf(path, 'loss_to_follow_up').loc[group_name]
+        self.loss_to_follow_up_vcov = pd.read_hdf(path, 'loss_to_follow_up_vcov').loc[group_name]
+        self.loss_to_follow_up_sa = sa_dict['loss_to_follow_up']
+        self.ltfu_knots = pd.read_hdf(path, 'ltfu_knots').loc[group_name]
 
-            # Cd4 Increase
-            self.cd4_increase = store['cd4_increase'].loc[group_name]
-            self.cd4_increase_vcov = store['cd4_increase_vcov'].loc[group_name]
-            self.cd4_increase_sa = sa_dict['cd4_increase']
-            self.cd4_increase_knots = store['cd4_increase_knots'].loc[group_name]
+        # Cd4 Increase
+        self.cd4_increase = pd.read_hdf(path, 'cd4_increase').loc[group_name]
+        self.cd4_increase_vcov = pd.read_hdf(path, 'cd4_increase_vcov').loc[group_name]
+        self.cd4_increase_sa = sa_dict['cd4_increase']
+        self.cd4_increase_knots = pd.read_hdf(path, 'cd4_increase_knots').loc[group_name]
 
-            # Cd4 Decrease
-            self.cd4_decrease = store['cd4_decrease'].loc['all']
-            self.cd4_decrease_vcov = store['cd4_decrease_vcov']
-            self.cd4_decrease_sa = sa_dict['cd4_decrease']
+        # Cd4 Decrease
+        self.cd4_decrease = pd.read_hdf(path, 'cd4_decrease').loc['all']
+        self.cd4_decrease_vcov = pd.read_hdf(path, 'cd4_decrease_vcov')
+        self.cd4_decrease_sa = sa_dict['cd4_decrease']
 
-            # Years out of Care
-            self.years_out_of_care = store['years_out_of_care']
+        # Years out of Care
+        self.years_out_of_care = pd.read_hdf(path, 'years_out_of_care')
 
-            # Stage 0 Comorbidities
-            self.hcv_prev_users = store['hcv_prev_users'].loc[group_name]
-            self.smoking_prev_users = store['smoking_prev_users'].loc[group_name]
+        # Stage 0 Comorbidities
+        self.hcv_prev_users = pd.read_hdf(path, 'hcv_prev_users').loc[group_name]
+        self.smoking_prev_users = pd.read_hdf(path, 'smoking_prev_users').loc[group_name]
 
-            self.hcv_prev_inits = store['hcv_prev_inits'].loc[group_name]
-            self.smoking_prev_inits = store['smoking_prev_inits'].loc[group_name]
+        self.hcv_prev_inits = pd.read_hdf(path, 'hcv_prev_inits').loc[group_name]
+        self.smoking_prev_inits = pd.read_hdf(path, 'smoking_prev_inits').loc[group_name]
 
-            # Stage 1 Comorbidities
-            self.anxiety_prev_users = store['anxiety_prev_users'].loc[group_name]
-            self.depression_prev_users = store['depression_prev_users'].loc[group_name]
+        # Stage 1 Comorbidities
+        self.anxiety_prev_users = pd.read_hdf(path, 'anxiety_prev_users').loc[group_name]
+        self.depression_prev_users = pd.read_hdf(path, 'depression_prev_users').loc[group_name]
 
-            self.anxiety_prev_inits = store['anxiety_prev_inits'].loc[group_name]
-            self.depression_prev_inits = store['depression_prev_inits'].loc[group_name]
+        self.anxiety_prev_inits = pd.read_hdf(path, 'anxiety_prev_inits').loc[group_name]
+        self.depression_prev_inits = pd.read_hdf(path, 'depression_prev_inits').loc[group_name]
 
-            self.anxiety_coeff = store['anxiety_coeff'].loc[group_name]
-            self.depression_coeff = store['depression_coeff'].loc[group_name]
+        self.anxiety_coeff = pd.read_hdf(path, 'anxiety_coeff').loc[group_name]
+        self.depression_coeff = pd.read_hdf(path, 'depression_coeff').loc[group_name]
 
-            # Stage 2 Comorbidities
-            self.ckd_prev_users = store['ckd_prev_users'].loc[group_name]
-            self.lipid_prev_users = store['lipid_prev_users'].loc[group_name]
-            self.diabetes_prev_users = store['diabetes_prev_users'].loc[group_name]
-            self.hypertension_prev_users = store['hypertension_prev_users'].loc[group_name]
+        # Stage 2 Comorbidities
+        self.ckd_prev_users = pd.read_hdf(path, 'ckd_prev_users').loc[group_name]
+        self.lipid_prev_users = pd.read_hdf(path, 'lipid_prev_users').loc[group_name]
+        self.diabetes_prev_users = pd.read_hdf(path, 'diabetes_prev_users').loc[group_name]
+        self.hypertension_prev_users = pd.read_hdf(path, 'hypertension_prev_users').loc[group_name]
 
-            self.ckd_prev_inits = store['ckd_prev_inits'].loc[group_name]
-            self.lipid_prev_inits = store['lipid_prev_inits'].loc[group_name]
-            self.diabetes_prev_inits = store['diabetes_prev_inits'].loc[group_name]
-            self.hypertension_prev_inits = store['hypertension_prev_inits'].loc[group_name]
+        self.ckd_prev_inits = pd.read_hdf(path, 'ckd_prev_inits').loc[group_name]
+        self.lipid_prev_inits = pd.read_hdf(path, 'lipid_prev_inits').loc[group_name]
+        self.diabetes_prev_inits = pd.read_hdf(path, 'diabetes_prev_inits').loc[group_name]
+        self.hypertension_prev_inits = pd.read_hdf(path, 'hypertension_prev_inits').loc[group_name]
 
-            self.ckd_coeff = store['ckd_coeff'].loc[group_name]
-            self.lipid_coeff = store['lipid_coeff'].loc[group_name]
-            self.diabetes_coeff = store['diabetes_coeff'].loc[group_name]
-            self.hypertension_coeff = store['hypertension_coeff'].loc[group_name]
+        self.ckd_coeff = pd.read_hdf(path, 'ckd_coeff').loc[group_name]
+        self.lipid_coeff = pd.read_hdf(path, 'lipid_coeff').loc[group_name]
+        self.diabetes_coeff = pd.read_hdf(path, 'diabetes_coeff').loc[group_name]
+        self.hypertension_coeff = pd.read_hdf(path, 'hypertension_coeff').loc[group_name]
 
-            # Comortality
-            self.comorbidity_flag = comorbidity_flag
-            if self.comorbidity_flag:
-                self.mortality_in_care = store['mortality_in_care_co'].loc[group_name]
-                self.mortality_out_care = store['mortality_out_care_co'].loc[group_name]
+        # Comortality
+        self.comorbidity_flag = comorbidity_flag
+        if self.comorbidity_flag:
+            self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care_co').loc[group_name]
+            self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care_co').loc[group_name]
+
 
 
 class Statistics:
