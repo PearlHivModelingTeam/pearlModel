@@ -420,7 +420,8 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sa_dict):
+    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sa_dict, output_folder=f'{os.getcwd()}/../../out/raw'):
+        self.output_folder = output_folder
         # Unpack Sensitivity Analysis List
         lambda1_sa = sa_dict['lambda1']
         mu1_sa = sa_dict['mu1']
@@ -590,7 +591,6 @@ def output_reindex(df):
 
 class Pearl:
     def __init__(self, parameters, group_name, replication, verbose=False):
-        self.out_dir = os.path.realpath(f'{os.getcwd()}/../../out/raw')
         self.group_name = group_name
         self.replication = replication
         self.verbose = verbose
@@ -1024,10 +1024,10 @@ class Pearl:
             self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
 
         # Make output directory if it doesn't exist
-        os.makedirs(self.out_dir, exist_ok=True)
+        os.makedirs(self.parameters.output_folder, exist_ok=True)
 
         # Save it all
-        with pd.HDFStore(f'{self.out_dir}/{self.group_name}_{str(self.replication)}.h5') as store:
+        with pd.HDFStore(f'{self.parameters.output_folder}/{self.group_name}_{str(self.replication)}.h5') as store:
             store['in_care_count'] = self.stats.in_care_count
             store['in_care_age'] = self.stats.in_care_age
             store['out_care_count'] = self.stats.out_care_count
