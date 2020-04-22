@@ -467,6 +467,14 @@ class Parameters:
             self.new_dx = pd.read_hdf(path, 'new_dx_ehe').loc[group_name]
         else:
             self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
+
+
+        # Sensitivity analysis for new diagnoses
+        if sa_dict['new_pop_size'] == 0:
+            self.new_dx['upper'] = self.new_dx['lower']
+        elif sa_dict['new_pop_size'] ==1:
+            self.new_dx['lower'] = self.new_dx['upper']
+
         self.linkage_to_care = pd.read_hdf(path, 'linkage_to_care').loc[group_name]
         self.age_by_h1yy = pd.read_hdf(path, 'age_by_h1yy').loc[group_name]
         self.cd4n_by_h1yy = pd.read_hdf(path, 'cd4n_by_h1yy').loc[group_name]
@@ -563,6 +571,7 @@ class Statistics:
         self.unique_out_care_ids = set()
         self.art_coeffs = pd.DataFrame()
         self.median_cd4s = pd.DataFrame()
+        self.tv_cd4_2009 = pd.DataFrame()
 
         # Multimorbidity
         self.multimorbidity_in_care = pd.DataFrame()
@@ -955,6 +964,9 @@ class Pearl:
                                     'group': self.group_name}, index=[0])
         self.stats.median_cd4s = pd.concat([self.stats.median_cd4s, median_cd4s])
 
+        if self.year==2009:
+            self.tv_cd4_2009 = pd.DataFrame(self.population.loc[ in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
+
         # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
             multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
@@ -1047,6 +1059,7 @@ class Pearl:
             store['n_unique_out_care'] = n_unique_out_care
             store['art_coeffs'] = self.stats.art_coeffs
             store['median_cd4s'] = self.stats.median_cd4s
+            store['tv_cd4_2009'] = self.tv_cd4_2009
 
             if self.parameters.comorbidity_flag:
                 store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care
