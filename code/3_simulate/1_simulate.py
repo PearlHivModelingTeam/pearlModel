@@ -40,7 +40,8 @@ sa_dict = {'lambda1':               None,
            'mortality_out_care':    None,
            'loss_to_follow_up':     None,
            'cd4_increase':          None,
-           'cd4_decrease':          None}
+           'cd4_decrease':          None,
+           'new_pop_size':          None}
 
 # Delete old files
 if os.path.isdir(output_folder):
