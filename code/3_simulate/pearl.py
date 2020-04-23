@@ -13,8 +13,10 @@ ART_USER = 2
 ART_NONUSER = 3
 REENGAGED = 4
 LTFU = 5
-DEAD_ART_USER = 6
-DEAD_ART_NONUSER = 7
+DYING_ART_USER = 6
+DYING_ART_NONUSER = 7
+DEAD_ART_USER = 8
+DEAD_ART_NONUSER = 9
 
 # Smearing correction
 SMEARING = 1.4
@@ -712,7 +714,7 @@ class Pearl:
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa,
                                     vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
-        self.population.loc[died, 'status'] = DEAD_ART_USER
+        self.population.loc[died, 'status'] = DYING_ART_USER
         self.population.loc[died, 'year_died'] = self.year
 
     def kill_out_care(self):
@@ -726,7 +728,7 @@ class Pearl:
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa,
                                     vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
-        self.population.loc[died, 'status'] = DEAD_ART_NONUSER
+        self.population.loc[died, 'status'] = DYING_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
         self.population.loc[died, 'return_year'] = 0
 
@@ -770,9 +772,13 @@ class Pearl:
     def append_new(self):
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
+        dying_art_user = self.population['status'] == DYING_ART_USER
+        dying_art_nonuser = self.population['status'] == DYING_ART_NONUSER
 
         self.population.loc[reengaged, 'status'] = ART_USER
         self.population.loc[ltfu, 'status'] = ART_NONUSER
+        self.population.loc[dying_art_user, 'status'] = DEAD_ART_USER
+        self.population.loc[dying_art_nonuser, 'status'] = DEAD_ART_NONUSER
 
     def apply_stage_1(self):
         in_care = self.population['status'] == ART_USER
@@ -898,22 +904,22 @@ class Pearl:
         self.population['hypertension'] = (old_hypertension | new_hypertension).astype(int)
 
     def record_stats(self):
-        uninitiated = self.population['status'].isin([UNINITIATED_USER, UNINITIATED_NONUSER])
         in_care = self.population['status'] == ART_USER
         out_care = self.population['status'] == ART_NONUSER
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
-        alive = self.population['status'].isin([ART_USER, ART_NONUSER, REENGAGED, LTFU])
+        dying_art_user = self.population['status'] == DYING_ART_USER
+        dying_art_nonuser = self.population['status'] == DYING_ART_NONUSER
 
 
         # Count of those in care by age_cat and year
-        in_care_count = (self.population.loc[in_care | ltfu].groupby(['age_cat']).size()
+        in_care_count = (self.population.loc[in_care | ltfu | dying_art_user].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
 
         # Count of those out of care by age_cat and year
-        out_care_count = (self.population.loc[out_care | reengaged].groupby(['age_cat']).size()
+        out_care_count = (self.population.loc[out_care | reengaged | dying_art_nonuser].groupby(['age_cat']).size()
                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                           .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
@@ -931,12 +937,12 @@ class Pearl:
         self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
 
         # Count of those in care by age and year
-        in_care_age = (self.population.loc[in_care | ltfu].groupby(['age']).size().reset_index(name='n')
+        in_care_age = (self.population.loc[in_care | ltfu | dying_art_user].groupby(['age']).size().reset_index(name='n')
                        .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
 
         # Count of those in care by age and year
-        out_care_age = (self.population.loc[out_care | reengaged].groupby(['age']).size().reset_index(name='n')
+        out_care_age = (self.population.loc[out_care | reengaged | dying_art_nonuser].groupby(['age']).size().reset_index(name='n')
                         .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
 
