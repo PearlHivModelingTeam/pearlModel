@@ -955,7 +955,7 @@ class Pearl:
             self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
 
         # Report median initial and varying cd4 count for in care population
-        median_init_cd4 = self.population.loc[in_care, 'init_sqrtcd4n'].median()
+        median_init_cd4 = self.population.loc[self.population['h1yy']==self.year, 'init_sqrtcd4n'].median()
         median_tv_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n'].median()
         median_cd4s = pd.DataFrame({'init_cd4': median_init_cd4,
                                     'tv_cd4': median_tv_cd4,
