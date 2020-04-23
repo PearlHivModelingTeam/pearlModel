@@ -921,13 +921,13 @@ class Pearl:
         # Count of those reengaging in care by age_cat and year
         reengaged_count = (self.population.loc[reengaged].groupby(['age_cat']).size()
                            .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                           .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+                           .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.reengaged_count = self.stats.reengaged_count.append(reengaged_count)
 
         # Count of those lost to care by age_cat and year
         ltfu_count = (self.population.loc[ltfu].groupby(['age_cat']).size()
                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                      .assign(year=(self.year + 1), replication=self.replication, group=self.group_name))
+                      .assign(year=(self.year), replication=self.replication, group=self.group_name))
         self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
 
         # Count of those in care by age and year
