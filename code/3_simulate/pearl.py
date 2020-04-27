@@ -904,22 +904,24 @@ class Pearl:
         self.population['hypertension'] = (old_hypertension | new_hypertension).astype(int)
 
     def record_stats(self):
-        in_care = self.population['status'] == ART_USER
-        out_care = self.population['status'] == ART_NONUSER
+        stay_in_care = self.population['status'] == ART_USER
+        stay_out_care = self.population['status'] == ART_NONUSER
         reengaged = self.population['status'] == REENGAGED
         ltfu = self.population['status'] == LTFU
         dying_art_user = self.population['status'] == DYING_ART_USER
         dying_art_nonuser = self.population['status'] == DYING_ART_NONUSER
+        in_care = stay_in_care | ltfu | dying_art_user
+        out_care = stay_out_care | ltfu | dying_art_nonuser
 
 
         # Count of those in care by age_cat and year
-        in_care_count = (self.population.loc[in_care | ltfu | dying_art_user].groupby(['age_cat']).size()
+        in_care_count = (self.population.loc[in_care].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
 
         # Count of those out of care by age_cat and year
-        out_care_count = (self.population.loc[out_care | reengaged | dying_art_nonuser].groupby(['age_cat']).size()
+        out_care_count = (self.population.loc[out_care].groupby(['age_cat']).size()
                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                           .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
@@ -937,12 +939,12 @@ class Pearl:
         self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
 
         # Count of those in care by age and year
-        in_care_age = (self.population.loc[in_care | ltfu | dying_art_user].groupby(['age']).size().reset_index(name='n')
+        in_care_age = (self.population.loc[in_care].groupby(['age']).size().reset_index(name='n')
                        .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
 
         # Count of those in care by age and year
-        out_care_age = (self.population.loc[out_care | reengaged | dying_art_nonuser].groupby(['age']).size().reset_index(name='n')
+        out_care_age = (self.population.loc[out_care].groupby(['age']).size().reset_index(name='n')
                         .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
 
@@ -958,20 +960,22 @@ class Pearl:
 
         # Keep track of unique individuals lost to follow up 2010-2015
         if 2010 <= self.year <= 2015:
-            self.stats.unique_out_care_ids.update(self.population.loc[out_care | reengaged].index)
+            self.stats.unique_out_care_ids.update(self.population.loc[out_care].index)
 
         # Report median initial and varying cd4 count for in care population
         median_init_cd4 = self.population.loc[self.population['h1yy']==self.year, 'init_sqrtcd4n'].median()
         median_tv_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n'].median()
+        median_tv_cd4_out = self.population.loc[out_care, 'time_varying_sqrtcd4n'].median()
         median_cd4s = pd.DataFrame({'init_cd4': median_init_cd4,
                                     'tv_cd4': median_tv_cd4,
+                                    'tv_cd4_out': median_tv_cd4_out,
                                     'year': self.year,
                                     'replication': self.replication,
                                     'group': self.group_name}, index=[0])
         self.stats.median_cd4s = pd.concat([self.stats.median_cd4s, median_cd4s])
 
         if self.year==2009:
-            self.tv_cd4_2009 = pd.DataFrame(self.population.loc[ in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
+            self.tv_cd4_2009 = pd.DataFrame(self.population.loc[in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
 
         # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
