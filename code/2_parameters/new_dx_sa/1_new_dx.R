@@ -7,8 +7,7 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+input_dir <- filePath(getwd(), '/../../../data/input/aim1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -49,8 +48,7 @@ surv_fx1 <- function(df) {
     ungroup %>%
     select(year, group, sex, n_dx) %>%
     unite(group, group, sex)
-
-  print(df)
+  
   return(df)
 }
 
@@ -152,47 +150,37 @@ predict_new_dx <- function(DF) {
   
   #################################################
   #' Create predicted #s of new Dx's
+  #' IDU: use gamma, poisson, and NS2 models
+  #' MSM: use gamma, poisson models
   #################################################
 
-  remove <- fit_all %>%
-    filter(grepl("idu_black", group), model %in% c("Gamma"))
-
-  fit_all <- fit_all %>%
-    anti_join(remove, by=c("group", "model"))
-
-  remove <- fit_all %>%
-    filter(grepl("idu_white_female", group), model %in% c("Gamma"))
-
-  fit_all <- fit_all %>%
-    anti_join(remove, by=c("group", "model"))
-
-  remove <- fit_all %>%
-    filter(grepl("idu_white", group), model %in% c("NS 2"))
-
-  fit_all <- fit_all %>%
-    anti_join(remove, by=c("group", "model"))
-
-  fit_all2a <- fit_all %>%
-    arrange(group, year, lower) %>%
-    group_by(group, year) %>%
-    filter(row_number()==1) %>%
-    ungroup %>%
-    select(group, year, lower)
+  #remove <- fit_all %>%
+  #  filter(grepl("msm", group), model %in% c("NS 2"))
   
-  fit_all2b <- fit_all %>%
-    arrange(group, year, desc(upper)) %>%
-    group_by(group, year) %>%
-    filter(row_number()==1) %>%
-    ungroup %>%
-    select(group, year, upper)
-  
-  fit_all2 <- fit_all2a %>%
-    full_join(fit_all2b, by=c("group", "year"))
-  
-  return(fit_all2)
+  #fit_all <- fit_all %>%
+  #  anti_join(remove, by=c("group", "model"))
+
+  #remove <- fit_all %>%
+  #  filter(grepl("idu_black", group), model %in% c("Gamma"))
+
+  #fit_all <- fit_all %>%
+  #  anti_join(remove, by=c("group", "model"))
+
+  return(fit_all)
 }
 
 new_dx <- read.csv(filePath(input_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
-
 new_dx_interval <- predict_new_dx(new_dx)
-write_feather(new_dx_interval, filePath(param_dir, 'new_dx_interval.feather'))
+new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
+write_feather(new_dx_interval, filePath('out/new_dx_all.feather'))
+
+for (yr in seq(from=2009, to=2014, by=1)) {
+  new_dx <- new_dx %>% filter(year != yr)
+  print(new_dx)
+  filename <- paste0('out/new_dx_', yr, '.feather')
+  new_dx_interval <- predict_new_dx(new_dx)
+  new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
+  write_feather(new_dx_interval, filePath(filename))
+}
+
+
