@@ -63,6 +63,9 @@ age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 # New dx prediction intervals
 new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
 new_dx_ehe = feather.read_dataframe(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
+new_dx_sa = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval_sa.feather').set_index(['group', 'year'])
+print(new_dx.loc['msm_white_male'])
+print(new_dx_sa.loc['msm_white_male'])
 
 # Linkage to care
 linkage_to_care = feather.read_dataframe(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
@@ -217,6 +220,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_ehe'] = new_dx_ehe
+    store['new_dx_sa'] = new_dx_sa
     store['linkage_to_care'] = linkage_to_care
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy

@@ -58,7 +58,7 @@ if os.path.isdir(output_folder):
 # Run simulations
 for group_name in group_names:
     print(group_name)
-    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=0, dx_reduce_flag=0,
-                                           sa_dict=sa_dict, output_folder=output_folder), group_name, replication)
+    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=0, sa_dict=sa_dict,
+                                           new_dx='test', output_folder=output_folder), group_name, replication)
                for replication in replications]
     ray.get(futures)

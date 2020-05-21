@@ -422,7 +422,7 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, dx_reduce_flag, sa_dict, output_folder=f'{os.getcwd()}/../../out/raw'):
+    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base', output_folder=f'{os.getcwd()}/../../out/raw'):
         self.output_folder = output_folder
         # Unpack Sensitivity Analysis List
         lambda1_sa = sa_dict['lambda1']
@@ -464,11 +464,20 @@ class Parameters:
             self.age_in_2009.loc['sigma2', 'estimate'] = self.age_in_2009.loc['sigma2', 'conf_high']
 
         # New ART initiators
-        self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
-        if dx_reduce_flag:
-            self.new_dx = pd.read_hdf(path, 'new_dx_ehe').loc[group_name]
-        else:
+        if new_dx == 'base':
             self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
+            print('base')
+            print(self.new_dx)
+        elif new_dx == 'ehe':
+            self.new_dx = pd.read_hdf(path, 'new_dx_ehe').loc[group_name]
+            print('ehe')
+            print(self.new_dx)
+        elif new_dx == 'sa':
+            self.new_dx = pd.read_hdf(path, 'new_dx_sa').loc[group_name]
+            print('sa')
+            print(self.new_dx)
+        else:
+            raise ValueError('Invalid new diagnosis file specified')
 
 
         # Sensitivity analysis for new diagnoses
