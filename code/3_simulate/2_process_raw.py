@@ -1,5 +1,6 @@
 # Imports
 import os
+import sys
 import pandas as pd
 import feather
 
@@ -10,6 +11,10 @@ pd.options.display.max_rows = 6000
 cwd = os.getcwd()
 h5_dir = cwd + '/../../out/raw'
 feather_dir = cwd + '/../../out/processed/4_15'
+os.makedirs(feather_dir, exist_ok=True)
+if os.listdir(feather_dir):
+    sys.exit('Directory is not empty')
+
 
 comorbidity = False
 
