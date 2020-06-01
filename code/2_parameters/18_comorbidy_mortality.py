@@ -27,6 +27,13 @@ mortality_in_care['sex'] = np.where(mortality_in_care['sex'] ==1, 'male', 'femal
 mortality_in_care['pop2'] = mortality_in_care['pop2'].str.lower()
 mortality_in_care['group'] = mortality_in_care['pop2'] + '_' + mortality_in_care['sex']
 mortality_in_care = mortality_in_care[['group', 'intercept_c', 'year_c', 'agecat_c', 'sqrtcd4n_c', 'h1yy_c', 'smoking_c', 'hcv_c', 'anx_c', 'dpr_c', 'ht_c', 'dm_c', 'ckd_c', 'lipid_c']].copy()
+idu_all_female = mortality_in_care['group'] == 'idu_all_female'
+idu_all_female_df = mortality_in_care.loc[idu_all_female].copy()
+mortality_in_care = mortality_in_care.loc[~idu_all_female]
+mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_black_female'))
+mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_white_female'))
+mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_hisp_female'))
+mortality_in_care = mortality_in_care.set_index('group').sort_index().reset_index()
 
 # Clean out care coefficients
 mortality_out_care = pd.read_csv(f'{in_dir}/mortality_coeff_out_of_care.csv')
@@ -35,6 +42,13 @@ mortality_out_care['sex'] = np.where(mortality_out_care['sex'] ==1, 'male', 'fem
 mortality_out_care['pop2'] = mortality_out_care['pop2'].str.lower()
 mortality_out_care['group'] = mortality_out_care['pop2'] + '_' + mortality_out_care['sex']
 mortality_out_care = mortality_out_care[['group', 'intercept_c', 'year_c', 'agecat_c', 'tv_sqrtcd4n_c', 'smoking_c', 'hcv_c', 'anx_c', 'dpr_c', 'ht_c', 'dm_c', 'ckd_c', 'lipid_c']].copy()
+idu_all_female = mortality_out_care['group'] == 'idu_all_female'
+idu_all_female_df = mortality_out_care.loc[idu_all_female].copy()
+mortality_out_care = mortality_out_care.loc[~idu_all_female]
+mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_black_female'))
+mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_white_female'))
+mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_hisp_female'))
+mortality_out_care = mortality_out_care.set_index('group').sort_index().reset_index()
 
 # Save them
 mortality_in_care.to_feather(f'{out_dir}/mortality_in_care.feather')

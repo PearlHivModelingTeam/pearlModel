@@ -467,15 +467,12 @@ class Parameters:
         if new_dx == 'base':
             self.new_dx = pd.read_hdf(path, 'new_dx').loc[group_name]
             print('base')
-            print(self.new_dx)
         elif new_dx == 'ehe':
             self.new_dx = pd.read_hdf(path, 'new_dx_ehe').loc[group_name]
             print('ehe')
-            print(self.new_dx)
         elif new_dx == 'sa':
             self.new_dx = pd.read_hdf(path, 'new_dx_sa').loc[group_name]
             print('sa')
-            print(self.new_dx)
         else:
             raise ValueError('Invalid new diagnosis file specified')
 

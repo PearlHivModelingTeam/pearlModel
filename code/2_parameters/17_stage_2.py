@@ -253,4 +253,3 @@ hypertension_table = hypertension_coeff.pivot(index='group', columns='param', va
 
 
 x = hypertension_coeff
-print(x.loc[x['param'] == 'intercept'].sort_values('estimate'))

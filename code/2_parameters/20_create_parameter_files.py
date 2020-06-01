@@ -64,8 +64,6 @@ age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
 new_dx_ehe = feather.read_dataframe(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
 new_dx_sa = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval_sa.feather').set_index(['group', 'year'])
-print(new_dx.loc['msm_white_male'])
-print(new_dx_sa.loc['msm_white_male'])
 
 # Linkage to care
 linkage_to_care = feather.read_dataframe(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
