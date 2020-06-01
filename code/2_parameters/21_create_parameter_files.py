@@ -89,7 +89,6 @@ age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
 
 
-
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
 years = np.arange(2010, 2031)
@@ -201,6 +200,19 @@ lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage2/lipid_coeff.feather').set_ind
 diabetes_coeff = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
 hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
 
+# Stage 3 comorbidities
+malig_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_users.feather').set_index('group')
+esld_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_users.feather').set_index('group')
+mi_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_users.feather').set_index('group')
+
+malig_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_inits.feather').set_index('group')
+esld_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_inits.feather').set_index('group')
+mi_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_inits.feather').set_index('group')
+
+malig_coeff = pd.read_feather(f'{aim_2_dir}/stage3/malig_coeff.feather').set_index('group')
+esld_coeff = pd.read_feather(f'{aim_2_dir}/stage3/esld_coeff.feather').set_index('group')
+mi_coeff = pd.read_feather(f'{aim_2_dir}/stage3/mi_coeff.feather').set_index('group')
+
 # mortality with comorbidity
 mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
 mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index('group')
@@ -255,16 +267,25 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['lipid_prev_users'] = lipid_prev_users
     store['diabetes_prev_users'] = diabetes_prev_users
     store['hypertension_prev_users'] = hypertension_prev_users
-
     store['ckd_prev_inits'] = ckd_prev_inits
     store['lipid_prev_inits'] = lipid_prev_inits
     store['diabetes_prev_inits'] = diabetes_prev_inits
     store['hypertension_prev_inits'] = hypertension_prev_inits
-
     store['ckd_coeff'] = ckd_coeff
     store['lipid_coeff'] = lipid_coeff
     store['diabetes_coeff'] = diabetes_coeff
     store['hypertension_coeff'] = hypertension_coeff
+
+    # Stage 3 comorbidities
+    store['malig_prev_users'] = malig_prev_users
+    store['esld_prev_users'] = esld_prev_users
+    store['mi_prev_users'] = mi_prev_users
+    store['malig_prev_inits'] = malig_prev_inits
+    store['esld_prev_inits'] = esld_prev_inits
+    store['mi_prev_inits'] = mi_prev_inits
+    store['malig_coeff'] = malig_coeff
+    store['esld_coeff'] = esld_coeff
+    store['mi_coeff'] = mi_coeff
 
     # Comorbidity modified mortality
     store['mortality_in_care_co'] = mortality_in_care_co

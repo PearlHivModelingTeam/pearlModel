@@ -15,8 +15,8 @@ os.makedirs(feather_dir, exist_ok=True)
 if os.listdir(feather_dir):
     sys.exit('Directory is not empty')
 
-
 comorbidity = False
+tv_cd4 = False
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
@@ -92,7 +92,8 @@ for group_name in group_names:
             art_coeffs = art_coeffs.append(store['art_coeffs'])
             median_cd4s = median_cd4s.append(store['median_cd4s'])
 
-            tv_cd4_2009 = tv_cd4_2009.append(store['tv_cd4_2009'])
+            if tv_cd4:
+                tv_cd4_2009 = tv_cd4_2009.append(store['tv_cd4_2009'])
 
             if comorbidity:
                 multimorbidity_in_care = multimorbidity_in_care.append(store['multimorbidity_in_care'])
@@ -137,10 +138,10 @@ for group_name in group_names:
     feather.write_dataframe(art_coeffs, f'{feather_dir}/{group_name}_art_coeffs.feather')
     feather.write_dataframe(median_cd4s, f'{feather_dir}/{group_name}_median_cd4s.feather')
 
-    feather.write_dataframe(tv_cd4_2009, f'{feather_dir}/{group_name}_tv_cd4_2009.feather')
+    if tv_cd4:
+        feather.write_dataframe(tv_cd4_2009, f'{feather_dir}/{group_name}_tv_cd4_2009.feather')
 
     if comorbidity:
-
         feather.write_dataframe(multimorbidity_in_care, f'{feather_dir}/{group_name}_multimorbidity_in_care.feather')
         feather.write_dataframe(multimorbidity_dead, f'{feather_dir}/{group_name}_multimorbidity_dead.feather')
 
