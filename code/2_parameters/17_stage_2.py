@@ -62,6 +62,7 @@ ckd_coeff = ckd_coeff.append(idu_white_female, ignore_index=True)
 ckd_coeff['group'] = ckd_coeff['pop2_'] + '_' + ckd_coeff['sex']
 ckd_coeff['param'] = ckd_coeff['parm']
 ckd_coeff = ckd_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+print(ckd_coeff)
 
 # Load dm coeff csv file
 dm_coeff = pd.read_csv(f'{in_dir}/dm_coeff.csv')
@@ -246,10 +247,3 @@ ckd_table = ckd_coeff.pivot(index='group', columns='param', values='estimate')[[
 lipid_table = lipid_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'dm', 'ht']]
 diabetes_table = diabetes_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'ht']]
 hypertension_table = hypertension_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'dm']]
-#ckd_table.to_csv('~/ckd_coeff.csv')
-#lipid_table.to_csv('~/lipid_coeff.csv')
-#diabetes_table.to_csv('~/diabetes_coeff.csv')
-#hypertension_table.to_csv('~/hypertension_coeff.csv')
-
-
-x = hypertension_coeff
