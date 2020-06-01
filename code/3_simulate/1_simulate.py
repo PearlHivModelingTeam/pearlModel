@@ -29,7 +29,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
-group_names = ['het_hisp_female']
+group_names = ['idu_white_female']
 
 
 # Declare sensitivity analysis params
@@ -58,7 +58,7 @@ if os.path.isdir(output_folder):
 # Run simulations
 for group_name in group_names:
     print(group_name)
-    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=0, sa_dict=sa_dict,
-                                           new_dx='test', output_folder=output_folder), group_name, replication)
+    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=1, sa_dict=sa_dict,
+                                           new_dx='base', output_folder=output_folder), group_name, replication)
                for replication in replications]
     ray.get(futures)
