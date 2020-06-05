@@ -415,7 +415,7 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
     return population
 
 def create_multimorbidity_stats(pop):
-    # Encode multimorbidity as 8 bit integer
+    # Encode multimorbidity as 11 bit integer
     df = pop[['age_cat', 'smoking', 'hcv', 'anxiety', 'depression', 'ckd', 'lipid', 'diabetes', 'hypertension', 'malig', 'esld', 'mi']].copy()
     df['multimorbidity'] = (
             df['smoking'].map(str) + df['hcv'].map(str) + df['anxiety'].map(str) + df['depression'].map(str)
@@ -424,7 +424,7 @@ def create_multimorbidity_stats(pop):
 
     # Count how many people have each unique set of comorbidities
     df = df.groupby(['age_cat', 'multimorbidity']).size()
-    index = pd.MultiIndex.from_product([df.index.levels[0], range(256)], names=['age_cat', 'multimorbidity'])
+    index = pd.MultiIndex.from_product([df.index.levels[0], range(2048)], names=['age_cat', 'multimorbidity'])
     df = df.reindex(index=index, fill_value=0).reset_index(name='n')
 
     return (df)
@@ -1067,7 +1067,7 @@ class Pearl:
         if (self.year==2009) & (self.parameters.record_tv_cd4):
             self.tv_cd4_2009 = pd.DataFrame(self.population.loc[in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
 
-        # Encode set of comorbidities as an 8 bit integer
+        # Encode set of comorbidities as an 11 bit integer
         if self.parameters.comorbidity_flag:
             multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
             multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
