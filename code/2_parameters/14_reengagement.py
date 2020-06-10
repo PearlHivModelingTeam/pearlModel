@@ -33,6 +33,7 @@ def pois_fit(x, mu, C):
 x = years
 pois_param, _ = curve_fit(pois_fit, years, proportion)
 exp_param, _ = curve_fit(decay_exp, years, proportion)
+print(pois_param)
 y = pois_fit(x, *pois_param)
 # Normalize
 y = y / np.sum(y)
