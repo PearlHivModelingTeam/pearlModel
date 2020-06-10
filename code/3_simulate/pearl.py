@@ -1078,6 +1078,10 @@ class Pearl:
             multimorbidity_inits = multimorbidity_inits.assign(year=self.year, replication=self.replication, group=self.group_name)
             self.stats.multimorbidity_inits = self.stats.multimorbidity_inits.append(multimorbidity_inits)
 
+            multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dying_art_user | dying_art_nonuser].copy())
+            multimorbidity_dead = multimorbidity_dead.assign(year=self.year, replication=self.replication, group=self.group_name)
+            self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
+
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
@@ -1133,11 +1137,6 @@ class Pearl:
         n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
                              .assign(replication=self.replication, group = self.group_name))
 
-        if self.parameters.comorbidity_flag:
-            # Encode set of comorbidities as an 8 bit integer
-            multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dead_in_care | dead_out_care].copy())
-            multimorbidity_dead = multimorbidity_dead.assign(year=self.year, replication=self.replication, group=self.group_name)
-            self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
 
         # Make output directory if it doesn't exist
         os.makedirs(self.parameters.output_folder, exist_ok=True)
