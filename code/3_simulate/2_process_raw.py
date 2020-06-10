@@ -50,6 +50,7 @@ for group_name in group_names:
     tv_cd4_2009 = pd.DataFrame()
 
     multimorbidity_in_care = pd.DataFrame()
+    multimorbidity_inits = pd.DataFrame()
     multimorbidity_dead = pd.DataFrame()
 
     anxiety_incidence = pd.DataFrame()
@@ -97,6 +98,7 @@ for group_name in group_names:
 
             if comorbidity:
                 multimorbidity_in_care = multimorbidity_in_care.append(store['multimorbidity_in_care'])
+                multimorbidity_inits = multimorbidity_inits.append(store['multimorbidity_inits'])
                 multimorbidity_dead = multimorbidity_dead.append(store['multimorbidity_dead'])
 
                 anxiety_incidence = anxiety_incidence.append(store['anxiety_incidence'])
@@ -143,6 +145,7 @@ for group_name in group_names:
 
     if comorbidity:
         feather.write_dataframe(multimorbidity_in_care, f'{feather_dir}/{group_name}_multimorbidity_in_care.feather')
+        feather.write_dataframe(multimorbidity_inits, f'{feather_dir}/{group_name}_multimorbidity_inits.feather')
         feather.write_dataframe(multimorbidity_dead, f'{feather_dir}/{group_name}_multimorbidity_dead.feather')
 
         feather.write_dataframe(anxiety_incidence, f'{feather_dir}/{group_name}_anxiety_incidence.feather')

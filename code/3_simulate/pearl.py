@@ -415,12 +415,12 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
     return population
 
 def create_multimorbidity_stats(pop):
-    # Encode multimorbidity as 11 bit integer
+    # Encode multimorbidity as 8 bit integer
     df = pop[['age_cat', 'smoking', 'hcv', 'anxiety', 'depression', 'ckd', 'lipid', 'diabetes', 'hypertension', 'malig', 'esld', 'mi']].copy()
     df['multimorbidity'] = (
             df['smoking'].map(str) + df['hcv'].map(str) + df['anxiety'].map(str) + df['depression'].map(str)
             + df['ckd'].map(str) + df['lipid'].map(str) + df['diabetes'].map(str) + df['hypertension'].map(
-        str) + df['malig'].map(str) + df['esld'].map(str) + df['mi'].map(str)).apply(int, base=2)
+        str)).apply(int, base=2)
 
     # Count how many people have each unique set of comorbidities
     df = df.groupby(['age_cat', 'multimorbidity']).size()
@@ -601,6 +601,7 @@ class Statistics:
 
         # Multimorbidity
         self.multimorbidity_in_care = pd.DataFrame()
+        self.multimorbidity_inits = pd.DataFrame()
         self.multimorbidity_dead = pd.DataFrame()
 
         # Incidence
@@ -1067,11 +1068,15 @@ class Pearl:
         if (self.year==2009) & (self.parameters.record_tv_cd4):
             self.tv_cd4_2009 = pd.DataFrame(self.population.loc[in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
 
-        # Encode set of comorbidities as an 11 bit integer
+        # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
             multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
             multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
             self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
+
+            multimorbidity_inits = create_multimorbidity_stats(self.population.loc[self.population['h1yy'] == self.year].copy())
+            multimorbidity_inits = multimorbidity_inits.assign(year=self.year, replication=self.replication, group=self.group_name)
+            self.stats.multimorbidity_inits = self.stats.multimorbidity_inits.append(multimorbidity_inits)
 
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_ART_USER
@@ -1160,11 +1165,11 @@ class Pearl:
             store['art_coeffs'] = self.stats.art_coeffs
             store['median_cd4s'] = self.stats.median_cd4s
             if self.parameters.record_tv_cd4:
-                print('hello')
                 store['tv_cd4_2009'] = self.tv_cd4_2009
 
             if self.parameters.comorbidity_flag:
                 store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care
+                store['multimorbidity_inits'] = self.stats.multimorbidity_inits
                 store['multimorbidity_dead'] = self.stats.multimorbidity_dead
 
                 store['anxiety_incidence'] = self.stats.anxiety_incidence
