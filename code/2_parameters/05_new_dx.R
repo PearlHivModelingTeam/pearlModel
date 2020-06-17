@@ -189,10 +189,37 @@ predict_new_dx <- function(DF) {
   fit_all2 <- fit_all2a %>%
     full_join(fit_all2b, by=c("group", "year"))
   
-  return(fit_all2)
+  return(fit_all)
 }
 
-new_dx <- read.csv(filePath(input_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
+combine_models <- function(df) {
+  fit_all2a <- df %>%
+    arrange(group, year, lower) %>%
+    group_by(group, year) %>%
+    filter(row_number()==1) %>%
+    ungroup %>%
+    select(group, year, lower)
 
+  fit_all2b <- df %>%
+    arrange(group, year, desc(upper)) %>%
+    group_by(group, year) %>%
+    filter(row_number()==1) %>%
+    ungroup %>%
+    select(group, year, upper)
+
+  fit_all2 <- fit_all2a %>%
+    full_join(fit_all2b, by=c("group", "year"))
+
+  return(fit_all2)
+
+}
+
+
+new_dx <- read.csv(filePath(input_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
 new_dx_interval <- predict_new_dx(new_dx)
+new_dx_model <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
+new_dx_interval <- combine_models(new_dx_interval)
+
+write_feather(new_dx, filePath(param_dir, 'new_dx.feather'))
+write_feather(new_dx_model, filePath(param_dir, 'new_dx_model.feather'))
 write_feather(new_dx_interval, filePath(param_dir, 'new_dx_interval.feather'))
