@@ -12,6 +12,7 @@ param_dir = cwd + '/../../data/parameters/'
 aim_1_dir = cwd + '/../../data/parameters/aim1'
 aim_2_dir = cwd + '/../../data/parameters/aim2'
 
+msm = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
@@ -217,6 +218,9 @@ mi_coeff = pd.read_feather(f'{aim_2_dir}/stage3/mi_coeff.feather').set_index('gr
 mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
 mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index('group')
 
+#show = cd4_decrease
+#print(show.round(3).iloc[:,:])
+
 # Save everything
 try:
     os.remove(f'{param_dir}/parameters.h5')
@@ -225,7 +229,7 @@ except:
 
 with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['on_art_2009'] = on_art_2009
-    store['h1yy_by_age_2009'] = h1yy_by_age_2009 
+    store['h1yy_by_age_2009'] = h1yy_by_age_2009
     store['cd4n_by_h1yy_2009'] = cd4n_by_h1yy_2009
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
