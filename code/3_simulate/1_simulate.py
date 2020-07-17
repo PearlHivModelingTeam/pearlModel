@@ -2,46 +2,42 @@
 import os
 import ray
 import pearl
+import yaml
+from pathlib import Path
+import argparse
+from datetime import datetime
 
-###############################################################################
-# Main Function                                                               #
-###############################################################################
+
+# Define parallel ray function
 @ray.remote
 def run(parameters, group_name, replication):
-    pearl.Pearl(parameters, group_name, replication, verbose=False)
-    return True
-
-# Number of cores
-ray.init(num_cpus=7)
-
-# Input and output files
-param_file = f'{os.getcwd()}/../../data/parameters/parameters.h5'
-output_folder = f'{os.getcwd()}/../../out/raw'
-
-# Number of replications
-replications = range(100)
-
-# Groups to run
-group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
-               'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
-               'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-
-group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
-group_names = ['idu_white_female']
+    simulation = pearl.Pearl(parameters, group_name, replication)
+    return simulation.stats
 
 
-# Declare sensitivity analysis params
-sa_dict = {'lambda1':               None,
-           'mu1':                   None,
-           'mu2':                   None,
-           'sigma1':                None,
-           'sigma2':                None,
-           'mortality_in_care':     None,
-           'mortality_out_care':    None,
-           'loss_to_follow_up':     None,
-           'cd4_increase':          None,
-           'cd4_decrease':          None,
-           'new_pop_size':          None}
+parser = argparse.ArgumentParser()
+parser.add_argument('--config')
+args = parser.parse_args()
+if args.config:
+    yaml_file = Path(f'yaml/{args.config}')
+else:
+    yaml_file = Path('yaml/default.yaml')
+
+date_string = datetime.today().strftime('%Y-%m-%d')
+output_folder = Path(f'../../out/{yaml_file.stem}_{date_string}/')
+
+# Load parameters
+with open(yaml_file, 'r') as f:
+    param_yaml = yaml.load(f, Loader=yaml.FullLoader)
+    num_cpus = param_yaml['num_cpus']
+    param_file = Path(param_yaml['param_file'])
+    replications = range(param_yaml['replications'])
+    group_names = param_yaml['group_names']
+    sa_dict = param_yaml['sa_dict']
+    comorbidity_flag = param_yaml['comorbidity_flag']
+    new_dx = param_yaml['new_dx']
+    record_tv_cd4 = param_yaml['record_tv_cd4']
+    verbose = param_yaml['verbose']
 
 # Delete old files
 if os.path.isdir(output_folder):
@@ -52,11 +48,19 @@ if os.path.isdir(output_folder):
                 os.unlink(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
+else:
+    os.makedirs(output_folder)
 
 # Run simulations
+ray.init(num_cpus=num_cpus)
+out_list = []
 for group_name in group_names:
     print(group_name)
-    futures = [run.remote(pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=1, sa_dict=sa_dict,
-                                           new_dx='base', output_folder=output_folder), group_name, replication)
-               for replication in replications]
-    ray.get(futures)
+    parameters = pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=comorbidity_flag,
+                                  sa_dict=sa_dict, new_dx=new_dx, output_folder=output_folder,
+                                  record_tv_cd4=record_tv_cd4, verbose=verbose)
+    futures = [run.remote(parameters, group_name, replication) for replication in replications]
+    out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, record_tv_cd4))
+
+out = pearl.Statistics(out_list, comorbidity_flag, record_tv_cd4)
+out.save(output_folder)
