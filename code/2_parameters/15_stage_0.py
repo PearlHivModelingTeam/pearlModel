@@ -1,8 +1,6 @@
 # Imports
 import os
-import numpy as np
 import pandas as pd
-import feather
 
 pd.set_option("display.max_rows", 1001)
 

@@ -2,7 +2,6 @@
 import os
 import numpy as np
 import pandas as pd
-import feather
 import statsmodels.formula.api as sm
 
 # Define directories

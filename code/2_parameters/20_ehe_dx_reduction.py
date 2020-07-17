@@ -1,9 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-import feather
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 pd.set_option("display.max_rows", 1001)
 
@@ -16,7 +13,7 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
-new_dx = feather.read_dataframe(f'{param_dir}/new_dx_interval.feather')
+new_dx = pd.read_feather(f'{param_dir}/new_dx_interval.feather')
 
 dx_2020 = new_dx.loc[new_dx['year'] == 2020].copy()
 dx_2020['2020'] = (dx_2020['upper'] + dx_2020['lower']) / 2.0
@@ -54,41 +51,3 @@ new_dx_reduce = pd.concat([dx_reduce, new_dx_mod]).sort_values(['group', 'year']
 new_dx_reduce['year'] = new_dx_reduce['year'].astype(int)
 new_dx_reduce = new_dx_reduce.reset_index(drop=True)
 new_dx_reduce.to_feather(f'{param_dir}/new_dx_combined_ehe.feather')
-
-plots = {'msm': ['msm_black_male', 'msm_hisp_male', 'msm_white_male'],
-         'het_female': ['het_black_female', 'het_hisp_female', 'het_white_female'],
-         'het_male': ['het_black_male', 'het_hisp_male', 'het_white_male'],
-         'idu_female': ['idu_black_female', 'idu_hisp_female', 'idu_white_female'],
-         'idu_male': ['idu_black_male', 'idu_hisp_male', 'idu_white_male']}
-
-group_names = ['msm_black_male', 'msm_hisp_male', 'msm_white_male']
-titles = ['Black', 'Hispanic', 'White']
-
-
-sns.set(style='ticks')
-sns.set_context('paper', font_scale = 1.8, rc={'lines.linewidth':3})
-colors = ['navy', 'mediumpurple', 'darkred']
-for plot_name in plots:
-    group_names = plots[plot_name]
-    fig, axes = plt.subplots(nrows=1, ncols=3, sharey='all', figsize=(16.0, 9.0))
-
-    for i, (group_name, ax) in enumerate(zip(group_names, axes.flat)):
-        data = new_dx.set_index(['group', 'year']).loc[group_name].copy().reset_index()
-        print(data)
-        ax.plot(data['year'], data['lower'], color='b', label='Predicted')
-        ax.plot(data['year'], data['upper'], color='b')
-        ax.fill_between(data['year'], data['lower'], data['upper'], color='b', alpha=0.3)
-
-        ax.set_title(titles[i])
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        if i==0:
-            ax.set_ylabel('Number of New Diagnoses')
-        if i==1:
-            ax.set_xlabel('Year')
-        if i==2:
-            ax.legend(frameon=False, loc='upper left')
-
-
-    plt.suptitle(plot_name)
-    #plt.savefig(f'{fig_dir}/{plot_name}_range.png', bbox_inches='tight')

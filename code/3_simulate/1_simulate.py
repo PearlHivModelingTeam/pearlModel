@@ -1,7 +1,5 @@
 # Imports
 import os
-import numpy as np
-import shutil
 import ray
 import pearl
 
@@ -21,7 +19,7 @@ param_file = f'{os.getcwd()}/../../data/parameters/parameters.h5'
 output_folder = f'{os.getcwd()}/../../out/raw'
 
 # Number of replications
-replications = range(1)
+replications = range(100)
 
 # Groups to run
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',

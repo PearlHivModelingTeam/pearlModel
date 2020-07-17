@@ -2,11 +2,6 @@
 import os
 import numpy as np
 import pandas as pd
-import feather
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 pd.set_option("display.max_rows", 1001)
 
