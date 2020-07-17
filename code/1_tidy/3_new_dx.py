@@ -1,8 +1,6 @@
 # Imports
 import os
-import numpy as np
 import pandas as pd
-import feather
 
 # Define directories
 input_dir = f'{os.getcwd()}/../../data/input/aim1'

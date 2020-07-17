@@ -2,8 +2,6 @@
 import os
 import numpy as np
 import pandas as pd
-import feather
-import statsmodels.api as sm
 from scipy.stats import nbinom
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -33,7 +31,6 @@ def pois_fit(x, mu, C):
 x = years
 pois_param, _ = curve_fit(pois_fit, years, proportion)
 exp_param, _ = curve_fit(decay_exp, years, proportion)
-print(pois_param)
 y = pois_fit(x, *pois_param)
 # Normalize
 y = y / np.sum(y)

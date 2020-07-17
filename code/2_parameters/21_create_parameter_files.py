@@ -2,7 +2,6 @@
 import os
 import numpy as np
 import pandas as pd
-import feather
 
 pd.set_option("display.max_rows", 1001)
 
@@ -17,16 +16,17 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 
+
 def clean_coeff(df):
     """Format tables holding coefficient values"""
     df.columns = df.columns.str.lower()
 
-    # Combine sex risk and race into single group indentifier
-    if (np.issubdtype(df.sex.dtype, np.number)):
+    # Combine sex risk and race into single group identifier
+    if np.issubdtype(df.sex.dtype, np.number):
         df.sex = np.where(df.sex == 1, 'male', 'female')
     else:
         df.sex = np.where(df.sex == 'Males', 'male', 'female')
-    if ('pop2' in df.columns):
+    if 'pop2' in df.columns:
         df = df.rename(columns={'pop2':'group'})
         df.group = df.group.str.decode('utf-8')
     else:
@@ -39,17 +39,18 @@ def clean_coeff(df):
     df = df.set_index('group')
     return(df)
 
+
 # Number of people on art in 2009: on_art_2009
-on_art_2009 = feather.read_dataframe(f'{aim_1_dir}/on_art_2009.feather').set_index(['group']).sort_index()
+on_art_2009 = pd.read_feather(f'{aim_1_dir}/on_art_2009.feather').set_index(['group']).sort_index()
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
-h1yy_by_age_2009 = feather.read_dataframe(f'{aim_1_dir}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
+h1yy_by_age_2009 = pd.read_feather(f'{aim_1_dir}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
-cd4n_by_h1yy_2009 = feather.read_dataframe(f'{aim_1_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
+cd4n_by_h1yy_2009 = pd.read_feather(f'{aim_1_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
 
 # Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
-age_in_2009 = feather.read_dataframe(f'{aim_1_dir}/age_in_2009.feather')
+age_in_2009 = pd.read_feather(f'{aim_1_dir}/age_in_2009.feather')
 neg = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)].copy()
 neg['conf_low'] = 0.0
 neg['conf_high'] = 2.0 * neg['estimate']
@@ -62,15 +63,15 @@ age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
 # New dx prediction intervals
-new_dx = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
-new_dx_ehe = feather.read_dataframe(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
-new_dx_sa = feather.read_dataframe(f'{aim_1_dir}/new_dx_interval_sa.feather').set_index(['group', 'year'])
+new_dx = pd.read_feather(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
+new_dx_ehe = pd.read_feather(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
+new_dx_sa = pd.read_feather(f'{aim_1_dir}/new_dx_interval_sa.feather').set_index(['group', 'year'])
 
 # Linkage to care
-linkage_to_care = feather.read_dataframe(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
+linkage_to_care = pd.read_feather(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
 
 # Age at haart init mixed gaussian coefficients
-age_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/age_by_h1yy.feather')
+age_by_h1yy = pd.read_feather(f'{aim_1_dir}/age_by_h1yy.feather')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
 
 # No values less than 0 and no lambda1 greater than 1
@@ -91,7 +92,7 @@ age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']]
 
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
-cd4n_by_h1yy = feather.read_dataframe(f'{aim_1_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
+cd4n_by_h1yy = pd.read_feather(f'{aim_1_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
 years = np.arange(2010, 2031)
 params = ['mu', 'sigma']
 
@@ -122,47 +123,47 @@ cd4n_by_h1yy = df
 
 
 # Coefficients for mortality in care
-mortality_in_care = feather.read_dataframe(f'{aim_1_dir}/mortality_in_care.feather')
+mortality_in_care = pd.read_feather(f'{aim_1_dir}/mortality_in_care.feather')
 cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
-mortality_in_care_vcov = feather.read_dataframe(f'{aim_1_dir}/mortality_in_care_vcov.feather')
+mortality_in_care_vcov = pd.read_feather(f'{aim_1_dir}/mortality_in_care_vcov.feather')
 mortality_in_care_vcov.columns = cols
 mortality_in_care_vcov['covariate'] = 15*(cols[1:])
 mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
 
 
 # Coefficients for mortality out of care
-mortality_out_care = feather.read_dataframe(f'{aim_1_dir}/mortality_out_care.feather')
+mortality_out_care = pd.read_feather(f'{aim_1_dir}/mortality_out_care.feather')
 cols = mortality_out_care.columns.tolist()
 mortality_out_care = mortality_out_care.set_index('group')
-mortality_out_care_vcov = feather.read_dataframe(f'{aim_1_dir}/mortality_out_care_vcov.feather')
+mortality_out_care_vcov = pd.read_feather(f'{aim_1_dir}/mortality_out_care_vcov.feather')
 mortality_out_care_vcov.columns = cols
 mortality_out_care_vcov['covariate'] = 15*(cols[1:])
 mortality_out_care_vcov = mortality_out_care_vcov.set_index(['group', 'covariate'])
 
 # Coefficients for loss to follow up
-loss_to_follow_up = feather.read_dataframe(f'{aim_1_dir}/loss_to_follow_up.feather')
+loss_to_follow_up = pd.read_feather(f'{aim_1_dir}/loss_to_follow_up.feather')
 cols = loss_to_follow_up.columns.tolist()
 loss_to_follow_up = loss_to_follow_up.set_index('group')
-loss_to_follow_up_vcov = feather.read_dataframe(f'{aim_1_dir}/loss_to_follow_up_vcov.feather')
+loss_to_follow_up_vcov = pd.read_feather(f'{aim_1_dir}/loss_to_follow_up_vcov.feather')
 loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
 ltfu_knots = clean_coeff(pd.read_sas(aim_1_dir + '/ltfu_knots.sas7bdat'))
 
 # Coefficients for cd4 decline out of care
-cd4_decrease = feather.read_dataframe(f'{aim_1_dir}/cd4_decrease.feather')
+cd4_decrease = pd.read_feather(f'{aim_1_dir}/cd4_decrease.feather')
 cols = cd4_decrease.columns.tolist()
 cd4_decrease['group'] = 'all'
 cd4_decrease = cd4_decrease.set_index('group')
-cd4_decrease_vcov = feather.read_dataframe(f'{aim_1_dir}/cd4_decrease_vcov.feather')
+cd4_decrease_vcov = pd.read_feather(f'{aim_1_dir}/cd4_decrease_vcov.feather')
 cd4_decrease_vcov.columns = cols
 
 # Coefficients of cd4 increase over time
-cd4_increase = feather.read_dataframe(f'{aim_1_dir}/cd4_increase.feather')
+cd4_increase = pd.read_feather(f'{aim_1_dir}/cd4_increase.feather')
 cols = cd4_increase.columns.tolist()
 cd4_increase = cd4_increase.set_index('group')
-cd4_increase_vcov = feather.read_dataframe(f'{aim_1_dir}/cd4_increase_vcov.feather')
+cd4_increase_vcov = pd.read_feather(f'{aim_1_dir}/cd4_increase_vcov.feather')
 cd4_increase_vcov.columns = cols
 cd4_increase_vcov['covariate'] = 15*(cols[1:])
 cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
