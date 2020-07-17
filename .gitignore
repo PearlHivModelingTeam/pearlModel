@@ -3,13 +3,12 @@ data/input/*
 data/processed/*
 data/param/*
 data/parameters/*
-data/ibk/*
-data/pbk/*
 !data/param/prob_reengage.csv
+#code/3_simulate/config/*
 *.swp
-code/test/*
 .idea/*
 *.pyc
 *.png
 *.xlsx
 *.feather
+venv/*

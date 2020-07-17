@@ -19,9 +19,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config')
 args = parser.parse_args()
 if args.config:
-    yaml_file = Path(f'yaml/{args.config}')
+    yaml_file = Path(f'config/{args.config}')
 else:
-    yaml_file = Path('yaml/default.yaml')
+    yaml_file = Path('config/default.yaml')
 
 date_string = datetime.today().strftime('%Y-%m-%d')
 output_folder = Path(f'../../out/{yaml_file.stem}_{date_string}/')
