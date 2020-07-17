@@ -434,9 +434,10 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base', output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False):
+    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base', output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False):
         self.output_folder = output_folder
         self.record_tv_cd4 = record_tv_cd4
+        self.verbose = verbose
         # Unpack Sensitivity Analysis List
         lambda1_sa = sa_dict['lambda1']
         mu1_sa = sa_dict['mu1']
@@ -574,45 +575,53 @@ class Parameters:
             self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care_co').loc[group_name]
 
 
-
 class Statistics:
-    def __init__(self):
-        self.in_care_count = pd.DataFrame()
-        self.in_care_age = pd.DataFrame()
-        self.out_care_count = pd.DataFrame()
-        self.out_care_age = pd.DataFrame()
-        self.reengaged_count = pd.DataFrame()
-        self.reengaged_age = pd.DataFrame()
-        self.ltfu_count = pd.DataFrame()
-        self.ltfu_age = pd.DataFrame()
-        self.died_in_care_count = pd.DataFrame()
-        self.died_in_care_age = pd.DataFrame()
-        self.died_out_care_count = pd.DataFrame()
-        self.died_out_care_age = pd.DataFrame()
-        self.new_init_count = pd.DataFrame()
-        self.new_init_age = pd.DataFrame()
-        self.years_out = pd.DataFrame()
-        self.n_times_lost = pd.DataFrame()
+    def __init__(self, out_list=None, comorbidity_flag=None, record_tv_cd4=None):
+        self.comorbidity_flag = comorbidity_flag
+        self.record_tv_cd4 = record_tv_cd4
+        self.in_care_count = pd.concat([out.in_care_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.in_care_age = pd.concat([out.in_care_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.out_care_count = pd.concat([out.out_care_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.out_care_age = pd.concat([out.out_care_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.reengaged_count = pd.concat([out.reengaged_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.reengaged_age = pd.concat([out.reengaged_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.ltfu_count = pd.concat([out.ltfu_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.ltfu_age = pd.concat([out.ltfu_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.dead_in_care_count = pd.concat([out.dead_in_care_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.dead_in_care_age = pd.concat([out.dead_in_care_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.dead_out_care_count = pd.concat([out.dead_out_care_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.dead_out_care_age = pd.concat([out.dead_out_care_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.new_init_count = pd.concat([out.new_init_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.new_init_age = pd.concat([out.new_init_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.years_out = pd.concat([out.years_out for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.n_times_lost = pd.concat([out.n_times_lost for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.unique_out_care_ids = set()
-        self.art_coeffs = pd.DataFrame()
-        self.median_cd4s = pd.DataFrame()
-        self.tv_cd4_2009 = pd.DataFrame()
+        self.n_unique_out_care = pd.concat([out.n_unique_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.initial_cd4n = pd.concat([out.initial_cd4n for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.art_coeffs = pd.concat([out.art_coeffs for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.median_cd4s = pd.concat([out.median_cd4s for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
-        # Multimorbidity
-        self.multimorbidity_in_care = pd.DataFrame()
-        self.multimorbidity_inits = pd.DataFrame()
-        self.multimorbidity_dead = pd.DataFrame()
+        if self.record_tv_cd4:
+            self.tv_cd4_2009 = pd.concat([out.tv_cd4_2009 for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
-        # Incidence
-        self.anxiety_incidence = pd.DataFrame()
-        self.depression_incidence = pd.DataFrame()
-        self.ckd_incidence = pd.DataFrame()
-        self.lipid_incidence = pd.DataFrame()
-        self.diabetes_incidence = pd.DataFrame()
-        self.hypertension_incidence = pd.DataFrame()
-        self.malig_incidence = pd.DataFrame()
-        self.esld_incidence = pd.DataFrame()
-        self.mi_incidence = pd.DataFrame()
+        if self.comorbidity_flag:
+            self.multimorbidity_in_care = pd.concat([out.multimorbidity_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.multimorbidity_inits = pd.concat([out.multimorbidity_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.multimorbidity_dead = pd.concat([out.multimorbidity_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.anxiety_incidence = pd.concat([out.anxiety_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.depression_incidence = pd.concat([out.depression_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.ckd_incidence = pd.concat([out.ckd_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.lipid_incidence = pd.concat([out.lipid_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.diabetes_incidence = pd.concat([out.diabetes_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.hypertension_incidence = pd.concat([out.hypertension_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.malig_incidence = pd.concat([out.malig_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.esld_incidence = pd.concat([out.esld_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.mi_incidence = pd.concat([out.mi_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+
+    def save(self, output_folder):
+        for name, df in self.__dict__.items():
+            if isinstance(df, pd.DataFrame):
+                df.to_feather(f'{output_folder}/{name}.feather')
 
 
 def output_reindex(df):
@@ -626,15 +635,14 @@ def output_reindex(df):
 ###############################################################################
 
 class Pearl:
-    def __init__(self, parameters, group_name, replication, verbose=False):
+    def __init__(self, parameters, group_name, replication):
         self.group_name = group_name
         self.replication = replication
-        self.verbose = verbose
         self.year = 2009
         self.parameters = parameters
 
         # Initiate output class
-        self.stats = Statistics()
+        self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag, record_tv_cd4=self.parameters.record_tv_cd4)
 
         # Simulate number of new art initiators
         n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx, parameters.linkage_to_care)
@@ -651,7 +659,7 @@ class Pearl:
         self.record_stats()
 
         # Print populations
-        if self.verbose:
+        if self.parameters.verbose:
             print(self)
 
         # Move to 2010
@@ -1100,7 +1108,7 @@ class Pearl:
         initial_cd4n['init_sqrtcd4n'] = initial_cd4n['init_sqrtcd4n'].astype(int)
         initial_cd4n = initial_cd4n.groupby(['h1yy', 'init_sqrtcd4n']).size()
         initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([np.arange(2000, 2030), np.arange(51)], names=['h1yy', 'init_sqrtcd4n']), fill_value=0).reset_index(name='n')
-        initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication)
+        self.stats.initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication)
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
@@ -1114,7 +1122,6 @@ class Pearl:
             output_reindex(self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size())
             .reset_index(name='n').rename(columns={'year_died': 'year'})
             .assign(replication=self.replication, group=self.group_name))
-
 
         # Count of those that died in care by age_cat and year
         self.stats.dead_out_care_count = (
@@ -1133,49 +1140,8 @@ class Pearl:
             .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
 
         # Number of unique people out of care 2010-2015
-        n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
-                             .assign(replication=self.replication, group = self.group_name))
-
-
-        # Make output directory if it doesn't exist
-        os.makedirs(self.parameters.output_folder, exist_ok=True)
-
-        # Save it all
-        with pd.HDFStore(f'{self.parameters.output_folder}/{self.group_name}_{str(self.replication)}.h5') as store:
-            store['in_care_count'] = self.stats.in_care_count
-            store['in_care_age'] = self.stats.in_care_age
-            store['out_care_count'] = self.stats.out_care_count
-            store['out_care_age'] = self.stats.out_care_age
-            store['reengaged_count'] = self.stats.reengaged_count
-            store['reengaged_age'] = self.stats.reengaged_age
-            store['ltfu_count'] = self.stats.ltfu_count
-            store['ltfu_age'] = self.stats.ltfu_age
-            store['dead_in_care_count'] = self.stats.dead_in_care_count
-            store['dead_in_care_age'] = self.stats.dead_in_care_age
-            store['dead_out_care_count'] = self.stats.dead_out_care_count
-            store['dead_out_care_age'] = self.stats.dead_out_care_age
-            store['new_init_count'] = self.stats.new_init_count
-            store['new_init_age'] = self.stats.new_init_age
-            store['years_out'] = self.stats.years_out
-            store['n_times_lost'] = self.stats.n_times_lost
-            store['initial_cd4n'] = initial_cd4n
-            store['n_unique_out_care'] = n_unique_out_care
-            store['art_coeffs'] = self.stats.art_coeffs
-            store['median_cd4s'] = self.stats.median_cd4s
-            if self.parameters.record_tv_cd4:
-                store['tv_cd4_2009'] = self.tv_cd4_2009
-
-            if self.parameters.comorbidity_flag:
-                store['multimorbidity_in_care'] = self.stats.multimorbidity_in_care
-                store['multimorbidity_inits'] = self.stats.multimorbidity_inits
-                store['multimorbidity_dead'] = self.stats.multimorbidity_dead
-
-                store['anxiety_incidence'] = self.stats.anxiety_incidence
-                store['depression_incidence'] = self.stats.depression_incidence
-                store['ckd_incidence'] = self.stats.ckd_incidence
-                store['lipid_incidence'] = self.stats.lipid_incidence
-                store['diabetes_incidence'] = self.stats.diabetes_incidence
-                store['hypertension_incidence'] = self.stats.hypertension_incidence
+        self.stats.n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
+                                        .assign(replication=self.replication, group = self.group_name))
 
 
     def run(self):
@@ -1209,7 +1175,7 @@ class Pearl:
             # Append changed populations to their respective DataFrames
             self.append_new()
 
-            if self.verbose:
+            if self.parameters.verbose:
                 print(self)
 
             # Increment year
