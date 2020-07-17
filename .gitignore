@@ -4,7 +4,7 @@ data/processed/*
 data/param/*
 data/parameters/*
 !data/param/prob_reengage.csv
-#code/3_simulate/config/*
+code/3_simulate/config/*
 *.swp
 .idea/*
 *.pyc
