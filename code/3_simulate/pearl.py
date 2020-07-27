@@ -434,7 +434,8 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base', output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False):
+    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base',
+                 output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False):
         self.output_folder = output_folder
         self.record_tv_cd4 = record_tv_cd4
         self.verbose = verbose
@@ -642,7 +643,8 @@ class Pearl:
         self.parameters = parameters
 
         # Initiate output class
-        self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag, record_tv_cd4=self.parameters.record_tv_cd4)
+        self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag,
+                                record_tv_cd4=self.parameters.record_tv_cd4)
 
         # Simulate number of new art initiators
         n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx, parameters.linkage_to_care)
@@ -1072,8 +1074,8 @@ class Pearl:
                                     'group': self.group_name}, index=[0])
         self.stats.median_cd4s = pd.concat([self.stats.median_cd4s, median_cd4s])
 
-        if (self.year==2009) & (self.parameters.record_tv_cd4):
-            self.tv_cd4_2009 = pd.DataFrame(self.population.loc[in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
+        if (self.year == 2009) & self.parameters.record_tv_cd4:
+            self.stats.tv_cd4_2009 = pd.DataFrame(self.population.loc[in_care, 'time_varying_sqrtcd4n']).assign(group=self.group_name, replication=self.replication)
 
         # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
