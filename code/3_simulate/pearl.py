@@ -121,44 +121,47 @@ def calculate_cd4_increase(pop, knots, year, coeffs, vcov, sa):
 
     return new_cd4
 
+
 def calculate_cd4_decrease(pop, coeffs, sa, vcov):
     pop['time_out'] = pop['year'] - pop['ltfu_year']
     pop_matrix = pop[['intercept', 'time_out', 'sqrtcd4n_exit']].to_numpy()
     diff = np.matmul(pop_matrix, coeffs)
 
-    if sa:
+    if sa is not None:
         se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
         low = diff - 1.96 * se
         high = diff + 1.96 * se
         diff = (sa * (high - low)) + low
 
-    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * SMEARING )
+    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy() ** 2)*np.exp(diff) * SMEARING)
     return new_cd4
+
 
 def create_comorbidity_pop_matrix(pop, condition):
     pop['time_since_art'] = pop['year'] - pop['h1yy']
     pop['out_care'] = (pop['status'] == ART_NONUSER).astype(int)
 
-    if condition=='anxiety':
+    if condition == 'anxiety':
         return pop[['age', 'init_sqrtcd4n', 'depression', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
-    elif condition=='depression':
+    elif condition == 'depression':
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
-    elif condition=='ckd':
+    elif condition == 'ckd':
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
-    elif condition=='lipid':
+    elif condition == 'lipid':
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'out_care', 'smoking', 'year']].to_numpy()
 
-    elif condition=='diabetes':
+    elif condition == 'diabetes':
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
-    elif condition=='hypertension':
+    elif condition == 'hypertension':
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
 
     elif condition in ['malig', 'esld', 'mi']:
         return pop[['age', 'anxiety', 'init_sqrtcd4n', 'ckd', 'diabetes', 'depression', 'time_since_art', 'hcv', 'hypertension', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy()
+
 
 def create_ltfu_pop_matrix(pop, knots):
     """ Create the population matrix for use in calculating probability of loss to follow up"""
@@ -174,13 +177,19 @@ def create_ltfu_pop_matrix(pop, knots):
     pop['haart_period'] = (pop['h1yy'].values > 2010).astype(int)
     return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy()
 
+
 def calculate_prob(pop, coeffs, sa, vcov):
     """ Calculate the individual probability from logistic regression """
 
     log_odds = np.matmul(pop, coeffs)
+
     if sa is not None:
         # Calculate variance of prediction using matrix multiplication
-        se = np.sqrt(np.sum(np.matmul(pop, vcov) * pop, axis=1))
+        a = np.matmul(pop, vcov)
+        b = a * pop
+        c = np.sum(b, axis=1)
+
+        se = np.sqrt(c)
         low = log_odds - 1.96 * se
         high = log_odds + 1.96 * se
         log_odds = (sa * (high - low)) + low
@@ -188,6 +197,7 @@ def calculate_prob(pop, coeffs, sa, vcov):
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
     return prob
+
 
 def simulate_new_dx(new_dx_param, linkage_to_care):
     """ Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of
@@ -212,7 +222,6 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
     new_dx['art_users'] = (new_dx['total_linked'] * linkage_to_care['art_prob']).astype(int)
     new_dx['art_nonusers'] = (new_dx['total_linked'] * (1 - linkage_to_care['art_prob'])).astype(int)
 
-
     # Count those not starting art 2006 - 2009 as initial ART nonusers
     n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
 
@@ -221,6 +230,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
     new_agents['total'] = new_agents['art_users'] + new_agents['art_nonusers']
 
     return n_initial_nonusers, new_agents
+
 
 def make_pop_2009(parameters, n_initial_nonusers, group_name):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
@@ -277,7 +287,6 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name):
     population = set_cd4_cat(population)
     population['init_age'] = population['age'] - (2009 - population['h1yy'])
 
-
     # Add final columns used for calculations and output
     population['n_lost'] = 0
     population['years_out'] = 0
@@ -326,6 +335,7 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name):
     population = population.reindex(sorted(population), axis=1)
 
     return population
+
 
 def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, replication, stats):
     """ Draw ages for new art initiators """
@@ -488,11 +498,10 @@ class Parameters:
         else:
             raise ValueError('Invalid new diagnosis file specified')
 
-
         # Sensitivity analysis for new diagnoses
         if sa_dict['new_pop_size'] == 0:
             self.new_dx['upper'] = self.new_dx['lower']
-        elif sa_dict['new_pop_size'] ==1:
+        elif sa_dict['new_pop_size'] == 1:
             self.new_dx['lower'] = self.new_dx['upper']
 
         self.linkage_to_care = pd.read_hdf(path, 'linkage_to_care').loc[group_name]
@@ -656,7 +665,6 @@ class Pearl:
         self.population = self.population.append(
             make_new_population(parameters, n_new_agents, len(self.population.index), self.group_name, self.replication, self.stats))
 
-
         # First recording of stats
         self.record_stats()
 
@@ -712,7 +720,6 @@ class Pearl:
             self.parameters.cd4_increase_vcov.to_numpy(),
             self.parameters.cd4_increase_sa)
 
-
     def decrease_cd4_count(self):
         out_care = self.population['status'] == ART_NONUSER
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_cd4_decrease(
@@ -720,7 +727,6 @@ class Pearl:
             self.parameters.cd4_decrease.to_numpy(),
             self.parameters.cd4_decrease_sa,
             self.parameters.cd4_decrease_vcov.to_numpy())
-
 
     def add_new_user(self):
         new_user = (self.population['status'] == UNINITIATED_USER) & (self.population['h1yy'] == self.year)
@@ -797,7 +803,6 @@ class Pearl:
         self.population = set_cd4_cat(self.population)
         self.population.loc[reengaged, 'return_year'] = 0
 
-
         # Save years out of care
         years_out = (pd.DataFrame(self.population.loc[reengaged, 'years_out'].value_counts()).reindex(range(1, 8), fill_value=0).reset_index()
                      .rename(columns={'index': 'years', 'years_out': 'n'})
@@ -854,7 +859,6 @@ class Pearl:
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
         depression_incidence['N'] = denominator
-
 
         self.stats.depression_incidence = self.stats.depression_incidence.append(depression_incidence)
 
@@ -1011,8 +1015,7 @@ class Pearl:
         dying_art_user = self.population['status'] == DYING_ART_USER
         dying_art_nonuser = self.population['status'] == DYING_ART_NONUSER
         in_care = stay_in_care | ltfu | dying_art_user
-        out_care = stay_out_care | ltfu | dying_art_nonuser
-
+        out_care = stay_out_care | reengaged | dying_art_nonuser
 
         # Count of those in care by age_cat and year
         in_care_count = (self.population.loc[in_care].groupby(['age_cat']).size()
