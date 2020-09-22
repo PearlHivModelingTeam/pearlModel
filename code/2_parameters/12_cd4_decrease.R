@@ -5,8 +5,9 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
 suppressMessages(library(feather))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/data/input/aim1')
+param_dir <- filePath(pearl_dir, '/data/parameters/aim1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -32,6 +33,8 @@ model <- glm(diff ~ time_out_of_naaccord + sqrtcd4_exit,
 
 coeffs = as_tibble(get_coeff(model))
 vcov = as_tibble(vcov(model))
+residuals = as_tibble(residuals(model))
 
 write_feather(coeffs, filePath(param_dir, 'cd4_decrease.feather'))
 write_feather(vcov, filePath(param_dir, 'cd4_decrease_vcov.feather'))
+write_feather(residuals, filePath(param_dir, 'cd4_decrease_residuals.feather'))

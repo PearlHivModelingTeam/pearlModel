@@ -19,6 +19,7 @@ dx_2020 = new_dx.loc[new_dx['year'] == 2020].copy()
 dx_2020['2020'] = (dx_2020['upper'] + dx_2020['lower']) / 2.0
 dx_2020['diff'] = (dx_2020['upper'] - dx_2020['lower']) / 2.0
 dx_reduce = dx_2020[['group', '2020']].set_index('group')
+print(dx_reduce)
 
 dx_reduce['2021'] = dx_reduce['2020'] - 0.1875 * dx_reduce['2020']
 dx_reduce['2022'] = dx_reduce['2021'] - 0.1875 * dx_reduce['2020']

@@ -1,14 +1,12 @@
 # Imports
 import os
-import numpy as np
-import feather
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Define directories
 cwd = os.getcwd()
-out_dir   = f'{cwd}/out'
+out_dir = f'{cwd}/out'
 in_dir = f'{cwd}/../../../data/input/aim1/'
 param_dir = f'{cwd}/../../../data/parameters/aim1/'
 
@@ -25,7 +23,6 @@ new_dx_int = pd.concat([new_dx_int] + new_dx_int_list)
 
 new_dx_int.loc[new_dx_int['model'] == 'NS 2', 'model'] = 'Spline'
 new_dx_int = new_dx_int.set_index(['group', 'rm', 'model', 'year']).sort_index()
-test = new_dx_int.loc['idu_white_female'].reset_index()
 
 plots = {'MSM': ['msm_black_male', 'msm_hisp_male', 'msm_white_male'],
          'HET Female': ['het_black_female', 'het_hisp_female', 'het_white_female'],
@@ -71,18 +68,14 @@ for file_name, plot_name in zip(file_names, plots):
             na_df = new_dx.loc[new_dx['group'] == group_name].copy()
             ax.plot(na_df['year'].to_numpy()[rm:], na_df['n_dx'].to_numpy()[rm:], 'o', color='k', label='CDC')
 
-            if k ==0:
-                ax.set_title(f'{titles[i]} {plot_name}')
+            if k==0:
+                ax.set_title(f'{titles[i]} {plot_name}', pad=15)
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
             if (k==3) & (i==0):
-                ax.set_ylabel('Number of New Diagnoses')
+                ax.set_ylabel('Number of New Diagnoses', labelpad=15)
             if (k==6) & (i==1):
-                ax.set_xlabel('Year')
-            if i==2:
-                pass
-                #ax.legend(frameon=False, loc='upper left')
-
+                ax.set_xlabel('Year', labelpad=15)
 
     plt.savefig(f'{out_dir}/{file_name}.png', bbox_inches='tight')
 
