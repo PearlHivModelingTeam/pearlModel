@@ -70,7 +70,7 @@ new_dx_ehe = pd.read_feather(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_ind
 # Linkage to care
 linkage_to_care = pd.read_feather(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
 
-# Age at haart init mixed gaussian coefficients
+# Age at art init mixed gaussian coefficients
 age_by_h1yy = pd.read_feather(f'{aim_1_dir}/age_by_h1yy.feather')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
 
