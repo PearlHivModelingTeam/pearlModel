@@ -572,19 +572,18 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
 
 
 def create_multimorbidity_stats(pop):
-    # Encode multimorbidity as 8 bit integer
+    # Encode multimorbidity as 11 bit integer
     df = pop[['age_cat', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'dm', 'ht', 'malig', 'esld', 'mi']].copy()
-    df['multimorbidity'] = (
-            df['smoking'].map(str) + df['hcv'].map(str) + df['anx'].map(str) + df['dpr'].map(str)
-            + df['ckd'].map(str) + df['lipid'].map(str) + df['dm'].map(str) + df['ht'].map(
-        str)).apply(int, base=2)
+    df['multimorbidity'] = (df['smoking'].map(str) + df['hcv'].map(str) + df['anx'].map(str) + df['dpr'].map(str) +
+                            df['ckd'].map(str) + df['lipid'].map(str) + df['dm'].map(str) + df['ht'].map(str) +
+                            df['malig'].map(str) + df['esld'].map(str) + df['mi'].map(str)).apply(int, base=2)
 
     # Count how many people have each unique set of comorbidities
     df = df.groupby(['age_cat', 'multimorbidity']).size()
     index = pd.MultiIndex.from_product([df.index.levels[0], range(2048)], names=['age_cat', 'multimorbidity'])
     df = df.reindex(index=index, fill_value=0).reset_index(name='n')
 
-    return (df)
+    return df
 
 
 ###############################################################################
