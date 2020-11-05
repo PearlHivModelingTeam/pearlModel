@@ -172,6 +172,16 @@ cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 
 # Number of years spent out of care
 years_out_of_care = pd.read_feather(f'{aim_1_dir}/years_out_of_care.feather')
 
+# BMI
+pre_art_bmi = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi.feather').set_index(['group', 'parameter'])
+pre_art_bmi_model = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_model.feather').set_index(['group'])
+pre_art_bmi_age_knots = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_age_knots.feather').set_index('group')
+pre_art_bmi_h1yy_knots = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_h1yy_knots.feather').set_index('group')
+post_art_bmi = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi.feather').set_index(['group', 'parameter'])
+post_art_bmi_age_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_bmi_age_knots.feather').set_index(['group'])
+post_art_bmi_pre_art_bmi_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi_pre_art_bmi_knots.feather').set_index(['group'])
+post_art_bmi_cd4_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi_cd4_knots.feather').set_index(['group'])
+
 # Stage 0 comorbidities
 hcv_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_users.feather').set_index('group')
 hcv_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_inits.feather').set_index('group')
@@ -179,48 +189,70 @@ smoking_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_users.fea
 smoking_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_inits.feather').set_index('group')
 
 # Stage 1 comorbidities
-anxiety_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_users.feather').set_index('group')
-depression_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_users.feather').set_index('group')
-anxiety_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_inits.feather').set_index('group')
-depression_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_inits.feather').set_index('group')
-anxiety_coeff = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
-depression_coeff = pd.read_feather(f'{aim_2_dir}/stage1/depression_coeff.feather').set_index(['group', 'param']).unstack()
+anx_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_users.feather').set_index('group')
+dpr_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_users.feather').set_index('group')
+anx_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_inits.feather').set_index('group')
+dpr_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_inits.feather').set_index('group')
+anx_coeff = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
+dpr_coeff = pd.read_feather(f'{aim_2_dir}/stage1/depression_coeff.feather').set_index(['group', 'param']).unstack()
 
 # Stage 2 comorbidities
 ckd_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_users.feather').set_index('group')
 lipid_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_users.feather').set_index('group')
-diabetes_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_prev_users.feather').set_index('group')
-hypertension_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_prev_users.feather').set_index('group')
+dm_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/dm_prev_users.feather').set_index('group')
+ht_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/ht_prev_users.feather').set_index('group')
 
 ckd_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_inits.feather').set_index('group')
 lipid_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_inits.feather').set_index('group')
-diabetes_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_prev_inits.feather').set_index('group')
-hypertension_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_prev_inits.feather').set_index('group')
+dm_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/dm_prev_inits.feather').set_index('group')
+ht_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/ht_prev_inits.feather').set_index('group')
 
 ckd_coeff = pd.read_feather(f'{aim_2_dir}/stage2/ckd_coeff.feather').set_index(['group', 'param']).unstack()
 lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
-diabetes_coeff = pd.read_feather(f'{aim_2_dir}/stage2/diabetes_coeff.feather').set_index(['group', 'param']).unstack()
-hypertension_coeff = pd.read_feather(f'{aim_2_dir}/stage2/hypertension_coeff.feather').set_index(['group', 'param']).unstack()
+dm_coeff = pd.read_feather(f'{aim_2_dir}/stage2/dm_coeff.feather').set_index(['group', 'param']).unstack()
+ht_coeff = pd.read_feather(f'{aim_2_dir}/stage2/ht_coeff.feather').set_index(['group', 'param']).unstack()
+
+ckd_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ckd_delta_bmi.feather').set_index('group')
+dm_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/dm_delta_bmi.feather').set_index('group')
+ht_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ht_delta_bmi.feather').set_index('group')
+lipid_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/lipid_delta_bmi.feather').set_index('group')
+
+ckd_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ckd_post_art_bmi.feather').set_index('group')
+dm_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/dm_post_art_bmi.feather').set_index('group')
+ht_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ht_post_art_bmi.feather').set_index('group')
+lipid_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/lipid_post_art_bmi.feather').set_index('group')
+print(ckd_post_art_bmi.loc['idu_hisp_male'])
+print(ckd_post_art_bmi.loc['msm_white_male'])
 
 # Stage 3 comorbidities
 malig_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_users.feather').set_index('group')
 esld_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_users.feather').set_index('group')
 mi_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_users.feather').set_index('group')
 
-malig_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_inits.feather').set_index('group')
-esld_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_inits.feather').set_index('group')
-mi_prev_inits = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_inits.feather').set_index('group')
+malig_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_ini.feather').set_index('group')
+esld_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_ini.feather').set_index('group')
+mi_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_ini.feather').set_index('group')
 
-malig_coeff = pd.read_feather(f'{aim_2_dir}/stage3/malig_coeff.feather').set_index('group')
-esld_coeff = pd.read_feather(f'{aim_2_dir}/stage3/esld_coeff.feather').set_index('group')
-mi_coeff = pd.read_feather(f'{aim_2_dir}/stage3/mi_coeff.feather').set_index('group')
+malig_coeff = pd.read_feather(f'{aim_2_dir}/stage3/malig_coeff.feather').set_index(['group', 'param']).unstack()
+esld_coeff = pd.read_feather(f'{aim_2_dir}/stage3/esld_coeff.feather').set_index(['group', 'param']).unstack()
+mi_coeff = pd.read_feather(f'{aim_2_dir}/stage3/mi_coeff.feather').set_index(['group', 'param']).unstack()
+
+malig_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/malig_delta_bmi.feather').set_index('group')
+esld_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/esld_delta_bmi.feather').set_index('group')
+mi_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/mi_delta_bmi.feather').set_index('group')
+
+malig_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/malig_post_art_bmi.feather').set_index('group')
+esld_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/esld_post_art_bmi.feather').set_index('group')
+mi_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/mi_post_art_bmi.feather').set_index('group')
 
 # mortality with comorbidity
-mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index('group')
-mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index('group')
+mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index(['group', 'param']).unstack()
+mortality_in_care_delta_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care_delta_bmi.feather').set_index('group')
+mortality_in_care_post_art_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care_post_art_bmi.feather').set_index('group')
 
-#show = cd4_decrease
-#print(show.round(3).iloc[:,:])
+mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index(['group', 'param']).unstack()
+mortality_out_care_delta_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care_delta_bmi.feather').set_index('group')
+mortality_out_care_post_art_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care_post_art_bmi.feather').set_index('group')
 
 # Save everything
 try:
@@ -253,6 +285,16 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['cd4_increase_knots'] = cd4_increase_knots
     store['years_out_of_care'] = years_out_of_care
 
+    # BMI
+    store['pre_art_bmi'] = pre_art_bmi
+    store['pre_art_bmi_model'] = pre_art_bmi_model
+    store['pre_art_bmi_age_knots'] = pre_art_bmi_age_knots
+    store['pre_art_bmi_h1yy_knots'] = pre_art_bmi_h1yy_knots
+    store['post_art_bmi'] = post_art_bmi
+    store['post_art_bmi_age_knots'] = post_art_bmi_age_knots
+    store['post_art_bmi_pre_art_bmi_knots'] = post_art_bmi_pre_art_bmi_knots
+    store['post_art_bmi_cd4_knots'] = post_art_bmi_cd4_knots
+
     # Stage 0 comorbidities
     store['hcv_prev_users'] = hcv_prev_users
     store['hcv_prev_inits'] = hcv_prev_inits
@@ -260,39 +302,58 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['smoking_prev_inits'] = smoking_prev_inits
 
     # Stage 1 comorbidities
-    store['anxiety_prev_users'] = anxiety_prev_users
-    store['anxiety_prev_inits'] = anxiety_prev_inits
-    store['anxiety_coeff'] = anxiety_coeff
-    store['depression_prev_users'] = depression_prev_users
-    store['depression_prev_inits'] = depression_prev_inits
-    store['depression_coeff'] = depression_coeff
+    store['anx_prev_users'] = anx_prev_users
+    store['anx_prev_inits'] = anx_prev_inits
+    store['anx_coeff'] = anx_coeff
+    store['dpr_prev_users'] = dpr_prev_users
+    store['dpr_prev_inits'] = dpr_prev_inits
+    store['dpr_coeff'] = dpr_coeff
 
     # Stage 2 comorbidities
     store['ckd_prev_users'] = ckd_prev_users
     store['lipid_prev_users'] = lipid_prev_users
-    store['diabetes_prev_users'] = diabetes_prev_users
-    store['hypertension_prev_users'] = hypertension_prev_users
+    store['dm_prev_users'] = dm_prev_users
+    store['ht_prev_users'] = ht_prev_users
     store['ckd_prev_inits'] = ckd_prev_inits
     store['lipid_prev_inits'] = lipid_prev_inits
-    store['diabetes_prev_inits'] = diabetes_prev_inits
-    store['hypertension_prev_inits'] = hypertension_prev_inits
+    store['dm_prev_inits'] = dm_prev_inits
+    store['ht_prev_inits'] = ht_prev_inits
     store['ckd_coeff'] = ckd_coeff
     store['lipid_coeff'] = lipid_coeff
-    store['diabetes_coeff'] = diabetes_coeff
-    store['hypertension_coeff'] = hypertension_coeff
+    store['dm_coeff'] = dm_coeff
+    store['ht_coeff'] = ht_coeff
+    store['ckd_delta_bmi'] = ckd_delta_bmi
+    store['lipid_delta_bmi'] = lipid_delta_bmi
+    store['dm_delta_bmi'] = dm_delta_bmi
+    store['ht_delta_bmi'] = ht_delta_bmi
+    store['ckd_post_art_bmi'] = ckd_post_art_bmi
+    store['lipid_post_art_bmi'] = lipid_post_art_bmi
+    store['dm_post_art_bmi'] = dm_post_art_bmi
+    store['ht_post_art_bmi'] = ht_post_art_bmi
 
     # Stage 3 comorbidities
     store['malig_prev_users'] = malig_prev_users
     store['esld_prev_users'] = esld_prev_users
     store['mi_prev_users'] = mi_prev_users
-    store['malig_prev_inits'] = malig_prev_inits
-    store['esld_prev_inits'] = esld_prev_inits
-    store['mi_prev_inits'] = mi_prev_inits
+    store['malig_prev_inits'] = malig_prev_ini
+    store['esld_prev_inits'] = esld_prev_ini
+    store['mi_prev_inits'] = mi_prev_ini
     store['malig_coeff'] = malig_coeff
     store['esld_coeff'] = esld_coeff
     store['mi_coeff'] = mi_coeff
+    store['malig_delta_bmi'] = malig_delta_bmi
+    store['esld_delta_bmi'] = esld_delta_bmi
+    store['mi_delta_bmi'] = mi_delta_bmi
+    store['malig_post_art_bmi'] = malig_post_art_bmi
+    store['esld_post_art_bmi'] = esld_post_art_bmi
+    store['mi_post_art_bmi'] = mi_post_art_bmi
 
     # Comorbidity modified mortality
     store['mortality_in_care_co'] = mortality_in_care_co
+    store['mortality_in_care_delta_bmi'] = mortality_in_care_delta_bmi
+    store['mortality_in_care_post_art_bmi'] = mortality_in_care_post_art_bmi
     store['mortality_out_care_co'] = mortality_out_care_co
+    store['mortality_out_care_delta_bmi'] = mortality_out_care_delta_bmi
+    store['mortality_out_care_post_art_bmi'] = mortality_out_care_post_art_bmi
+
 

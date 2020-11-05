@@ -14,7 +14,6 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 group_names.sort()
 
-
 hcv_prev_users = pd.read_csv(f'{in_dir}/hcv_prev_user_by_race_risk_sex.csv')
 hcv_prev_users.columns = hcv_prev_users.columns.str.lower()
 hcv_prev_users['sex'] = hcv_prev_users['sex'].str.lower()
@@ -47,11 +46,6 @@ smoking_prev_inits['pop2'] = smoking_prev_inits['pop2'].str.lower()
 smoking_prev_inits['group'] = smoking_prev_inits['pop2'] + '_' + smoking_prev_inits['sex']
 smoking_prev_inits['prevalence'] /= 100.0
 smoking_prev_inits = smoking_prev_inits.rename(columns={'prevalence': 'proportion'})[['group', 'proportion']].copy()
-
-#print(hcv_prev_users)
-#print(hcv_prev_inits)
-#print(smoking_prev_inits)
-#print(smoking_prev_users)
 
 hcv_prev_users.to_feather(f'{out_dir}/hcv_prev_users.feather')
 hcv_prev_inits.to_feather(f'{out_dir}/hcv_prev_inits.feather')

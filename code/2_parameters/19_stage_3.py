@@ -15,104 +15,218 @@ cwd = os.getcwd()
 in_dir = cwd + '/../../data/input/aim2/stage3'
 out_dir = cwd + '/../../data/parameters/aim2/stage3'
 
+
+
 # Malignancy incidence coeff
-df = pd.read_csv(f'{in_dir}/malig/malig_coeff.csv')
+df = pd.read_csv(f'{in_dir}/malig_coeff.csv')
 df.columns = df.columns.str.lower()
 df = df[['pop2_', 'sex', 'parm', 'estimate']]
-df['sex'] = np.where(df['sex'] ==1, 'male', 'female')
 df['pop2_'] = df['pop2_'].str.lower()
-df['parm'] = df['parm'].str.lower()
+df['sex'] = df['sex'].str.lower()
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = df['pop2_'].values[0]
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black'),
+                 df2.assign(pop2_='idu_hisp'), df2.assign(pop2_='idu_white'), df2.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = df['pop2_'].values[0]
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='msm_hisp'), df3.assign(pop2_='msm_white'), df3.assign(pop2_='msm_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2_'] + '_' + df['sex']
-df = df.rename(columns = {'parm': 'param'})
-del df['pop2_'], df['sex']
-df = df.pivot_table(index = 'group', columns='param', values='estimate').reset_index()
-df = pd.concat([df] + [df.loc[df['group'] == 'all women_female'].assign(group = group_name) for group_name in group_names if ('female' in group_name)], ignore_index=True)
-df = pd.concat([df] + [df.loc[df['group'] == 'het hisp + white_male'].assign(group = group_name) for group_name in ['het_hisp_male', 'het_white_male']], ignore_index=True)
-df = pd.concat([df] + [df.loc[df['group'] == 'idu hisp + white_male'].assign(group = group_name) for group_name in ['idu_hisp_male', 'idu_white_male']], ignore_index=True)
-df = df.loc[~df['group'].isin(['all women_female', 'het hisp + white_male', 'idu hisp + white_male'])].set_index('group').sort_index().reset_index()
+df['param'] = df['parm']
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
 df.to_feather(f'{out_dir}/malig_coeff.feather')
 
-# Esld incidence coeff
-df = pd.read_csv(f'{in_dir}/esld/esld_coeff.csv')
+# malig knots
+df = pd.read_csv(f'{in_dir}/malig_bmi_percentiles.csv')
 df.columns = df.columns.str.lower()
-df = df.rename(columns = {'parm': 'param'})
-df['param'] = df['param'].str.lower()
-df = df[['param', 'estimate']]
-df['group'] = 'all'
-df = df.pivot_table(index='group', columns='param', values='estimate').reset_index()
-df = pd.concat([df.assign(group = group_name) for group_name in group_names], ignore_index=True)
-df.to_feather(f'{out_dir}/esld_coeff.feather')
-
-# MI incidence coeff
-df = pd.read_csv(f'{in_dir}/mi/mi_coeff.csv')
-df.columns = df.columns.str.lower()
-df = df[['pop2_', 'parm', 'estimate']]
+df['sex'] = np.where(df['sex'] == 1, 'male', 'female')
 df['pop2_'] = df['pop2_'].str.lower()
-df['parm'] = df['parm'].str.lower()
-df['group'] = df['pop2_']
-df.loc[df['group']=='msm_white', 'group'] = 'msm_white_male'
-df = df.rename(columns = {'parm': 'param'})
-del df['pop2_']
-df = df.pivot_table(index = 'group', columns='param', values='estimate').reset_index()
-df = pd.concat([df] + [df.loc[df['group'] == 'everyone else'].assign(group = group_name) for group_name in group_names if group_name != 'msm_white_male'], ignore_index=True)
-df = df.loc[df['group'] != 'everyone else'].copy().set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/mi_coeff.feather')
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = df['pop2_'].values[0]
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black'),
+                 df2.assign(pop2_='idu_hisp'), df2.assign(pop2_='idu_white'), df2.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = df['pop2_'].values[0]
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='msm_hisp'), df3.assign(pop2_='msm_white'), df3.assign(pop2_='msm_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
+df['group'] = df['pop2_'] + '_' + df['sex']
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/malig_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/malig_post_art_bmi.feather')
+
 
 # Malignancy prevalence users
-df = pd.read_csv(f'{in_dir}/malig/malig_prev_users_2009.csv')
+df = pd.read_csv(f'{in_dir}/malig_prev_users_2009.csv')
 df.columns = df.columns.str.lower()
-df['sex'] = np.where(df['sex'] ==1, 'male', 'female')
 df['pop2'] = df['pop2'].str.lower()
-df['group'] = df['pop2'] + '_' + df['sex']
-df['proportion'] = df['prev'] / 100.0
-df = df[['group', 'proportion']]
-df.to_feather(f'{out_dir}/malig_prev_users.feather')
+df['sex'] = df['sex'].str.lower()
 
-# esld prevalence users
-df = pd.read_csv(f'{in_dir}/esld/esld_prev_users_2009.csv')
-df.columns = df.columns.str.lower()
-df['group'] = df['pop2'].str.lower()
-df['proportion'] = df['prev'] / 100.0
-df = df[['group', 'proportion']]
-df = pd.concat([df.loc[df['group'] == 'all msm'].assign(group = group_name) for group_name in group_names if 'msm' in group_name] +
-               [df.loc[df['group'] == 'everyone else'].assign(group = group_name) for group_name in group_names if 'msm' not in group_name], ignore_index=True).set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/esld_prev_users.feather')
+group = df['pop2'].values[0]
+df1 = df.loc[df['pop2'] == group].copy()
+df1 = pd.concat([df1.assign(pop2='het_hisp'), df1.assign(pop2='het_white'), df1.assign(pop2='het_black')])
+df = df.loc[df['pop2'] != group].copy()
 
-# mi prevalence users
-df = pd.read_csv(f'{in_dir}/mi/mi_prev_users_2009.csv')
-df.columns = df.columns.str.lower()
-df['group'] = df['pop2'].str.lower()
-df['proportion'] = df['prev'] / 100.0
-df = df[['group', 'proportion']]
-df = pd.concat([df.loc[df['group'] == 'msm_white'].assign(group = group_name) for group_name in group_names if 'msm_white' in group_name] +
-               [df.loc[df['group'] == 'everyone else'].assign(group = group_name) for group_name in group_names if 'msm_white' not in group_name], ignore_index=True).set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/mi_prev_users.feather')
+group = df['pop2'].values[0]
+df2 = df.loc[df['pop2'] == group].copy()
+df2 = pd.concat([df2.assign(pop2='idu_hisp'), df2.assign(pop2='idu_white'), df2.assign(pop2='idu_black')])
+df = df.loc[df['pop2'] != group].copy()
 
-# malignancy prevalence initiators
-df = pd.read_csv(f'{in_dir}/malig/malig_prev_ini.csv')
-df.columns = df.columns.str.lower()
-df['sex'] = np.where(df['sex'] ==1, 'male', 'female')
-df['pop2'] = df['pop2'].str.lower()
+group = df['pop2'].values[0]
+df3 = df.loc[df['pop2'] == group].copy()
+df3 = pd.concat([df3.assign(pop2='het_hisp'), df3.assign(pop2='het_white'), df3.assign(pop2='het_black'),
+                 df3.assign(pop2='idu_hisp'), df3.assign(pop2='idu_white'), df3.assign(pop2='idu_black')])
+df = df.loc[df['pop2'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2'] + '_' + df['sex']
 df['proportion'] = df['prev'] / 100.0
 df = df[['group', 'proportion']].set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/malig_prev_inits.feather')
+df.to_feather(f'{out_dir}/malig_prev_users.feather')
 
-# esld prevalence initiators
-df = pd.read_csv(f'{in_dir}/esld/esld_prev_ini.csv')
-df.columns = df.columns.str.lower()
-df['group'] = df['pop2'].str.lower()
-df['proportion'] = df['prev'] / 100.0
-df = df[['group', 'proportion']]
-df = pd.concat([df.assign(group = group_name) for group_name in group_names]).set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/esld_prev_inits.feather')
+# Malignancy prevalence ini
+df = pd.read_csv(f'{in_dir}/malig_prev_ini.csv')
+df['pop2_'] = df['pop2_'].str.lower()
+df['sex'] = df['sex'].str.lower()
 
-# mi prevalence initiators
-df = pd.read_csv(f'{in_dir}/mi/MI_prev_ini.csv')
-df.columns = df.columns.str.lower()
-df['group'] = df['pop2'].str.lower()
+group = df['pop2_'].values[0]
+df1 = df.loc[(df['pop2_'] == group) & (df['sex'] == 'male')].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[~((df['pop2_'] == group) & (df['sex'] == 'male'))].copy()
+
+group = df['pop2_'].values[0]
+df2 = df.loc[(df['pop2_'] == group) & (df['sex'] == 'female')].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black'),
+                 df2.assign(pop2_='idu_hisp'), df2.assign(pop2_='idu_white'), df2.assign(pop2_='idu_black')])
+df = df.loc[~((df['pop2_'] == group) & (df['sex'] == 'female'))].copy()
+
+
+group = df['pop2_'].values[1]
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='msm_hisp'), df3.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
+df['group'] = df['pop2_'] + '_' + df['sex']
 df['proportion'] = df['prev'] / 100.0
-df = df[['group', 'proportion']]
-df = pd.concat([df.assign(group = group_name) for group_name in group_names]).set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/mi_prev_inits.feather')
+df = df[['group', 'proportion']].set_index('group').sort_index().reset_index()
+df.to_feather(f'{out_dir}/malig_prev_ini.feather')
+
+
+# mi incidence coeff
+df = pd.read_csv(f'{in_dir}/mi_coeff.csv')
+df.columns = df.columns.str.lower()
+df = df[['parm', 'estimate']]
+df = pd.concat([df.assign(group=group) for group in group_names])
+df['param'] = df['parm']
+df = df.set_index(['group', 'param']).sort_index().reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/mi_coeff.feather')
+
+# mi knots
+df = pd.read_csv(f'{in_dir}/mi_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+df = pd.concat([df.assign(group=group) for group in group_names])
+
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/mi_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/mi_post_art_bmi.feather')
+
+# mi prevalence users
+df = pd.read_csv(f'{in_dir}/mi_prev_users_2009.csv')
+df.columns = df.columns.str.lower()
+df['pop2'] = df['pop2'].str.lower()
+df1 = df.loc[df['pop2'] == 'everyone else']
+df1 = pd.concat([df1.assign(group=group_name) for group_name in group_names if group_name != 'msm_white_male'])
+df = df.loc[df['pop2'] == 'msm_white'].assign(group='msm_white_male')
+df = pd.concat([df, df1])
+df['proportion'] = df['prev'] / 100.0
+df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
+df.to_feather(f'{out_dir}/mi_prev_users.feather')
+
+# mi prevalence ini
+df = pd.read_csv(f'{in_dir}/mi_prev_ini.csv')
+df = pd.concat([df.assign(group=group_name) for group_name in group_names])
+df['proportion'] = df['prev'] / 100.0
+df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
+df.to_feather(f'{out_dir}/mi_prev_ini.feather')
+
+
+# esld incidence coeff
+df = pd.read_csv(f'{in_dir}/esld_coeff.csv')
+df.columns = df.columns.str.lower()
+df = pd.concat([df.assign(group=group_name) for group_name in group_names])
+df = df[['group', 'parm', 'estimate']]
+df = df.rename(columns={'parm': 'param'})
+df = df.set_index(['group', 'param']).sort_index().reset_index()
+df.to_feather(f'{out_dir}/esld_coeff.feather')
+
+# esld knots
+df = pd.read_csv(f'{in_dir}/esld_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+df = pd.concat([df.assign(group=group) for group in group_names])
+
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/esld_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/esld_post_art_bmi.feather')
+
+
+# esld prevalence users
+df = pd.read_csv(f'{in_dir}/esld_prev_users_2009.csv')
+df.columns = df.columns.str.lower()
+df['pop2'] = df['pop2'].str.lower()
+df1 = df.loc[df['pop2'] == 'everyone else']
+df1 = pd.concat([df1.assign(group=group_name) for group_name in group_names if group_name not in ['msm_white_male', 'msm_black_male', 'msm_hisp_male']])
+df2 = df.loc[df['pop2'] == 'all msm']
+df2 = pd.concat([df2.assign(group=group_name) for group_name in ['msm_white_male', 'msm_black_male', 'msm_hisp_male']])
+df = pd.concat([df1, df2])
+df['proportion'] = df['prev'] / 100.0
+df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
+df.to_feather(f'{out_dir}/esld_prev_users.feather')
+
+# esld prevalence ini
+df = pd.read_csv(f'{in_dir}/esld_prev_ini.csv')
+df = pd.concat([df.assign(group=group_name) for group_name in group_names])
+df['proportion'] = df['prev'] / 100.0
+df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
+df.to_feather(f'{out_dir}/esld_prev_ini.feather')
 
