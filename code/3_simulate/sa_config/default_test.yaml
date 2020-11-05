@@ -1,4 +1,4 @@
-group_names: ['msm_white_male', 'idu_white_female']
+group_names: ['sm_white_male', 'idu_white_female']
 num_cpus: 2
 replications: 2
 param_file: '../../data/parameters/parameters.h5'

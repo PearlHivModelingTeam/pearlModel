@@ -15,230 +15,361 @@ cwd = os.getcwd()
 in_dir = cwd + '/../../data/input/aim2/stage2'
 out_dir = cwd + '/../../data/parameters/aim2/stage2'
 
-# Load ckd coeff csv file
-ckd_coeff = pd.read_csv(f'{in_dir}/ckd_coeff.csv')
 
-ckd_coeff.columns = ckd_coeff.columns.str.lower()
-ckd_coeff = ckd_coeff[['pop2_', 'sex', 'parm', 'estimate']]
-ckd_coeff['sex'] = np.where(ckd_coeff['sex'] ==1, 'male', 'female')
-ckd_coeff['pop2_'] = ckd_coeff['pop2_'].str.lower()
-ckd_coeff['parm'] = ckd_coeff['parm'].str.lower()
 
-# Separate collapsed groups
-het_hisp = ckd_coeff.loc[ckd_coeff['pop2_'] == 'het hisp + white'].copy()
-het_hisp['pop2_'] = 'het_hisp'
-het_white = ckd_coeff.loc[ckd_coeff['pop2_'] == 'het hisp + white'].copy()
-het_white['pop2_'] = 'het_white'
 
-idu_hisp_male = ckd_coeff.loc[ckd_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_hisp_male['pop2_'] = 'idu_hisp'
-idu_white_male = ckd_coeff.loc[ckd_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_white_male['pop2_'] = 'idu_white'
+# ckd coeff
+df = pd.read_csv(f'{in_dir}/ckd_coeff.csv')
 
-idu_hisp_female = ckd_coeff.loc[ckd_coeff['pop2_'] == 'idu females'].copy()
-idu_hisp_female['pop2_'] = 'idu_hisp'
-idu_black_female = ckd_coeff.loc[ckd_coeff['pop2_'] == 'idu females'].copy()
-idu_black_female['pop2_'] = 'idu_black'
-idu_white_female = ckd_coeff.loc[ckd_coeff['pop2_'] == 'idu females'].copy()
-idu_white_female['pop2_'] = 'idu_white'
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df = df[['pop2_', 'sex', 'parm', 'estimate']]
+df['pop2_'] = df['pop2_'].str.lower()
+df['parm'] = df['parm'].str.lower()
 
-ckd_coeff = ckd_coeff.loc[~ckd_coeff['pop2_'].isin(['het hisp + white', 'idu hisp + white', 'idu females'])].copy()
+group = 'het_hisp + het_white + het_black'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Reattach separated groups
-ckd_coeff = ckd_coeff.append(het_hisp, ignore_index=True)
-ckd_coeff = ckd_coeff.append(het_white, ignore_index=True)
-ckd_coeff = ckd_coeff.append(idu_hisp_male, ignore_index=True)
-ckd_coeff = ckd_coeff.append(idu_white_male, ignore_index=True)
-ckd_coeff = ckd_coeff.append(idu_hisp_female, ignore_index=True)
-ckd_coeff = ckd_coeff.append(idu_black_female, ignore_index=True)
-ckd_coeff = ckd_coeff.append(idu_white_female, ignore_index=True)
+group = 'het_hisp + het_white'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Clean up dataframe
-ckd_coeff['group'] = ckd_coeff['pop2_'] + '_' + ckd_coeff['sex']
-ckd_coeff['param'] = ckd_coeff['parm']
-ckd_coeff = ckd_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-print(ckd_coeff)
+group = 'idu_hisp + idu_white + idu_black'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white'), df3.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Load dm coeff csv file
-dm_coeff = pd.read_csv(f'{in_dir}/dm_coeff.csv')
+group = 'idu_hisp + idu_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='idu_hisp'), df4.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-dm_coeff.columns = dm_coeff.columns.str.lower()
-dm_coeff = dm_coeff[['pop2_', 'sex', 'parm', 'estimate']]
-dm_coeff['sex'] = np.where(dm_coeff['sex'] ==1, 'male', 'female')
-dm_coeff['pop2_'] = dm_coeff['pop2_'].str.lower()
-dm_coeff['parm'] = dm_coeff['parm'].str.lower()
+group = 'msm_hisp + msm_white'
+df5 = df.loc[df['pop2_'] == group].copy()
+df5 = pd.concat([df5.assign(pop2_='msm_hisp'), df5.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Separate collapsed groups
-het_hisp = dm_coeff.loc[dm_coeff['pop2_'] == 'het hisp + white'].copy()
-het_hisp['pop2_'] = 'het_hisp'
-het_white = dm_coeff.loc[dm_coeff['pop2_'] == 'het hisp + white'].copy()
-het_white['pop2_'] = 'het_white'
+df = pd.concat([df, df1, df2, df3, df4, df5])
+df['group'] = df['pop2_'] + '_' + df['sex']
+df['param'] = df['parm']
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/ckd_coeff.feather')
 
-idu_hisp_male = dm_coeff.loc[dm_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_hisp_male['pop2_'] = 'idu_hisp'
-idu_white_male = dm_coeff.loc[dm_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_white_male['pop2_'] = 'idu_white'
 
-idu_hisp_female = dm_coeff.loc[dm_coeff['pop2_'] == 'idu females'].copy()
-idu_hisp_female['pop2_'] = 'idu_hisp'
-idu_black_female = dm_coeff.loc[dm_coeff['pop2_'] == 'idu females'].copy()
-idu_black_female['pop2_'] = 'idu_black'
-idu_white_female = dm_coeff.loc[dm_coeff['pop2_'] == 'idu females'].copy()
-idu_white_female['pop2_'] = 'idu_white'
+# ckd knots
+df = pd.read_csv(f'{in_dir}/ckd_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df['pop2_'] = df['pop2_'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
 
-dm_coeff = dm_coeff.loc[~dm_coeff['pop2_'].isin(['het hisp + white', 'idu hisp + white', 'idu females'])].copy()
+group = 'het_hisp + het_white + het_black'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Reattach separated groups
-dm_coeff = dm_coeff.append(het_hisp, ignore_index=True)
-dm_coeff = dm_coeff.append(het_white, ignore_index=True)
-dm_coeff = dm_coeff.append(idu_hisp_male, ignore_index=True)
-dm_coeff = dm_coeff.append(idu_white_male, ignore_index=True)
-dm_coeff = dm_coeff.append(idu_hisp_female, ignore_index=True)
-dm_coeff = dm_coeff.append(idu_black_female, ignore_index=True)
-dm_coeff = dm_coeff.append(idu_white_female, ignore_index=True)
+group = 'het_hisp + het_white'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Clean up dataframe
-dm_coeff['group'] = dm_coeff['pop2_'] + '_' + dm_coeff['sex']
-dm_coeff['param'] = dm_coeff['parm']
-diabetes_coeff = dm_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+group = 'idu_hisp + idu_white + idu_black'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white'), df3.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Load ht coeff csv file
-ht_coeff = pd.read_csv(f'{in_dir}/ht_coeff.csv')
+group = 'idu_hisp + idu_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='idu_hisp'), df4.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-ht_coeff.columns = ht_coeff.columns.str.lower()
-ht_coeff = ht_coeff[['pop2_', 'sex', 'parm', 'estimate']]
-ht_coeff['sex'] = np.where(ht_coeff['sex'] ==1, 'male', 'female')
-ht_coeff['pop2_'] = ht_coeff['pop2_'].str.lower()
-ht_coeff['parm'] = ht_coeff['parm'].str.lower()
+group = 'msm_hisp + msm_white'
+df5 = df.loc[df['pop2_'] == group].copy()
+df5 = pd.concat([df5.assign(pop2_='msm_hisp'), df5.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Separate collapsed groups
-het_hisp = ht_coeff.loc[ht_coeff['pop2_'] == 'het hisp + white'].copy()
-het_hisp['pop2_'] = 'het_hisp'
-het_white = ht_coeff.loc[ht_coeff['pop2_'] == 'het hisp + white'].copy()
-het_white['pop2_'] = 'het_white'
+df = pd.concat([df, df1, df2, df3, df4, df5], ignore_index=True)
+df['group'] = df['pop2_'] + '_' + df['sex']
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-idu_hisp_male = ht_coeff.loc[ht_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_hisp_male['pop2_'] = 'idu_hisp'
-idu_white_male = ht_coeff.loc[ht_coeff['pop2_'] == 'idu hisp + white'].copy()
-idu_white_male['pop2_'] = 'idu_white'
+df1.to_feather(f'{out_dir}/ckd_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/ckd_post_art_bmi.feather')
 
-idu_hisp_female = ht_coeff.loc[ht_coeff['pop2_'] == 'idu females'].copy()
-idu_hisp_female['pop2_'] = 'idu_hisp'
-idu_black_female = ht_coeff.loc[ht_coeff['pop2_'] == 'idu females'].copy()
-idu_black_female['pop2_'] = 'idu_black'
-idu_white_female = ht_coeff.loc[ht_coeff['pop2_'] == 'idu females'].copy()
-idu_white_female['pop2_'] = 'idu_white'
 
-ht_coeff = ht_coeff.loc[~ht_coeff['pop2_'].isin(['het hisp + white', 'idu hisp + white', 'idu females'])].copy()
 
-# Reattach separated groups
-ht_coeff = ht_coeff.append(het_hisp, ignore_index=True)
-ht_coeff = ht_coeff.append(het_white, ignore_index=True)
-ht_coeff = ht_coeff.append(idu_hisp_male, ignore_index=True)
-ht_coeff = ht_coeff.append(idu_white_male, ignore_index=True)
-ht_coeff = ht_coeff.append(idu_hisp_female, ignore_index=True)
-ht_coeff = ht_coeff.append(idu_black_female, ignore_index=True)
-ht_coeff = ht_coeff.append(idu_white_female, ignore_index=True)
 
-# Clean up dataframe
-ht_coeff['group'] = ht_coeff['pop2_'] + '_' + ht_coeff['sex']
-ht_coeff['param'] = ht_coeff['parm']
-hypertension_coeff = ht_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+# dm coeff
+df = pd.read_csv(f'{in_dir}/dm_coeff.csv')
 
-# Load dm coeff csv file
-lipid_coeff = pd.read_csv(f'{in_dir}/lipid_coeff.csv')
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df = df[['pop2_', 'sex', 'parm', 'estimate']]
+df['pop2_'] = df['pop2_'].str.lower()
+df['parm'] = df['parm'].str.lower()
 
-lipid_coeff.columns = lipid_coeff.columns.str.lower()
-lipid_coeff = lipid_coeff[['pop2_', 'sex', 'parm', 'estimate']]
-lipid_coeff['sex'] = np.where(lipid_coeff['sex'] ==1, 'male', 'female')
-lipid_coeff['pop2_'] = lipid_coeff['pop2_'].str.lower()
-lipid_coeff['parm'] = lipid_coeff['parm'].str.lower()
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Separate collapsed groups
-het_hisp = lipid_coeff.loc[lipid_coeff['pop2_'] == 'het hisp + white'].copy()
-het_hisp['pop2_'] = 'het_hisp'
-het_white = lipid_coeff.loc[lipid_coeff['pop2_'] == 'het hisp + white'].copy()
-het_white['pop2_'] = 'het_white'
+group = 'het_hisp + het_white + het_black'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-idu_hisp_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
-idu_hisp_male['pop2_'] = 'idu_hisp'
-idu_white_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
-idu_white_male['pop2_'] = 'idu_white'
-idu_black_male = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu males'].copy()
-idu_black_male['pop2_'] = 'idu_black'
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-idu_hisp_female = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu females'].copy()
-idu_hisp_female['pop2_'] = 'idu_hisp'
-idu_black_female = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu females'].copy()
-idu_black_female['pop2_'] = 'idu_black'
-idu_white_female = lipid_coeff.loc[lipid_coeff['pop2_'] == 'idu females'].copy()
-idu_white_female['pop2_'] = 'idu_white'
+group = 'msm_hisp + msm_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='msm_hisp'), df4.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-lipid_coeff = lipid_coeff.loc[~lipid_coeff['pop2_'].isin(['het hisp + white', 'idu males', 'idu females'])].copy()
+df = pd.concat([df, df1, df2, df3, df4])
+df['group'] = df['pop2_'] + '_' + df['sex']
+df['param'] = df['parm']
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/dm_coeff.feather')
 
-# Reattach separated groups
-lipid_coeff = lipid_coeff.append(het_hisp, ignore_index=True)
-lipid_coeff = lipid_coeff.append(het_white, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_hisp_male, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_white_male, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_black_male, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_hisp_female, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_black_female, ignore_index=True)
-lipid_coeff = lipid_coeff.append(idu_white_female, ignore_index=True)
+# dm knots
+df = pd.read_csv(f'{in_dir}/dm_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df['pop2_'] = df['pop2_'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
 
-# Clean up dataframe
-lipid_coeff['group'] = lipid_coeff['pop2_'] + '_' + lipid_coeff['sex']
-lipid_coeff['param'] = lipid_coeff['parm']
-lipid_coeff = lipid_coeff.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-# Load anxiety coeff csv file
-stage2_prev_users = pd.read_csv(f'{in_dir}/stage2_prev_users.csv')
-# Clean up
-stage2_prev_users.columns = stage2_prev_users.columns.str.lower()
-stage2_prev_users['sex'] = np.where(stage2_prev_users['sex']==1, 'male', 'female')
-stage2_prev_users['sex'] = stage2_prev_users['sex'].str.lower()
-stage2_prev_users['pop2'] = stage2_prev_users['pop2'].str.lower()
-stage2_prev_users['group'] = stage2_prev_users['pop2'] + '_' + stage2_prev_users['sex']
-stage2_prev_users['prev'] /= 100.0
-stage2_prev_users = stage2_prev_users.rename(columns={'prev': 'proportion'})
+group = 'het_hisp + het_white + het_black'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
 
-ckd_prev_users = stage2_prev_users.loc[stage2_prev_users['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
-lipid_prev_users = stage2_prev_users.loc[stage2_prev_users['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
-diabetes_prev_users = stage2_prev_users.loc[stage2_prev_users['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
-hypertension_prev_users = stage2_prev_users.loc[stage2_prev_users['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-stage2_prev_inits = pd.read_csv(f'{in_dir}/ht_dm_ckd_lipid_prev_ini.csv')
-# Clean up
-stage2_prev_inits.columns = stage2_prev_inits.columns.str.lower()
-stage2_prev_inits['sex'] = np.where(stage2_prev_inits['sex']==1, 'male', 'female')
-stage2_prev_inits['sex'] = stage2_prev_inits['sex'].str.lower()
-stage2_prev_inits['pop2'] = stage2_prev_inits['pop2'].str.lower()
-stage2_prev_inits['group'] = stage2_prev_inits['pop2'] + '_' + stage2_prev_inits['sex']
-stage2_prev_inits['prevalence'] /= 100.0
-stage2_prev_inits = stage2_prev_inits.rename(columns={'prevalence': 'proportion'})
+group = 'msm_hisp + msm_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='msm_hisp'), df4.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
 
-ckd_prev_inits = stage2_prev_inits.loc[stage2_prev_inits['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
-lipid_prev_inits = stage2_prev_inits.loc[stage2_prev_inits['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
-diabetes_prev_inits = stage2_prev_inits.loc[stage2_prev_inits['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
-hypertension_prev_inits = stage2_prev_inits.loc[stage2_prev_inits['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
+df = pd.concat([df, df1, df2, df3, df4])
+df['group'] = df['pop2_'] + '_' + df['sex']
 
-# Save them all
-ckd_coeff.to_feather(f'{out_dir}/ckd_coeff.feather')
-lipid_coeff.to_feather(f'{out_dir}/lipid_coeff.feather')
-diabetes_coeff.to_feather(f'{out_dir}/diabetes_coeff.feather')
-hypertension_coeff.to_feather(f'{out_dir}/hypertension_coeff.feather')
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-ckd_prev_users.to_feather(f'{out_dir}/ckd_prev_users.feather')
-lipid_prev_users.to_feather(f'{out_dir}/lipid_prev_users.feather')
-diabetes_prev_users.to_feather(f'{out_dir}/diabetes_prev_users.feather')
-hypertension_prev_users.to_feather(f'{out_dir}/hypertension_prev_users.feather')
+df1.to_feather(f'{out_dir}/dm_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/dm_post_art_bmi.feather')
 
-ckd_prev_inits.to_feather(f'{out_dir}/ckd_prev_inits.feather')
-lipid_prev_inits.to_feather(f'{out_dir}/lipid_prev_inits.feather')
-diabetes_prev_inits.to_feather(f'{out_dir}/diabetes_prev_inits.feather')
-hypertension_prev_inits.to_feather(f'{out_dir}/hypertension_prev_inits.feather')
 
-ckd_table = ckd_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'lipid', 'dm', 'ht']]
-lipid_table = lipid_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'dm', 'ht']]
-diabetes_table = diabetes_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'ht']]
-hypertension_table = hypertension_coeff.pivot(index='group', columns='param', values='estimate')[['intercept', 'year', 'age', 'cd4n_entry', 'h1yy_time', 'outcare', 'smoking', 'hcv', 'anx', 'dpr', 'ckd', 'lipid', 'dm']]
+
+# ht coeff
+df = pd.read_csv(f'{in_dir}/ht_coeff.csv')
+
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df = df[['pop2_', 'sex', 'parm', 'estimate']]
+df['pop2_'] = df['pop2_'].str.lower()
+df['parm'] = df['parm'].str.lower()
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'het_hisp + het_white'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'msm_hisp + msm_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='msm_hisp'), df4.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df['group'] = df['pop2_'] + '_' + df['sex']
+df['param'] = df['parm']
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/ht_coeff.feather')
+
+
+# ht knots
+df = pd.read_csv(f'{in_dir}/ht_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df['pop2_'] = df['pop2_'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'het_hisp + het_white'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'msm_hisp + msm_white'
+df4 = df.loc[df['pop2_'] == group].copy()
+df4 = pd.concat([df4.assign(pop2_='msm_hisp'), df4.assign(pop2_='msm_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df['group'] = df['pop2_'] + '_' + df['sex']
+
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/ht_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/ht_post_art_bmi.feather')
+
+# lipid coeff
+df = pd.read_csv(f'{in_dir}/lipid_coeff.csv')
+
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df = df[['pop2_', 'sex', 'parm', 'estimate']]
+df['pop2_'] = df['pop2_'].str.lower()
+df['parm'] = df['parm'].str.lower()
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'het_hisp + het_white + het_black'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
+df['group'] = df['pop2_'] + '_' + df['sex']
+df['param'] = df['parm']
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/lipid_coeff.feather')
+
+# lipid knots
+df = pd.read_csv(f'{in_dir}/lipid_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df['pop2_'] = df['pop2_'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+
+group = 'all women'
+df1 = df.loc[df['pop2_'] == group].copy()
+df1 = pd.concat([df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'), df1.assign(pop2_='het_black'),
+                 df1.assign(pop2_='idu_hisp'), df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'het_hisp + het_white + het_black'
+df2 = df.loc[df['pop2_'] == group].copy()
+df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df2.assign(pop2_='het_black')])
+df = df.loc[df['pop2_'] != group].copy()
+
+group = 'idu_hisp + idu_white'
+df3 = df.loc[df['pop2_'] == group].copy()
+df3 = pd.concat([df3.assign(pop2_='idu_hisp'), df3.assign(pop2_='idu_white')])
+df = df.loc[df['pop2_'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3])
+df['group'] = df['pop2_'] + '_' + df['sex']
+
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/lipid_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/lipid_post_art_bmi.feather')
+
+
+# Load prev users csv file
+df = pd.read_csv(f'{in_dir}/ht_dm_ckd_lipid_prev_users.csv')
+
+df.columns = df.columns.str.lower()
+df['sex'] = df['sex'].str.lower()
+df['pop2'] = df['pop2'].str.lower()
+df['group'] = df['pop2'] + '_' + df['sex']
+df['prev'] /= 100.0
+df = df.rename(columns={'prev': 'proportion'})
+
+df1 = df.loc[df['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/ckd_prev_users.feather')
+
+df1 = df.loc[df['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/dm_prev_users.feather')
+
+df1 = df.loc[df['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/ht_prev_users.feather')
+
+df1 = df.loc[df['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/lipid_prev_users.feather')
+
+# Load prev ini csv file
+df = pd.read_csv(f'{in_dir}/ht_dm_ckd_lipid_prev_ini.csv')
+
+df.columns = df.columns.str.lower()
+
+df['sex'] = df['sex'].str.lower()
+df['pop2'] = df['pop2'].str.lower()
+df['group'] = df['pop2'] + '_' + df['sex']
+df['prevalence'] /= 100.0
+df = df.rename(columns={'prevalence': 'proportion'})
+
+df1 = df.loc[df['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/ckd_prev_inits.feather')
+
+df1 = df.loc[df['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/dm_prev_inits.feather')
+
+df1 = df.loc[df['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/ht_prev_inits.feather')
+
+df1 = df.loc[df['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
+df1.to_feather(f'{out_dir}/lipid_prev_inits.feather')
+
+

@@ -15,36 +15,140 @@ cwd = os.getcwd()
 in_dir = cwd + '/../../data/input/aim2/mortality'
 out_dir = cwd + '/../../data/parameters/aim2/mortality'
 
-# Clean in care coefficients
-mortality_in_care = pd.read_csv(f'{in_dir}/mortality_coeff_in_care.csv')
-mortality_in_care.columns = mortality_in_care.columns.str.lower()
-mortality_in_care['sex'] = np.where(mortality_in_care['sex'] ==1, 'male', 'female')
-mortality_in_care['pop2'] = mortality_in_care['pop2'].str.lower()
-mortality_in_care['group'] = mortality_in_care['pop2'] + '_' + mortality_in_care['sex']
-mortality_in_care = mortality_in_care[['group', 'intercept_c', 'year_c', 'agecat_c', 'sqrtcd4n_c', 'h1yy_c', 'smoking_c', 'hcv_c', 'anx_c', 'dpr_c', 'ht_c', 'dm_c', 'ckd_c', 'lipid_c']].copy()
-idu_all_female = mortality_in_care['group'] == 'idu_all_female'
-idu_all_female_df = mortality_in_care.loc[idu_all_female].copy()
-mortality_in_care = mortality_in_care.loc[~idu_all_female]
-mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_black_female'))
-mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_white_female'))
-mortality_in_care = mortality_in_care.append(idu_all_female_df.assign(group='idu_hisp_female'))
-mortality_in_care = mortality_in_care.set_index('group').sort_index().reset_index()
+# mortality in care coeffs
+df = pd.read_csv(f'{in_dir}/mortality_in_care_coeff.csv')
+df.columns = df.columns.str.lower()
+df['group'] = df['pop3'].str.lower()
+df['param'] = df['parm'].str.lower()
+df = df[['group', 'param', 'estimate']]
 
-# Clean out care coefficients
-mortality_out_care = pd.read_csv(f'{in_dir}/mortality_coeff_out_of_care.csv')
-mortality_out_care.columns = mortality_out_care.columns.str.lower()
-mortality_out_care['sex'] = np.where(mortality_out_care['sex'] ==1, 'male', 'female')
-mortality_out_care['pop2'] = mortality_out_care['pop2'].str.lower()
-mortality_out_care['group'] = mortality_out_care['pop2'] + '_' + mortality_out_care['sex']
-mortality_out_care = mortality_out_care[['group', 'intercept_c', 'year_c', 'agecat_c', 'tv_sqrtcd4n_c', 'smoking_c', 'hcv_c', 'anx_c', 'dpr_c', 'ht_c', 'dm_c', 'ckd_c', 'lipid_c']].copy()
-idu_all_female = mortality_out_care['group'] == 'idu_all_female'
-idu_all_female_df = mortality_out_care.loc[idu_all_female].copy()
-mortality_out_care = mortality_out_care.loc[~idu_all_female]
-mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_black_female'))
-mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_white_female'))
-mortality_out_care = mortality_out_care.append(idu_all_female_df.assign(group='idu_hisp_female'))
-mortality_out_care = mortality_out_care.set_index('group').sort_index().reset_index()
+group = df['group'].values[0]
+df1 = df.loc[df['group'] == group].copy()
+df1 = pd.concat([df1.assign(group='het_hisp_female'), df1.assign(group='het_white_female'), df1.assign(group='het_black_female'),
+                 df1.assign(group='idu_hisp_female'), df1.assign(group='idu_white_female'), df1.assign(group='idu_black_female')])
+df = df.loc[df['group'] != group].copy()
 
-# Save them
-mortality_in_care.to_feather(f'{out_dir}/mortality_in_care.feather')
-mortality_out_care.to_feather(f'{out_dir}/mortality_out_care.feather')
+group = df['group'].values[0]
+df2 = df.loc[df['group'] == group].copy()
+df2 = pd.concat([df2.assign(group='het_hisp_male'), df2.assign(group='het_white_male'), df2.assign(group='het_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df3 = df.loc[df['group'] == group].copy()
+df3 = pd.concat([df3.assign(group='idu_hisp_male'), df3.assign(group='idu_white_male'), df3.assign(group='idu_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].unique()[1]
+df4 = df.loc[df['group'] == group].copy()
+df4 = pd.concat([df4.assign(group='msm_hisp_male'), df4.assign(group='msm_white_male')])
+df = df.loc[df['group'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/mortality_in_care.feather')
+
+# mortality in care knots
+df = pd.read_csv(f'{in_dir}/mortality_in_care_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['group'] = df['pop3'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+
+group = df['group'].values[0]
+df1 = df.loc[df['group'] == group].copy()
+df1 = pd.concat([df1.assign(group='het_hisp_female'), df1.assign(group='het_white_female'), df1.assign(group='het_black_female'),
+                 df1.assign(group='idu_hisp_female'), df1.assign(group='idu_white_female'), df1.assign(group='idu_black_female')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df2 = df.loc[df['group'] == group].copy()
+df2 = pd.concat([df2.assign(group='het_hisp_male'), df2.assign(group='het_white_male'), df2.assign(group='het_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df3 = df.loc[df['group'] == group].copy()
+df3 = pd.concat([df3.assign(group='idu_hisp_male'), df3.assign(group='idu_white_male'), df3.assign(group='idu_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].unique()[1]
+df4 = df.loc[df['group'] == group].copy()
+df4 = pd.concat([df4.assign(group='msm_hisp_male'), df4.assign(group='msm_white_male')])
+df = df.loc[df['group'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/mortality_in_care_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/mortality_in_care_post_art_bmi.feather')
+
+# mortality out care coeffs
+df = pd.read_csv(f'{in_dir}/mortality_out_care_coeff.csv')
+df.columns = df.columns.str.lower()
+df['group'] = df['pop3'].str.lower()
+df['param'] = df['parm'].str.lower()
+df = df[['group', 'param', 'estimate']]
+
+group = df['group'].values[0]
+df1 = df.loc[df['group'] == group].copy()
+df1 = pd.concat([df1.assign(group='het_hisp_female'), df1.assign(group='het_white_female'), df1.assign(group='het_black_female'),
+                 df1.assign(group='idu_hisp_female'), df1.assign(group='idu_white_female'), df1.assign(group='idu_black_female')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df2 = df.loc[df['group'] == group].copy()
+df2 = pd.concat([df2.assign(group='het_hisp_male'), df2.assign(group='het_white_male'), df2.assign(group='het_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df3 = df.loc[df['group'] == group].copy()
+df3 = pd.concat([df3.assign(group='idu_hisp_male'), df3.assign(group='idu_white_male'), df3.assign(group='idu_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].unique()[1]
+df4 = df.loc[df['group'] == group].copy()
+df4 = pd.concat([df4.assign(group='msm_hisp_male'), df4.assign(group='msm_white_male')])
+df = df.loc[df['group'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
+df.to_feather(f'{out_dir}/mortality_out_care.feather')
+
+# mortality out care knots
+df = pd.read_csv(f'{in_dir}/mortality_out_care_bmi_percentiles.csv')
+df.columns = df.columns.str.lower()
+df['group'] = df['pop3'].str.lower()
+df['variable'] = df['variable'].str.lower()
+df.loc[df['variable'] == 'post-art bmi - pre-art bmi', 'variable'] = 'delta bmi'
+df.loc[df['variable'] == 'post-art bmi', 'variable'] = 'post art bmi'
+
+group = df['group'].values[0]
+df1 = df.loc[df['group'] == group].copy()
+df1 = pd.concat([df1.assign(group='het_hisp_female'), df1.assign(group='het_white_female'), df1.assign(group='het_black_female'),
+                 df1.assign(group='idu_hisp_female'), df1.assign(group='idu_white_female'), df1.assign(group='idu_black_female')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df2 = df.loc[df['group'] == group].copy()
+df2 = pd.concat([df2.assign(group='het_hisp_male'), df2.assign(group='het_white_male'), df2.assign(group='het_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].values[0]
+df3 = df.loc[df['group'] == group].copy()
+df3 = pd.concat([df3.assign(group='idu_hisp_male'), df3.assign(group='idu_white_male'), df3.assign(group='idu_black_male')])
+df = df.loc[df['group'] != group].copy()
+
+group = df['group'].unique()[1]
+df4 = df.loc[df['group'] == group].copy()
+df4 = pd.concat([df4.assign(group='msm_hisp_male'), df4.assign(group='msm_white_male')])
+df = df.loc[df['group'] != group].copy()
+
+df = pd.concat([df, df1, df2, df3, df4])
+df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p65', 'p95']]
+df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
+
+df1.to_feather(f'{out_dir}/mortality_out_care_delta_bmi.feather')
+df2.to_feather(f'{out_dir}/mortality_out_care_post_art_bmi.feather')
