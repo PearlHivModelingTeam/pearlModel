@@ -2,7 +2,6 @@
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
@@ -13,7 +12,7 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_feather(filePath(input_dir, 'naaccord_2009.feather'))
+test <- read_csv(filePath(input_dir, 'naaccord_2009.csv'))
 
 # Nest by group 
 test <- test %>%
@@ -64,4 +63,4 @@ age_in_2009 <- test %>%
   unnest() %>% 
   rename_all(tolower)
 
-write_feather(age_in_2009, filePath(param_dir, 'age_in_2009.feather'))
+write_csv(age_in_2009, filePath(param_dir, 'age_in_2009.csv'))

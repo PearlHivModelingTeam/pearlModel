@@ -20,6 +20,11 @@ DEAD_ART_NONUSER = 9
 # Smearing correction
 SMEARING = 1.4
 
+STAGE0 = ['hcv', 'smoking']
+STAGE1 = ['anx', 'dpr']
+STAGE2 = ['ckd', 'lipid', 'dm', 'ht']
+STAGE3 = ['malig', 'esld', 'mi']
+
 
 ###############################################################################
 # Functions                                                                   #
@@ -160,9 +165,6 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, delta_bmi_k
                         'year']].to_numpy(dtype=float)
         else:
             return pop[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy(dtype=float)
-
-
-
 
 
 def create_comorbidity_pop_matrix(pop, condition, delta_bmi_knots=pd.DataFrame(), post_art_bmi_knots=pd.DataFrame()):
@@ -449,25 +451,9 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name):
                                                             parameters.post_art_bmi_cd4_knots, True)
         population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
-
-        # Stage 0 comorbidities
-        population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_users.values).astype(int)
-        population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_users.values).astype(int)
-
-        # Stage 1 comorbidities
-        population['anx'] = (np.random.rand(len(population.index)) < parameters.anx_prev_users.values).astype(int)
-        population['dpr'] = (np.random.rand(len(population.index)) < parameters.dpr_prev_users.values).astype(int)
-
-        # Stage 2 comorbidities
-        population['ckd'] = (np.random.rand(len(population.index)) < parameters.ckd_prev_users.values).astype(int)
-        population['lipid'] = (np.random.rand(len(population.index)) < parameters.lipid_prev_users.values).astype(int)
-        population['dm'] = (np.random.rand(len(population.index)) < parameters.dm_prev_users.values).astype(int)
-        population['ht'] = (np.random.rand(len(population.index)) < parameters.ht_prev_users.values).astype(int)
-
-        # Stage 3 comorbidities
-        population['malig'] = (np.random.rand(len(population.index)) < parameters.malig_prev_users.values).astype(int)
-        population['esld'] = (np.random.rand(len(population.index)) < parameters.esld_prev_users.values).astype(int)
-        population['mi'] = (np.random.rand(len(population.index)) < parameters.mi_prev_users.values).astype(int)
+        # Apply comorbidities
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            population[condition] = (np.random.rand(len(population.index)) < parameters.prev_users_dict[condition].values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -546,24 +532,9 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
                                                             parameters.post_art_bmi_cd4_knots)
         population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
-        # Stage 0 comorbidities
-        population['smoking'] = (np.random.rand(len(population.index)) < parameters.smoking_prev_inits.values).astype(int)
-        population['hcv'] = (np.random.rand(len(population.index)) < parameters.hcv_prev_inits.values).astype(int)
-
-        # Stage 1 comorbidities
-        population['anx'] = (np.random.rand(len(population.index)) < parameters.anx_prev_inits.values).astype(int)
-        population['dpr'] = (np.random.rand(len(population.index)) < parameters.dpr_prev_inits.values).astype(int)
-
-        # Stage 2 comorbidities
-        population['ckd'] = (np.random.rand(len(population.index)) < parameters.ckd_prev_inits.values).astype(int)
-        population['lipid'] = (np.random.rand(len(population.index)) < parameters.lipid_prev_inits.values).astype(int)
-        population['dm'] = (np.random.rand(len(population.index)) < parameters.dm_prev_inits.values).astype(int)
-        population['ht'] = (np.random.rand(len(population.index)) < parameters.ht_prev_inits.values).astype(int)
-
-        # Stage 3 comorbidities
-        population['malig'] = (np.random.rand(len(population.index)) < parameters.malig_prev_inits.values).astype(int)
-        population['esld'] = (np.random.rand(len(population.index)) < parameters.esld_prev_inits.values).astype(int)
-        population['mi'] = (np.random.rand(len(population.index)) < parameters.mi_prev_inits.values).astype(int)
+        # Apply comorbidities
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            population[condition] = (np.random.rand(len(population.index)) < parameters.prev_inits_dict[condition].values).astype(int)
 
     # Sort columns alphabetically
     population = population.reindex(sorted(population), axis=1)
@@ -579,10 +550,8 @@ def create_multimorbidity_stats(pop):
                             df['malig'].map(str) + df['esld'].map(str) + df['mi'].map(str)).apply(int, base=2)
 
     # Count how many people have each unique set of comorbidities
-    df = df.groupby(['age_cat', 'multimorbidity']).size()
-    index = pd.MultiIndex.from_product([df.index.levels[0], range(2048)], names=['age_cat', 'multimorbidity'])
-    df = df.reindex(index=index, fill_value=0).reset_index(name='n')
-
+    df = df.groupby(['multimorbidity']).size()
+    df = df.reindex(index=range(2048), fill_value=0).reset_index(name='n')
     return df
 
 
@@ -591,9 +560,11 @@ def create_multimorbidity_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, sa_dict, new_dx='base',
+    def __init__(self, path, group_name, comorbidity_flag, multimorbidity_flag, sa_dict, new_dx='base',
                  output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False):
         self.output_folder = output_folder
+        self.comorbidity_flag = comorbidity_flag
+        self.multimorbidity_flag = multimorbidity_flag
         self.record_tv_cd4 = record_tv_cd4
         self.verbose = verbose
         # Unpack Sensitivity Analysis List
@@ -685,7 +656,7 @@ class Parameters:
         # Years out of Care
         self.years_out_of_care = pd.read_hdf(path, 'years_out_of_care')
 
-        self.comorbidity_flag = comorbidity_flag
+        # BMI
         self.pre_art_bmi = pd.read_hdf(path, 'pre_art_bmi').loc[group_name]
         self.pre_art_bmi_model = pd.read_hdf(path, 'pre_art_bmi_model').loc[group_name].values[0]
         self.pre_art_bmi_age_knots = pd.read_hdf(path, 'pre_art_bmi_age_knots').loc[group_name]
@@ -695,58 +666,17 @@ class Parameters:
         self.post_art_bmi_pre_art_bmi_knots = pd.read_hdf(path, 'post_art_bmi_pre_art_bmi_knots').loc[group_name]
         self.post_art_bmi_cd4_knots = pd.read_hdf(path, 'post_art_bmi_cd4_knots').loc[group_name]
 
-        # Stage 0 Comorbidities
-        self.hcv_prev_users = pd.read_hdf(path, 'hcv_prev_users').loc[group_name]
-        self.smoking_prev_users = pd.read_hdf(path, 'smoking_prev_users').loc[group_name]
-        self.hcv_prev_inits = pd.read_hdf(path, 'hcv_prev_inits').loc[group_name]
-        self.smoking_prev_inits = pd.read_hdf(path, 'smoking_prev_inits').loc[group_name]
-
-        # Stage 1 Comorbidities
-        self.anx_prev_users = pd.read_hdf(path, 'anx_prev_users').loc[group_name]
-        self.dpr_prev_users = pd.read_hdf(path, 'dpr_prev_users').loc[group_name]
-        self.anx_prev_inits = pd.read_hdf(path, 'anx_prev_inits').loc[group_name]
-        self.dpr_prev_inits = pd.read_hdf(path, 'dpr_prev_inits').loc[group_name]
-        self.anx_coeff = pd.read_hdf(path, 'anx_coeff').loc[group_name]
-        self.dpr_coeff = pd.read_hdf(path, 'dpr_coeff').loc[group_name]
-
-        # Stage 2 Comorbidities
-        self.ckd_prev_users = pd.read_hdf(path, 'ckd_prev_users').loc[group_name]
-        self.lipid_prev_users = pd.read_hdf(path, 'lipid_prev_users').loc[group_name]
-        self.dm_prev_users = pd.read_hdf(path, 'dm_prev_users').loc[group_name]
-        self.ht_prev_users = pd.read_hdf(path, 'ht_prev_users').loc[group_name]
-        self.ckd_prev_inits = pd.read_hdf(path, 'ckd_prev_inits').loc[group_name]
-        self.lipid_prev_inits = pd.read_hdf(path, 'lipid_prev_inits').loc[group_name]
-        self.dm_prev_inits = pd.read_hdf(path, 'dm_prev_inits').loc[group_name]
-        self.ht_prev_inits = pd.read_hdf(path, 'ht_prev_inits').loc[group_name]
-        self.ckd_coeff = pd.read_hdf(path, 'ckd_coeff').loc[group_name]
-        self.lipid_coeff = pd.read_hdf(path, 'lipid_coeff').loc[group_name]
-        self.dm_coeff = pd.read_hdf(path, 'dm_coeff').loc[group_name]
-        self.ht_coeff = pd.read_hdf(path, 'ht_coeff').loc[group_name]
-        self.ckd_delta_bmi = pd.read_hdf(path, 'ckd_delta_bmi').loc[group_name]
-        self.lipid_delta_bmi = pd.read_hdf(path, 'lipid_delta_bmi').loc[group_name]
-        self.dm_delta_bmi = pd.read_hdf(path, 'dm_delta_bmi').loc[group_name]
-        self.ht_delta_bmi = pd.read_hdf(path, 'ht_delta_bmi').loc[group_name]
-        self.ckd_post_art_bmi = pd.read_hdf(path, 'ckd_post_art_bmi').loc[group_name]
-        self.lipid_post_art_bmi = pd.read_hdf(path, 'lipid_post_art_bmi').loc[group_name]
-        self.dm_post_art_bmi = pd.read_hdf(path, 'dm_post_art_bmi').loc[group_name]
-        self.ht_post_art_bmi = pd.read_hdf(path, 'ht_post_art_bmi').loc[group_name]
-
-        # Stage 3 Comorbidities
-        self.malig_prev_users = pd.read_hdf(path, 'malig_prev_users').loc[group_name]
-        self.esld_prev_users = pd.read_hdf(path, 'esld_prev_users').loc[group_name]
-        self.mi_prev_users = pd.read_hdf(path, 'mi_prev_users').loc[group_name]
-        self.malig_prev_inits = pd.read_hdf(path, 'malig_prev_inits').loc[group_name]
-        self.esld_prev_inits = pd.read_hdf(path, 'esld_prev_inits').loc[group_name]
-        self.mi_prev_inits = pd.read_hdf(path, 'mi_prev_inits').loc[group_name]
-        self.malig_coeff = pd.read_hdf(path, 'malig_coeff').loc[group_name]
-        self.esld_coeff = pd.read_hdf(path, 'esld_coeff').loc[group_name]
-        self.mi_coeff = pd.read_hdf(path, 'mi_coeff').loc[group_name]
-        self.malig_delta_bmi = pd.read_hdf(path, 'malig_delta_bmi').loc[group_name]
-        self.esld_delta_bmi = pd.read_hdf(path, 'esld_delta_bmi').loc[group_name]
-        self.mi_delta_bmi = pd.read_hdf(path, 'mi_delta_bmi').loc[group_name]
-        self.malig_post_art_bmi = pd.read_hdf(path, 'malig_post_art_bmi').loc[group_name]
-        self.esld_post_art_bmi = pd.read_hdf(path, 'esld_post_art_bmi').loc[group_name]
-        self.mi_post_art_bmi = pd.read_hdf(path, 'mi_post_art_bmi').loc[group_name]
+        # Comorbidities
+        self.prev_users_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_users').loc[group_name]
+                                for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}
+        self.prev_inits_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_inits').loc[group_name]
+                                for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}
+        self.comorbidity_coeff_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_coeff').loc[group_name]
+                                       for comorbidity in STAGE1 + STAGE2 + STAGE3}
+        self.delta_bmi_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_delta_bmi').loc[group_name]
+                               for comorbidity in STAGE2 + STAGE3}
+        self.post_art_bmi_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_post_art_bmi').loc[group_name]
+                                  for comorbidity in STAGE2 + STAGE3}
 
         # Comortality
         self.mortality_in_care_co = pd.read_hdf(path, 'mortality_in_care_co').loc[group_name]
@@ -758,8 +688,9 @@ class Parameters:
 
 
 class Statistics:
-    def __init__(self, out_list=None, comorbidity_flag=None, record_tv_cd4=None):
+    def __init__(self, out_list=None, comorbidity_flag=None, multimorbidity_flag=None, record_tv_cd4=None):
         self.comorbidity_flag = comorbidity_flag
+        self.multimorbidity_flag = multimorbidity_flag
         self.record_tv_cd4 = record_tv_cd4
         self.in_care_count = pd.concat([out.in_care_count for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.in_care_age = pd.concat([out.in_care_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
@@ -787,23 +718,17 @@ class Statistics:
             self.tv_cd4_2009 = pd.concat([out.tv_cd4_2009 for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
         if self.comorbidity_flag:
-            self.multimorbidity_in_care = pd.concat([out.multimorbidity_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.multimorbidity_inits = pd.concat([out.multimorbidity_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.multimorbidity_dead = pd.concat([out.multimorbidity_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.anx_incidence = pd.concat([out.anx_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.dpr_incidence = pd.concat([out.dpr_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.ckd_incidence = pd.concat([out.ckd_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.lipid_incidence = pd.concat([out.lipid_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.dm_incidence = pd.concat([out.dm_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.ht_incidence = pd.concat([out.ht_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.malig_incidence = pd.concat([out.malig_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.esld_incidence = pd.concat([out.esld_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
-            self.mi_incidence = pd.concat([out.mi_incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.incidence = pd.concat([out.incidence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            self.prevalence = pd.concat([out.prevalence for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+            if self.multimorbidity_flag:
+                self.multimorbidity_in_care = pd.concat([out.multimorbidity_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+                self.multimorbidity_inits = pd.concat([out.multimorbidity_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+                self.multimorbidity_dead = pd.concat([out.multimorbidity_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
     def save(self, output_folder):
         for name, df in self.__dict__.items():
             if isinstance(df, pd.DataFrame):
-                df.to_feather(f'{output_folder}/{name}.feather')
+                df.to_csv(f'{output_folder}/{name}.csv', index=False)
 
 
 def output_reindex(df):
@@ -825,6 +750,7 @@ class Pearl:
 
         # Initiate output class
         self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag,
+                                multimorbidity_flag=self.parameters.multimorbidity_flag,
                                 record_tv_cd4=self.parameters.record_tv_cd4)
 
         # Simulate number of new art initiators
@@ -997,200 +923,43 @@ class Pearl:
         in_care = self.population['status'] == ART_USER
         out_care = self.population['status'] == ART_NONUSER
 
-        # Use matrix multiplication to calculate probability of anx incidence
-        anx_coeff_matrix = self.parameters.anx_coeff.to_numpy(dtype=float)
-        anx_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition ='anx')
-        anx_prob = calculate_prob(anx_pop_matrix, anx_coeff_matrix, None, None)
-        anx_rand = anx_prob > np.random.rand(len(self.population.index))
-        old_anx = self.population['anx']
-        new_anx = anx_rand & (in_care | out_care) & ~old_anx
+        for condition in STAGE1:
+            coeff_matrix = self.parameters.comorbidity_coeff_dict[condition].to_numpy(dtype=float)
+            pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition=condition)
 
-        # Save incidence
-        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
-                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
-        anx_incidence = (self.population.loc[new_anx].groupby(['age_cat']).size()
+            prob = calculate_prob(pop_matrix, coeff_matrix, None, None)
+            rand = prob > np.random.rand(len(self.population.index))
+            old = self.population[condition]
+            new = rand & (in_care | out_care) & ~old
+
+            incidence = (self.population.loc[new].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-        anx_incidence['N'] = denominator
+                         .assign(year=self.year, replication=self.replication,
+                                 group=self.group_name, condition=condition))
+            self.stats.incidence = self.stats.incidence.append(incidence)
 
-        self.stats.anx_incidence = self.stats.anx_incidence.append(anx_incidence)
+            self.population[condition] = (old | new).astype(int)
 
-        # Set variables
-        self.population['anx'] = (old_anx | new_anx).astype(int)
-
-        # Use matrix multiplication to calculate probability of dpr incidence
-        dpr_coeff_matrix = self.parameters.dpr_coeff.to_numpy(dtype=float)
-        dpr_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition='dpr')
-        dpr_prob = calculate_prob(dpr_pop_matrix, dpr_coeff_matrix, None, None)
-        dpr_rand = dpr_prob > np.random.rand(len(self.population.index))
-        old_dpr = self.population['dpr']
-        new_dpr = dpr_rand & (in_care | out_care) & ~old_dpr
-
-        # Save incidence
-        dpr_incidence = (self.population.loc[new_dpr].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-        dpr_incidence['N'] = denominator
-
-        self.stats.dpr_incidence = self.stats.dpr_incidence.append(dpr_incidence)
-
-        # Set variables
-        self.population['dpr'] = (old_dpr | new_dpr).astype(int)
-
-    def apply_stage_2(self):
+    def apply_stage_2_and_3(self):
         in_care = self.population['status'] == ART_USER
         out_care = self.population['status'] == ART_NONUSER
 
-        # ckd
-        ckd_coeff_matrix = self.parameters.ckd_coeff.to_numpy(dtype=float)
-        ckd_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'ckd', self.parameters.ckd_delta_bmi,
-                                                       self.parameters.ckd_post_art_bmi)
-        ckd_prob = calculate_prob(ckd_pop_matrix, ckd_coeff_matrix, None, None)
-        ckd_rand = ckd_prob > np.random.rand(len(self.population.index))
-        old_ckd = self.population['ckd']
-        new_ckd = ckd_rand & (in_care | out_care) & ~old_ckd
+        for condition in STAGE2 + STAGE3:
+            coeff_matrix = self.parameters.comorbidity_coeff_dict[condition].to_numpy(dtype=float)
+            pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition,
+                                                       self.parameters.delta_bmi_dict[condition],
+                                                       self.parameters.post_art_bmi_dict[condition])
+            prob = calculate_prob(pop_matrix, coeff_matrix, None, None)
+            rand = prob > np.random.rand(len(self.population.index))
+            old = self.population[condition]
+            new = rand & (in_care | out_care) & ~old
 
-        # Save incidence
-        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
-                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
-        ckd_incidence = (self.population.loc[new_ckd].groupby(['age_cat']).size()
+            incidence = (self.population.loc[new].groupby(['age_cat']).size()
                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-        ckd_incidence['N'] = denominator
-        self.stats.ckd_incidence = self.stats.ckd_incidence.append(ckd_incidence)
+                         .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
+            self.stats.incidence = self.stats.incidence.append(incidence)
 
-        # Set variables
-        self.population['ckd'] = (old_ckd | new_ckd).astype(int)
-
-        # lipid
-        lipid_coeff_matrix = self.parameters.lipid_coeff.to_numpy(dtype=float)
-        lipid_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'lipid',
-                                                         self.parameters.lipid_delta_bmi,
-                                                         self.parameters.lipid_post_art_bmi)
-        lipid_prob = calculate_prob(lipid_pop_matrix, lipid_coeff_matrix, None, None)
-        lipid_rand = lipid_prob > np.random.rand(len(self.population.index))
-        old_lipid = self.population['lipid']
-        new_lipid = lipid_rand & (in_care | out_care) & ~old_lipid
-
-        # Save incidence
-        lipid_incidence = (self.population.loc[new_lipid].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-        lipid_incidence['N'] = denominator
-        self.stats.lipid_incidence = self.stats.lipid_incidence.append(lipid_incidence)
-
-        # Set variables
-        self.population['lipid'] = (old_lipid | new_lipid).astype(int)
-
-        # dm
-        dm_coeff_matrix = self.parameters.dm_coeff.to_numpy(dtype=float)
-        dm_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'dm',
-                                                      self.parameters.dm_delta_bmi,
-                                                      self.parameters.dm_post_art_bmi)
-        dm_prob = calculate_prob(dm_pop_matrix, dm_coeff_matrix, None, None)
-        dm_rand = dm_prob > np.random.rand(len(self.population.index))
-        old_dm = self.population['dm']
-        new_dm = dm_rand & (in_care | out_care) & ~old_dm
-
-        # Save incidence
-        dm_incidence = (self.population.loc[new_dm].groupby(['age_cat']).size()
-                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-        dm_incidence['N'] = denominator
-        self.stats.dm_incidence = self.stats.dm_incidence.append(dm_incidence)
-
-        # Set variables
-        self.population['dm'] = (old_dm | new_dm).astype(int)
-
-        # ht
-        ht_coeff_matrix = self.parameters.ht_coeff.to_numpy(dtype=float)
-        ht_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'ht',
-                                                      self.parameters.ht_delta_bmi,
-                                                      self.parameters.ht_post_art_bmi)
-        ht_prob = calculate_prob(ht_pop_matrix, ht_coeff_matrix, None, None)
-        ht_rand = ht_prob > np.random.rand(len(self.population.index))
-        old_ht = self.population['ht']
-        new_ht = ht_rand & (in_care | out_care) & ~old_ht
-
-        # Save incidence
-        ht_incidence = (self.population.loc[new_ht].groupby(['age_cat']).size()
-                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-        ht_incidence['N'] = denominator
-        self.stats.ht_incidence = self.stats.ht_incidence.append(ht_incidence)
-
-        # Set variables
-        self.population['ht'] = (old_ht | new_ht).astype(int)
-
-    def apply_stage_3(self):
-        in_care = self.population['status'] == ART_USER
-        out_care = self.population['status'] == ART_NONUSER
-
-        # malig
-        malig_coeff_matrix = self.parameters.malig_coeff.to_numpy(dtype=float)
-        malig_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'malig',
-                                                         self.parameters.malig_delta_bmi,
-                                                         self.parameters.malig_post_art_bmi)
-        malig_prob = calculate_prob(malig_pop_matrix, malig_coeff_matrix, None, None)
-        malig_rand = malig_prob > np.random.rand(len(self.population.index))
-        old_malig = self.population['malig']
-        new_malig = malig_rand & (in_care | out_care) & ~old_malig
-
-        # Save incidence
-        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
-                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
-        malig_incidence = (self.population.loc[new_malig].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                         .assign(year=self.year, replication=self.replication, group=self.group_name))
-        malig_incidence['N'] = denominator
-        self.stats.malig_incidence = self.stats.malig_incidence.append(malig_incidence)
-
-        # Set variables
-        self.population['malig'] = (old_malig | new_malig).astype(int)
-
-        # esld
-        esld_coeff_matrix = self.parameters.esld_coeff.to_numpy(dtype=float)
-        esld_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'esld',
-                                                        self.parameters.esld_delta_bmi,
-                                                        self.parameters.esld_post_art_bmi)
-        esld_prob = calculate_prob(esld_pop_matrix, esld_coeff_matrix, None, None)
-        esld_rand = esld_prob > np.random.rand(len(self.population.index))
-        old_esld = self.population['esld']
-        new_esld = esld_rand & (in_care | out_care) & ~old_esld
-
-        # Save incidence
-        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
-                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
-        esld_incidence = (self.population.loc[new_esld].groupby(['age_cat']).size()
-                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
-        esld_incidence['N'] = denominator
-        self.stats.esld_incidence = self.stats.esld_incidence.append(esld_incidence)
-
-        # Set variables
-        self.population['esld'] = (old_esld | new_esld).astype(int)
-
-        # mi
-        mi_coeff_matrix = self.parameters.mi_coeff.to_numpy(dtype=float)
-        mi_pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), 'mi',
-                                                      self.parameters.mi_delta_bmi,
-                                                      self.parameters.mi_post_art_bmi)
-        mi_prob = calculate_prob(mi_pop_matrix, mi_coeff_matrix, None, None)
-        mi_rand = mi_prob > np.random.rand(len(self.population.index))
-        old_mi = self.population['mi']
-        new_mi = mi_rand & (in_care | out_care) & ~old_mi
-
-        # Save incidence
-        denominator = (self.population.loc[in_care | out_care].groupby(['age_cat']).size()
-                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='N'))['N']
-        mi_incidence = (self.population.loc[new_mi].groupby(['age_cat']).size()
-                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
-                          .assign(year=self.year, replication=self.replication, group=self.group_name))
-        mi_incidence['N'] = denominator
-        self.stats.mi_incidence = self.stats.mi_incidence.append(mi_incidence)
-
-        # Set variables
-        self.population['esld'] = (old_esld | new_esld).astype(int)
+            self.population[condition] = (old | new).astype(int)
 
     def record_stats(self):
         stay_in_care = self.population['status'] == ART_USER
@@ -1267,17 +1036,26 @@ class Pearl:
 
         # Encode set of comorbidities as an 8 bit integer
         if self.parameters.comorbidity_flag:
-            multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
-            multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
-            self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
+            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+                has_condition = self.population[condition] == 1
 
-            multimorbidity_inits = create_multimorbidity_stats(self.population.loc[self.population['h1yy'] == self.year].copy())
-            multimorbidity_inits = multimorbidity_inits.assign(year=self.year, replication=self.replication, group=self.group_name)
-            self.stats.multimorbidity_inits = self.stats.multimorbidity_inits.append(multimorbidity_inits)
+                prevalence = (self.population.loc[(in_care | out_care) & has_condition].groupby(['age_cat']).size()
+                             .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                             .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
+                self.stats.prevalence = self.stats.prevalence.append(prevalence)
 
-            multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dying_art_user | dying_art_nonuser].copy())
-            multimorbidity_dead = multimorbidity_dead.assign(year=self.year, replication=self.replication, group=self.group_name)
-            self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
+            if self.parameters.multimorbidity_flag:
+                multimorbidity_in_care = create_multimorbidity_stats(self.population.loc[in_care].copy())
+                multimorbidity_in_care = multimorbidity_in_care.assign(year=self.year, replication=self.replication, group=self.group_name)
+                self.stats.multimorbidity_in_care = self.stats.multimorbidity_in_care.append(multimorbidity_in_care)
+
+                multimorbidity_inits = create_multimorbidity_stats(self.population.loc[self.population['h1yy'] == self.year].copy())
+                multimorbidity_inits = multimorbidity_inits.assign(year=self.year, replication=self.replication, group=self.group_name)
+                self.stats.multimorbidity_inits = self.stats.multimorbidity_inits.append(multimorbidity_inits)
+
+                multimorbidity_dead = create_multimorbidity_stats(self.population.loc[dying_art_user | dying_art_nonuser].copy())
+                multimorbidity_dead = multimorbidity_dead.assign(year=self.year, replication=self.replication, group=self.group_name)
+                self.stats.multimorbidity_dead = self.stats.multimorbidity_dead.append(multimorbidity_dead)
 
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_ART_USER
@@ -1332,7 +1110,6 @@ class Pearl:
         self.stats.n_unique_out_care = (pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]})
                                         .assign(replication=self.replication, group = self.group_name))
 
-
     def run(self):
         """ Simulate from 2010 to 2030 """
         while self.year <= 2030:
@@ -1343,8 +1120,7 @@ class Pearl:
             # Apply comorbidities
             if self.parameters.comorbidity_flag:
                 self.apply_stage_1()
-                self.apply_stage_2()
-                self.apply_stage_3()
+                self.apply_stage_2_and_3()
 
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care

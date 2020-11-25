@@ -45,7 +45,7 @@ df = df.loc[df['group'] != group].copy()
 
 df = pd.concat([df, df1, df2, df3, df4])
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/mortality_in_care.feather')
+df.to_csv(f'{out_dir}/mortality_in_care.csv', index=False)
 
 # mortality in care knots
 df = pd.read_csv(f'{in_dir}/mortality_in_care_bmi_percentiles.csv')
@@ -81,8 +81,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/mortality_in_care_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/mortality_in_care_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/mortality_in_care_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/mortality_in_care_post_art_bmi.csv', index=False)
 
 # mortality out care coeffs
 df = pd.read_csv(f'{in_dir}/mortality_out_care_coeff.csv')
@@ -114,7 +114,7 @@ df = df.loc[df['group'] != group].copy()
 
 df = pd.concat([df, df1, df2, df3, df4])
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/mortality_out_care.feather')
+df.to_csv(f'{out_dir}/mortality_out_care.csv', index=False)
 
 # mortality out care knots
 df = pd.read_csv(f'{in_dir}/mortality_out_care_bmi_percentiles.csv')
@@ -150,5 +150,5 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/mortality_out_care_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/mortality_out_care_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/mortality_out_care_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/mortality_out_care_post_art_bmi.csv', index=False)

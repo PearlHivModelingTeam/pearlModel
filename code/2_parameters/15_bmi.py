@@ -30,9 +30,9 @@ df = df[['group', 'model', 'parameter', 'coeff']]
 df = df.set_index(['group', 'parameter']).sort_index().reset_index()
 df1 = df[['group', 'model']]
 df1 = df1.drop_duplicates().set_index('group').reset_index()
-df1.to_feather(f'{out_dir}/pre_art_bmi_model.feather')
+df1.to_csv(f'{out_dir}/pre_art_bmi_model.csv', index=False)
 del df['model']
-df.to_feather(f'{out_dir}/pre_art_bmi.feather')
+df.to_csv(f'{out_dir}/pre_art_bmi.csv', index=False)
 
 # Pre art age knots
 df = pd.read_csv(f'{in_dir}/pre_art_bmi_age_knots_final.csv')
@@ -48,7 +48,7 @@ del df['pop'], df['sex']
 df = df[['group', 'knot_number', 'knot']]
 df = df.pivot_table(index='group', columns='knot_number', values='knot').reset_index()
 df.columns = df.columns.astype(str)
-df.to_feather(f'{out_dir}/pre_art_bmi_age_knots.feather')
+df.to_csv(f'{out_dir}/pre_art_bmi_age_knots.csv', index=False)
 
 # Pre art h1yy knots
 df = pd.read_csv(f'{in_dir}/pre_art_bmi_h1yy_knots_final.csv')
@@ -64,7 +64,7 @@ del df['pop'], df['sex']
 df = df[['group', 'knot_number', 'knot']]
 df = df.pivot_table(index='group', columns='knot_number', values='knot').reset_index()
 df.columns = df.columns.astype(str)
-df.to_feather(f'{out_dir}/pre_art_bmi_h1yy_knots.feather')
+df.to_csv(f'{out_dir}/pre_art_bmi_h1yy_knots.csv', index=False)
 
 # Post art coeffs
 df = pd.read_csv(f'{in_dir}/post_art_bmi_coeffs.csv')
@@ -81,7 +81,7 @@ df['group'] = df['pop'] + '_' + df['sex']
 del df['pop'], df['sex']
 df = df[['group', 'parameter', 'coeff']]
 df = df.set_index(['group', 'parameter']).sort_index().reset_index()
-df.to_feather(f'{out_dir}/post_art_bmi.feather')
+df.to_csv(f'{out_dir}/post_art_bmi.csv', index=False)
 
 # Post art knots
 df = pd.read_csv(f'{in_dir}/post_art_bmi_knot_locations.csv')
@@ -101,14 +101,14 @@ df = df.set_index(['parameter', 'group', 'knotnum']).sort_index()
 # age
 df1 = df.loc['age'].reset_index().pivot_table(index='group', columns='knotnum', values='knotvalue').reset_index()
 df1.columns = df1.columns.astype(str)
-df1.to_feather(f'{out_dir}/post_art_bmi_age_knots.feather')
+df1.to_csv(f'{out_dir}/post_art_bmi_age_knots.csv', index=False)
 
 # pre_sqrt
 df1 = df.loc['pre_sqrt'].reset_index().pivot_table(index='group', columns='knotnum', values='knotvalue').reset_index()
 df1.columns = df1.columns.astype(str)
-df1.to_feather(f'{out_dir}/post_art_bmi_pre_art_bmi_knots.feather')
+df1.to_csv(f'{out_dir}/post_art_bmi_pre_art_bmi_knots.csv', index=False)
 
 # sqrtcd4
 df1 = df.loc['sqrtcd4'].reset_index().pivot_table(index='group', columns='knotnum', values='knotvalue').reset_index()
 df1.columns = df1.columns.astype(str)
-df1.to_feather(f'{out_dir}/post_art_bmi_cd4_knots.feather')
+df1.to_csv(f'{out_dir}/post_art_bmi_cd4_knots.csv', index=False)

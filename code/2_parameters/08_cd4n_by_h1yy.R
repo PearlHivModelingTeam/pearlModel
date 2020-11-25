@@ -1,9 +1,7 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
@@ -14,16 +12,16 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_feather(filePath(input_dir, 'naaccord.feather'))
+test <- read_csv(filePath(input_dir, 'naaccord.csv'))
 
 # Nest by group 
 test <- test %>%
   group_by(group) %>%
-  nest(.key = "naaccord")
+  nest()
 
-get_cd4n_by_h1yy <- function(naaccord, group) {
+get_cd4n_by_h1yy <- function(data, group) {
   # Go back to NA-ACCORD population & get sqrt cd4n @ HAART initiation
-  popu2 <- naaccord %>%
+  popu2 <- data %>%
     mutate(H1YY = year(haart1date),
            sqrtcd4n = ifelse(cd4n >= 0, sqrt(cd4n), NA)) %>%
     filter(2010 <= H1YY, H1YY <= 2017)
@@ -79,15 +77,15 @@ fit_glm_to_cd4n_by_h1yy <- function(sumdat) {
 }
 
 test <- test %>%
-  mutate(ini1 = pmap(list(naaccord, group), get_cd4n_by_h1yy))
+  mutate(ini1 = pmap(list(data, group), get_cd4n_by_h1yy))
 
-test1 <- unnest(test, ini1) %>% select(-'naaccord')
-write_feather(test1, filePath(param_dir, 'cd4n_by_h1yy_raw.feather'))
+test1 <- unnest(test, ini1) %>% select(-'data')
+write_csv(test1, filePath(param_dir, 'cd4n_by_h1yy_raw.csv'))
 
 cd4n_by_h1yy <- test %>%
   mutate(cd4n_by_h1yy = map(ini1, fit_glm_to_cd4n_by_h1yy)) %>%
   select(c(group, cd4n_by_h1yy)) %>%
-  unnest() %>%
+  unnest(cols = cd4n_by_h1yy) %>%
   rename_all(tolower)
 
-write_feather(cd4n_by_h1yy, filePath(param_dir, 'cd4n_by_h1yy.feather'))
+write_csv(cd4n_by_h1yy, filePath(param_dir, 'cd4n_by_h1yy.csv'))

@@ -3,7 +3,6 @@ suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
-suppressMessages(library(feather))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
 param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
@@ -62,9 +61,9 @@ coeffs <- model3 %>%
 
 vcov <- model3 %>% 
   select(group, vcov) %>% 
-  mutate_if(is.list, map, as_data_frame) %>%
+  mutate_if(is.list, map, as_tibble, .name_repair='unique') %>%
   unnest(cols=vcov)
 
-write_feather(coeffs, filePath(param_dir, 'loss_to_follow_up.feather'))
-write_feather(vcov, filePath(param_dir, 'loss_to_follow_up_vcov.feather'))
+write_csv(coeffs, filePath(param_dir, 'loss_to_follow_up.csv'))
+write_csv(vcov, filePath(param_dir, 'loss_to_follow_up_vcov.csv'))
 

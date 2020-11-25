@@ -29,7 +29,7 @@ df = pd.concat([df, df1.assign(pop2_='idu_white'), df1.assign(pop2_='idu_black')
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/depression_coeff.feather')
+df.to_csv(f'{out_dir}/depression_coeff.csv', index=False)
 
 
 # Load anxiety coeff csv file
@@ -50,8 +50,7 @@ df = pd.concat([df, df1.assign(pop2_='het_hisp'), df1.assign(pop2_='het_white'),
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/anxiety_coeff.feather')
-#anxiety_coeff.to_csv(f'{param_dir}/stage_1/anxiety_coeff.csv', index=False)
+df.to_csv(f'{out_dir}/anxiety_coeff.csv', index=False)
 
 # Load mh prev users csv file
 df = pd.read_csv(f'{in_dir}/mh_prev_users.csv')
@@ -66,8 +65,8 @@ df = df.rename(columns={'prev': 'proportion'})
 df1 = df.loc[df['dx'] == 'dpr'].reset_index()[['group', 'proportion']].copy()
 df2 = df.loc[df['dx'] == 'anx'].reset_index()[['group', 'proportion']].copy()
 
-df1.to_feather(f'{out_dir}/depression_prev_users.feather')
-df2.to_feather(f'{out_dir}/anxiety_prev_users.feather')
+df1.to_csv(f'{out_dir}/depression_prev_users.csv', index=False)
+df2.to_csv(f'{out_dir}/anxiety_prev_users.csv', index=False)
 
 
 df = pd.read_csv(f'{in_dir}/mh_prev_ini.csv')
@@ -81,5 +80,5 @@ df = df.rename(columns={'prevalence': 'proportion'}).sort_values(['dx','group'])
 df1 = df.loc[df['dx'] == 'dpr'].reset_index()[['group', 'proportion']].copy()
 df2 = df.loc[df['dx'] == 'anx'].reset_index()[['group', 'proportion']].copy()
 
-df1.to_feather(f'{out_dir}/depression_prev_inits.feather')
-df2.to_feather(f'{out_dir}/anxiety_prev_inits.feather')
+df1.to_csv(f'{out_dir}/depression_prev_inits.csv', index=False)
+df2.to_csv(f'{out_dir}/anxiety_prev_inits.csv', index=False)

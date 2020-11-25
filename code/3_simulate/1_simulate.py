@@ -35,6 +35,7 @@ with open(yaml_file, 'r') as f:
     group_names = param_yaml['group_names']
     sa_dict = param_yaml['sa_dict']
     comorbidity_flag = param_yaml['comorbidity_flag']
+    multimorbidity_flag = param_yaml['multimorbidity_flag']
     new_dx = param_yaml['new_dx']
     record_tv_cd4 = param_yaml['record_tv_cd4']
     verbose = param_yaml['verbose']
@@ -57,10 +58,10 @@ out_list = []
 for group_name in group_names:
     print(group_name)
     parameters = pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=comorbidity_flag,
-                                  sa_dict=sa_dict, new_dx=new_dx, output_folder=output_folder,
-                                  record_tv_cd4=record_tv_cd4, verbose=verbose)
+                                  multimorbidity_flag=multimorbidity_flag, sa_dict=sa_dict, new_dx=new_dx,
+                                  output_folder=output_folder, record_tv_cd4=record_tv_cd4, verbose=verbose)
     futures = [run.remote(parameters, group_name, replication) for replication in replications]
-    out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, record_tv_cd4))
+    out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, multimorbidity_flag, record_tv_cd4))
 
-out = pearl.Statistics(out_list, comorbidity_flag, record_tv_cd4)
+out = pearl.Statistics(out_list, comorbidity_flag, multimorbidity_flag, record_tv_cd4)
 out.save(output_folder)

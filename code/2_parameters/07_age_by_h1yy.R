@@ -1,9 +1,7 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
@@ -14,7 +12,7 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_feather(filePath(input_dir, 'naaccord.feather'))
+test <- read_csv(filePath(input_dir, 'naaccord.csv'))
 
 # Nest by group 
 test <- test %>%
@@ -84,7 +82,7 @@ fit_glm_to_age_by_h1yy <- function(DATA) {
     mutate(glm_model = map(data, ~glm(value ~ period, data = .)),
            glm_predict = map(glm_model, predict_it)) %>%
     select(param, glm_predict) %>%
-    unnest
+    unnest(cols = glm_predict)
   
   colnames(DF2)[colnames(DF2)=="period"] <- "H1YY"
   
@@ -95,12 +93,15 @@ test <- test %>%
   mutate(ini1 = pmap(list(naaccord, group), get_age_by_h1yy))
 
 test1 <- unnest(test, ini1) %>% select(-'naaccord')
-write_feather(test1, filePath(param_dir, 'age_by_h1yy_raw.feather'))
+print(test1)
+write_csv(test1, filePath(param_dir, 'age_by_h1yy_raw.csv'))
 
 age_by_h1yy <- test %>%
   mutate(age_by_h1yy = map(ini1, fit_glm_to_age_by_h1yy)) %>%
   select(c(group, age_by_h1yy)) %>%
-  unnest() %>%
+  unnest(cols = age_by_h1yy) %>%
   rename_all(tolower)
 
-write_feather(age_by_h1yy, filePath(param_dir, 'age_by_h1yy.feather'))
+print(age_by_h1yy)
+write_csv(age_by_h1yy, filePath(param_dir, 'age_by_h1yy.csv'))
+warnings()

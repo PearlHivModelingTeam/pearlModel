@@ -1,15 +1,14 @@
 # Imports
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
 pd.set_option("display.max_rows", 1001)
 
 # Define directories
-cwd = os.getcwd()
-param_dir = cwd + '/../../data/parameters/'
-aim_1_dir = cwd + '/../../data/parameters/aim1'
-aim_2_dir = cwd + '/../../data/parameters/aim2'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+param_dir = f'{pearl_dir}/data/parameters'
 
 msm = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
@@ -41,16 +40,16 @@ def clean_coeff(df):
 
 
 # Number of people on art in 2009: on_art_2009
-on_art_2009 = pd.read_feather(f'{aim_1_dir}/on_art_2009.feather').set_index(['group']).sort_index()
+on_art_2009 = pd.read_csv(f'{param_dir}/aim1/on_art_2009.csv').set_index(['group']).sort_index()
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
-h1yy_by_age_2009 = pd.read_feather(f'{aim_1_dir}/h1yy_by_age_2009.feather').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
+h1yy_by_age_2009 = pd.read_csv(f'{param_dir}/aim1/h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
-cd4n_by_h1yy_2009 = pd.read_feather(f'{aim_1_dir}/cd4n_by_h1yy_2009.feather').set_index(['group']).sort_index()
+cd4n_by_h1yy_2009 = pd.read_csv(f'{param_dir}/aim1/cd4n_by_h1yy_2009.csv').set_index(['group']).sort_index()
 
 # Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
-age_in_2009 = pd.read_feather(f'{aim_1_dir}/age_in_2009.feather')
+age_in_2009 = pd.read_csv(f'{param_dir}/aim1/age_in_2009.csv')
 neg = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)].copy()
 neg['conf_low'] = 0.0
 neg['conf_high'] = 2.0 * neg['estimate']
@@ -63,15 +62,15 @@ age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
 # New dx prediction intervals
-new_dx = pd.read_feather(f'{aim_1_dir}/new_dx_interval.feather').set_index(['group', 'year'])
-new_dx_ehe = pd.read_feather(f'{aim_1_dir}/new_dx_combined_ehe.feather').set_index(['group', 'year'])
-#new_dx_sa = pd.read_feather(f'{aim_1_dir}/new_dx_interval_sa.feather').set_index(['group', 'year'])
+new_dx = pd.read_csv(f'{param_dir}/aim1/new_dx_interval.csv').set_index(['group', 'year'])
+new_dx_ehe = pd.read_csv(f'{param_dir}/aim1/new_dx_combined_ehe.csv').set_index(['group', 'year'])
+new_dx_sa = pd.read_csv(f'{param_dir}/aim1/new_dx_interval_sa.csv').set_index(['group', 'year'])
 
 # Linkage to care
-linkage_to_care = pd.read_feather(f'{aim_1_dir}/linkage_to_care.feather').set_index(['group', 'year'])
+linkage_to_care = pd.read_csv(f'{param_dir}/aim1/linkage_to_care.csv').set_index(['group', 'year'])
 
 # Age at art init mixed gaussian coefficients
-age_by_h1yy = pd.read_feather(f'{aim_1_dir}/age_by_h1yy.feather')
+age_by_h1yy = pd.read_csv(f'{param_dir}/aim1/age_by_h1yy.csv')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
 
 # No values less than 0 and no lambda1 greater than 1
@@ -92,7 +91,7 @@ age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']]
 
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
-cd4n_by_h1yy = pd.read_feather(f'{aim_1_dir}/cd4n_by_h1yy.feather').set_index('group').sort_index()
+cd4n_by_h1yy = pd.read_csv(f'{param_dir}/aim1/cd4n_by_h1yy.csv').set_index('group').sort_index()
 years = np.arange(2010, 2031)
 params = ['mu', 'sigma']
 
@@ -100,13 +99,13 @@ df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years],
 for group in group_names:
     mu = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'meanint'] + cd4n_by_h1yy.loc[group, 'meanslp'] * years})
     mu['high_value'] = mu['low_value']
-    mu_2018 = mu.loc[mu['h1yy']==2018, 'high_value'].to_numpy()
+    mu_2018 = mu.loc[mu['h1yy']==2018, 'high_value'].to_numpy()[0]
     mu.loc[mu['h1yy'] >=2018, 'low_value'] = mu_2018
     mu = mu.set_index('h1yy')
 
     sigma = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'stdint'] + cd4n_by_h1yy.loc[group, 'stdslp'] * years})
     sigma['high_value'] = sigma['low_value']
-    sigma_2018 = sigma.loc[sigma['h1yy']==2018, 'high_value'].to_numpy()
+    sigma_2018 = sigma.loc[sigma['h1yy']==2018, 'high_value'].to_numpy()[0]
     sigma.loc[sigma['h1yy'] >=2018, 'low_value'] = sigma_2018
     sigma = sigma.set_index('h1yy')
 
@@ -123,136 +122,134 @@ cd4n_by_h1yy = df
 
 
 # Coefficients for mortality in care
-mortality_in_care = pd.read_feather(f'{aim_1_dir}/mortality_in_care.feather')
+mortality_in_care = pd.read_csv(f'{param_dir}/aim1/mortality_in_care.csv')
 cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
-mortality_in_care_vcov = pd.read_feather(f'{aim_1_dir}/mortality_in_care_vcov.feather')
+mortality_in_care_vcov = pd.read_csv(f'{param_dir}/aim1/mortality_in_care_vcov.csv')
 mortality_in_care_vcov.columns = cols
 mortality_in_care_vcov['covariate'] = 15*(cols[1:])
 mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
 
 
 # Coefficients for mortality out of care
-mortality_out_care = pd.read_feather(f'{aim_1_dir}/mortality_out_care.feather')
+mortality_out_care = pd.read_csv(f'{param_dir}/aim1/mortality_out_care.csv')
 cols = mortality_out_care.columns.tolist()
 mortality_out_care = mortality_out_care.set_index('group')
-mortality_out_care_vcov = pd.read_feather(f'{aim_1_dir}/mortality_out_care_vcov.feather')
+mortality_out_care_vcov = pd.read_csv(f'{param_dir}/aim1/mortality_out_care_vcov.csv')
 mortality_out_care_vcov.columns = cols
 mortality_out_care_vcov['covariate'] = 15*(cols[1:])
 mortality_out_care_vcov = mortality_out_care_vcov.set_index(['group', 'covariate'])
 
 # Coefficients for loss to follow up
-loss_to_follow_up = pd.read_feather(f'{aim_1_dir}/loss_to_follow_up.feather')
+loss_to_follow_up = pd.read_csv(f'{param_dir}/aim1/loss_to_follow_up.csv')
 cols = loss_to_follow_up.columns.tolist()
 loss_to_follow_up = loss_to_follow_up.set_index('group')
-loss_to_follow_up_vcov = pd.read_feather(f'{aim_1_dir}/loss_to_follow_up_vcov.feather')
+loss_to_follow_up_vcov = pd.read_csv(f'{param_dir}/aim1/loss_to_follow_up_vcov.csv')
 loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
-ltfu_knots = clean_coeff(pd.read_sas(aim_1_dir + '/ltfu_knots.sas7bdat'))
+ltfu_knots = clean_coeff(pd.read_sas(f'{param_dir}/aim1/ltfu_knots.sas7bdat'))
 
 # Coefficients for cd4 decline out of care
-cd4_decrease = pd.read_feather(f'{aim_1_dir}/cd4_decrease.feather')
+cd4_decrease = pd.read_csv(f'{param_dir}/aim1/cd4_decrease.csv')
 cols = cd4_decrease.columns.tolist()
 cd4_decrease['group'] = 'all'
 cd4_decrease = cd4_decrease.set_index('group')
-cd4_decrease_vcov = pd.read_feather(f'{aim_1_dir}/cd4_decrease_vcov.feather')
+cd4_decrease_vcov = pd.read_csv(f'{param_dir}/aim1/cd4_decrease_vcov.csv')
 cd4_decrease_vcov.columns = cols
 
 # Coefficients of cd4 increase over time
-cd4_increase = pd.read_feather(f'{aim_1_dir}/cd4_increase.feather')
+cd4_increase = pd.read_csv(f'{param_dir}/aim1/cd4_increase.csv')
 cols = cd4_increase.columns.tolist()
 cd4_increase = cd4_increase.set_index('group')
-cd4_increase_vcov = pd.read_feather(f'{aim_1_dir}/cd4_increase_vcov.feather')
+cd4_increase_vcov = pd.read_csv(f'{param_dir}/aim1/cd4_increase_vcov.csv')
 cd4_increase_vcov.columns = cols
 cd4_increase_vcov['covariate'] = 15*(cols[1:])
 cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[4.0], 'p65': 15*[7.0], 'p95': 15*[13.0]}).set_index('group')
 
 # Number of years spent out of care
-years_out_of_care = pd.read_feather(f'{aim_1_dir}/years_out_of_care.feather')
+years_out_of_care = pd.read_csv(f'{param_dir}/aim1/years_out_of_care.csv')
 
 # BMI
-pre_art_bmi = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi.feather').set_index(['group', 'parameter'])
-pre_art_bmi_model = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_model.feather').set_index(['group'])
-pre_art_bmi_age_knots = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_age_knots.feather').set_index('group')
-pre_art_bmi_h1yy_knots = pd.read_feather(f'{aim_2_dir}/bmi/pre_art_bmi_h1yy_knots.feather').set_index('group')
-post_art_bmi = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi.feather').set_index(['group', 'parameter'])
-post_art_bmi_age_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_bmi_age_knots.feather').set_index(['group'])
-post_art_bmi_pre_art_bmi_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi_pre_art_bmi_knots.feather').set_index(['group'])
-post_art_bmi_cd4_knots = pd.read_feather(f'{aim_2_dir}/bmi/post_art_bmi_cd4_knots.feather').set_index(['group'])
+pre_art_bmi = pd.read_csv(f'{param_dir}/aim2/bmi/pre_art_bmi.csv').set_index(['group', 'parameter'])
+pre_art_bmi_model = pd.read_csv(f'{param_dir}/aim2/bmi/pre_art_bmi_model.csv').set_index(['group'])
+pre_art_bmi_age_knots = pd.read_csv(f'{param_dir}/aim2/bmi/pre_art_bmi_age_knots.csv').set_index('group')
+pre_art_bmi_h1yy_knots = pd.read_csv(f'{param_dir}/aim2/bmi/pre_art_bmi_h1yy_knots.csv').set_index('group')
+post_art_bmi = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi.csv').set_index(['group', 'parameter'])
+post_art_bmi_age_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_age_knots.csv').set_index(['group'])
+post_art_bmi_pre_art_bmi_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_pre_art_bmi_knots.csv').set_index(['group'])
+post_art_bmi_cd4_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_cd4_knots.csv').set_index(['group'])
 
 # Stage 0 comorbidities
-hcv_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_users.feather').set_index('group')
-hcv_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/hcv_prev_inits.feather').set_index('group')
-smoking_prev_users = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_users.feather').set_index('group')
-smoking_prev_inits = pd.read_feather(f'{aim_2_dir}/stage0/smoking_prev_inits.feather').set_index('group')
+hcv_prev_users = pd.read_csv(f'{param_dir}/aim2/stage0/hcv_prev_users.csv').set_index('group')
+hcv_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage0/hcv_prev_inits.csv').set_index('group')
+smoking_prev_users = pd.read_csv(f'{param_dir}/aim2/stage0/smoking_prev_users.csv').set_index('group')
+smoking_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage0/smoking_prev_inits.csv').set_index('group')
 
 # Stage 1 comorbidities
-anx_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_users.feather').set_index('group')
-dpr_prev_users = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_users.feather').set_index('group')
-anx_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_prev_inits.feather').set_index('group')
-dpr_prev_inits = pd.read_feather(f'{aim_2_dir}/stage1/depression_prev_inits.feather').set_index('group')
-anx_coeff = pd.read_feather(f'{aim_2_dir}/stage1/anxiety_coeff.feather').set_index(['group', 'param']).unstack()
-dpr_coeff = pd.read_feather(f'{aim_2_dir}/stage1/depression_coeff.feather').set_index(['group', 'param']).unstack()
+anx_prev_users = pd.read_csv(f'{param_dir}/aim2/stage1/anxiety_prev_users.csv').set_index('group')
+dpr_prev_users = pd.read_csv(f'{param_dir}/aim2/stage1/depression_prev_users.csv').set_index('group')
+anx_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage1/anxiety_prev_inits.csv').set_index('group')
+dpr_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage1/depression_prev_inits.csv').set_index('group')
+anx_coeff = pd.read_csv(f'{param_dir}/aim2/stage1/anxiety_coeff.csv').set_index(['group', 'param']).unstack()
+dpr_coeff = pd.read_csv(f'{param_dir}/aim2/stage1/depression_coeff.csv').set_index(['group', 'param']).unstack()
 
 # Stage 2 comorbidities
-ckd_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_users.feather').set_index('group')
-lipid_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_users.feather').set_index('group')
-dm_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/dm_prev_users.feather').set_index('group')
-ht_prev_users = pd.read_feather(f'{aim_2_dir}/stage2/ht_prev_users.feather').set_index('group')
+ckd_prev_users = pd.read_csv(f'{param_dir}/aim2/stage2/ckd_prev_users.csv').set_index('group')
+lipid_prev_users = pd.read_csv(f'{param_dir}/aim2/stage2/lipid_prev_users.csv').set_index('group')
+dm_prev_users = pd.read_csv(f'{param_dir}/aim2/stage2/dm_prev_users.csv').set_index('group')
+ht_prev_users = pd.read_csv(f'{param_dir}/aim2/stage2/ht_prev_users.csv').set_index('group')
 
-ckd_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/ckd_prev_inits.feather').set_index('group')
-lipid_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/lipid_prev_inits.feather').set_index('group')
-dm_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/dm_prev_inits.feather').set_index('group')
-ht_prev_inits = pd.read_feather(f'{aim_2_dir}/stage2/ht_prev_inits.feather').set_index('group')
+ckd_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage2/ckd_prev_inits.csv').set_index('group')
+lipid_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage2/lipid_prev_inits.csv').set_index('group')
+dm_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage2/dm_prev_inits.csv').set_index('group')
+ht_prev_inits = pd.read_csv(f'{param_dir}/aim2/stage2/ht_prev_inits.csv').set_index('group')
 
-ckd_coeff = pd.read_feather(f'{aim_2_dir}/stage2/ckd_coeff.feather').set_index(['group', 'param']).unstack()
-lipid_coeff = pd.read_feather(f'{aim_2_dir}/stage2/lipid_coeff.feather').set_index(['group', 'param']).unstack()
-dm_coeff = pd.read_feather(f'{aim_2_dir}/stage2/dm_coeff.feather').set_index(['group', 'param']).unstack()
-ht_coeff = pd.read_feather(f'{aim_2_dir}/stage2/ht_coeff.feather').set_index(['group', 'param']).unstack()
+ckd_coeff = pd.read_csv(f'{param_dir}/aim2/stage2/ckd_coeff.csv').set_index(['group', 'param']).unstack()
+lipid_coeff = pd.read_csv(f'{param_dir}/aim2/stage2/lipid_coeff.csv').set_index(['group', 'param']).unstack()
+dm_coeff = pd.read_csv(f'{param_dir}/aim2/stage2/dm_coeff.csv').set_index(['group', 'param']).unstack()
+ht_coeff = pd.read_csv(f'{param_dir}/aim2/stage2/ht_coeff.csv').set_index(['group', 'param']).unstack()
 
-ckd_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ckd_delta_bmi.feather').set_index('group')
-dm_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/dm_delta_bmi.feather').set_index('group')
-ht_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ht_delta_bmi.feather').set_index('group')
-lipid_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage2/lipid_delta_bmi.feather').set_index('group')
+ckd_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/ckd_delta_bmi.csv').set_index('group')
+dm_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/dm_delta_bmi.csv').set_index('group')
+ht_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/ht_delta_bmi.csv').set_index('group')
+lipid_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/lipid_delta_bmi.csv').set_index('group')
 
-ckd_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ckd_post_art_bmi.feather').set_index('group')
-dm_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/dm_post_art_bmi.feather').set_index('group')
-ht_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/ht_post_art_bmi.feather').set_index('group')
-lipid_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage2/lipid_post_art_bmi.feather').set_index('group')
-print(ckd_post_art_bmi.loc['idu_hisp_male'])
-print(ckd_post_art_bmi.loc['msm_white_male'])
+ckd_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/ckd_post_art_bmi.csv').set_index('group')
+dm_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/dm_post_art_bmi.csv').set_index('group')
+ht_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/ht_post_art_bmi.csv').set_index('group')
+lipid_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage2/lipid_post_art_bmi.csv').set_index('group')
 
 # Stage 3 comorbidities
-malig_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_users.feather').set_index('group')
-esld_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_users.feather').set_index('group')
-mi_prev_users = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_users.feather').set_index('group')
+malig_prev_users = pd.read_csv(f'{param_dir}/aim2/stage3/malig_prev_users.csv').set_index('group')
+esld_prev_users = pd.read_csv(f'{param_dir}/aim2/stage3/esld_prev_users.csv').set_index('group')
+mi_prev_users = pd.read_csv(f'{param_dir}/aim2/stage3/mi_prev_users.csv').set_index('group')
 
-malig_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/malig_prev_ini.feather').set_index('group')
-esld_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/esld_prev_ini.feather').set_index('group')
-mi_prev_ini = pd.read_feather(f'{aim_2_dir}/stage3/mi_prev_ini.feather').set_index('group')
+malig_prev_ini = pd.read_csv(f'{param_dir}/aim2/stage3/malig_prev_ini.csv').set_index('group')
+esld_prev_ini = pd.read_csv(f'{param_dir}/aim2/stage3/esld_prev_ini.csv').set_index('group')
+mi_prev_ini = pd.read_csv(f'{param_dir}/aim2/stage3/mi_prev_ini.csv').set_index('group')
 
-malig_coeff = pd.read_feather(f'{aim_2_dir}/stage3/malig_coeff.feather').set_index(['group', 'param']).unstack()
-esld_coeff = pd.read_feather(f'{aim_2_dir}/stage3/esld_coeff.feather').set_index(['group', 'param']).unstack()
-mi_coeff = pd.read_feather(f'{aim_2_dir}/stage3/mi_coeff.feather').set_index(['group', 'param']).unstack()
+malig_coeff = pd.read_csv(f'{param_dir}/aim2/stage3/malig_coeff.csv').set_index(['group', 'param']).unstack()
+esld_coeff = pd.read_csv(f'{param_dir}/aim2/stage3/esld_coeff.csv').set_index(['group', 'param']).unstack()
+mi_coeff = pd.read_csv(f'{param_dir}/aim2/stage3/mi_coeff.csv').set_index(['group', 'param']).unstack()
 
-malig_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/malig_delta_bmi.feather').set_index('group')
-esld_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/esld_delta_bmi.feather').set_index('group')
-mi_delta_bmi = pd.read_feather(f'{aim_2_dir}/stage3/mi_delta_bmi.feather').set_index('group')
+malig_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/malig_delta_bmi.csv').set_index('group')
+esld_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/esld_delta_bmi.csv').set_index('group')
+mi_delta_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/mi_delta_bmi.csv').set_index('group')
 
-malig_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/malig_post_art_bmi.feather').set_index('group')
-esld_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/esld_post_art_bmi.feather').set_index('group')
-mi_post_art_bmi = pd.read_feather(f'{aim_2_dir}/stage3/mi_post_art_bmi.feather').set_index('group')
+malig_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/malig_post_art_bmi.csv').set_index('group')
+esld_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/esld_post_art_bmi.csv').set_index('group')
+mi_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/mi_post_art_bmi.csv').set_index('group')
 
 # mortality with comorbidity
-mortality_in_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care.feather').set_index(['group', 'param']).unstack()
-mortality_in_care_delta_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care_delta_bmi.feather').set_index('group')
-mortality_in_care_post_art_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_in_care_post_art_bmi.feather').set_index('group')
+mortality_in_care_co = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care.csv').set_index(['group', 'param']).unstack()
+mortality_in_care_delta_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care_delta_bmi.csv').set_index('group')
+mortality_in_care_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care_post_art_bmi.csv').set_index('group')
 
-mortality_out_care_co = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care.feather').set_index(['group', 'param']).unstack()
-mortality_out_care_delta_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care_delta_bmi.feather').set_index('group')
-mortality_out_care_post_art_bmi = pd.read_feather(f'{aim_2_dir}/mortality/mortality_out_care_post_art_bmi.feather').set_index('group')
+mortality_out_care_co = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care.csv').set_index(['group', 'param']).unstack()
+mortality_out_care_delta_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care_delta_bmi.csv').set_index('group')
+mortality_out_care_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care_post_art_bmi.csv').set_index('group')
 
 # Save everything
 try:
@@ -267,7 +264,7 @@ with pd.HDFStore(param_dir + '/parameters.h5') as store:
     store['age_in_2009'] = age_in_2009
     store['new_dx'] = new_dx
     store['new_dx_ehe'] = new_dx_ehe
-    #store['new_dx_sa'] = new_dx_sa
+    store['new_dx_sa'] = new_dx_sa
     store['linkage_to_care'] = linkage_to_care
     store['age_by_h1yy'] = age_by_h1yy
     store['cd4n_by_h1yy'] = cd4n_by_h1yy

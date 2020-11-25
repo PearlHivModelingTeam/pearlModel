@@ -45,7 +45,7 @@ df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/malig_coeff.feather')
+df.to_csv(f'{out_dir}/malig_coeff.csv', index=False)
 
 # malig knots
 df = pd.read_csv(f'{in_dir}/malig_bmi_percentiles.csv')
@@ -79,8 +79,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/malig_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/malig_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/malig_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/malig_post_art_bmi.csv', index=False)
 
 
 # Malignancy prevalence users
@@ -109,7 +109,7 @@ df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2'] + '_' + df['sex']
 df['proportion'] = df['prev'] / 100.0
 df = df[['group', 'proportion']].set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/malig_prev_users.feather')
+df.to_csv(f'{out_dir}/malig_prev_users.csv', index=False)
 
 # Malignancy prevalence ini
 df = pd.read_csv(f'{in_dir}/malig_prev_ini.csv')
@@ -138,7 +138,7 @@ df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['proportion'] = df['prev'] / 100.0
 df = df[['group', 'proportion']].set_index('group').sort_index().reset_index()
-df.to_feather(f'{out_dir}/malig_prev_ini.feather')
+df.to_csv(f'{out_dir}/malig_prev_ini.csv', index=False)
 
 
 # mi incidence coeff
@@ -148,7 +148,7 @@ df = df[['parm', 'estimate']]
 df = pd.concat([df.assign(group=group) for group in group_names])
 df['param'] = df['parm']
 df = df.set_index(['group', 'param']).sort_index().reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/mi_coeff.feather')
+df.to_csv(f'{out_dir}/mi_coeff.csv', index=False)
 
 # mi knots
 df = pd.read_csv(f'{in_dir}/mi_bmi_percentiles.csv')
@@ -162,8 +162,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/mi_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/mi_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/mi_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/mi_post_art_bmi.csv', index=False)
 
 # mi prevalence users
 df = pd.read_csv(f'{in_dir}/mi_prev_users_2009.csv')
@@ -175,14 +175,14 @@ df = df.loc[df['pop2'] == 'msm_white'].assign(group='msm_white_male')
 df = pd.concat([df, df1])
 df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
-df.to_feather(f'{out_dir}/mi_prev_users.feather')
+df.to_csv(f'{out_dir}/mi_prev_users.csv', index=False)
 
 # mi prevalence ini
 df = pd.read_csv(f'{in_dir}/mi_prev_ini.csv')
 df = pd.concat([df.assign(group=group_name) for group_name in group_names])
 df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
-df.to_feather(f'{out_dir}/mi_prev_ini.feather')
+df.to_csv(f'{out_dir}/mi_prev_ini.csv', index=False)
 
 
 # esld incidence coeff
@@ -192,7 +192,7 @@ df = pd.concat([df.assign(group=group_name) for group_name in group_names])
 df = df[['group', 'parm', 'estimate']]
 df = df.rename(columns={'parm': 'param'})
 df = df.set_index(['group', 'param']).sort_index().reset_index()
-df.to_feather(f'{out_dir}/esld_coeff.feather')
+df.to_csv(f'{out_dir}/esld_coeff.csv', index=False)
 
 # esld knots
 df = pd.read_csv(f'{in_dir}/esld_bmi_percentiles.csv')
@@ -206,8 +206,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/esld_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/esld_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/esld_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/esld_post_art_bmi.csv', index=False)
 
 
 # esld prevalence users
@@ -221,12 +221,12 @@ df2 = pd.concat([df2.assign(group=group_name) for group_name in ['msm_white_male
 df = pd.concat([df1, df2])
 df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
-df.to_feather(f'{out_dir}/esld_prev_users.feather')
+df.to_csv(f'{out_dir}/esld_prev_users.csv', index=False)
 
 # esld prevalence ini
 df = pd.read_csv(f'{in_dir}/esld_prev_ini.csv')
 df = pd.concat([df.assign(group=group_name) for group_name in group_names])
 df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
-df.to_feather(f'{out_dir}/esld_prev_ini.feather')
+df.to_csv(f'{out_dir}/esld_prev_ini.csv', index=False)
 
