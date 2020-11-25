@@ -14,10 +14,10 @@ param_dir = f'{cwd}/../../../data/parameters/aim1/'
 titles = ['Black', 'Hispanic', 'White']
 
 new_dx = pd.read_csv(f'{in_dir}/new_dx.csv')
-new_dx_int = pd.read_feather('out/new_dx_all.feather').assign(rm=0)
+new_dx_int = pd.read_csv('out/new_dx_all.csv').assign(rm=0)
 new_dx_int_list = []
 for i, year in enumerate(range(2009, 2015)):
-    new_dx_int_list.append(pd.read_feather(f'out/new_dx_{year}.feather').assign(rm=i+1))
+    new_dx_int_list.append(pd.read_csv(f'out/new_dx_{year}.csv').assign(rm=i+1))
 
 new_dx_int = pd.concat([new_dx_int] + new_dx_int_list)
 
@@ -134,5 +134,5 @@ for file_name, plot_name in zip(file_names, plots):
 
     plt.savefig(f'{out_dir}/{file_name}_range.png', bbox_inches='tight')
 
-data_1.reset_index()[['group', 'year', 'lower', 'upper']].to_feather(f'{param_dir}/new_dx_interval_sa.feather')
+data_1.reset_index()[['group', 'year', 'lower', 'upper']].to_csv(f'{param_dir}/new_dx_interval_sa.csv', index=False)
 

@@ -1,13 +1,12 @@
 # Load packages ---------------------------------------------------------------
 suppressMessages(library(gamlss))
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
-input_dir <- filePath(getwd(), '../../../data/input/aim1')
+pearl_dir <- Sys.getenv('PEARL_DIR')
+input_dir <- filePath(pearl_dir, '/data/input/aim1')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -172,15 +171,14 @@ predict_new_dx <- function(DF) {
 new_dx <- read.csv(filePath(input_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
 new_dx_interval <- predict_new_dx(new_dx)
 new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
-write_feather(new_dx_interval, filePath('out/new_dx_all.feather'))
+write_csv(new_dx_interval, filePath('out/new_dx_all.csv'))
 
 for (yr in seq(from=2009, to=2014, by=1)) {
   new_dx <- new_dx %>% filter(year != yr)
-  print(new_dx)
-  filename <- paste0('out/new_dx_', yr, '.feather')
+  filename <- paste0('out/new_dx_', yr, '.csv')
   new_dx_interval <- predict_new_dx(new_dx)
   new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
-  write_feather(new_dx_interval, filePath(filename))
+  write_csv(new_dx_interval, filePath(filename))
 }
 
 

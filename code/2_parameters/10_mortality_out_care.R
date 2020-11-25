@@ -3,7 +3,6 @@ suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
-suppressMessages(library(feather))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
 param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
@@ -58,9 +57,10 @@ coeffs <- model2 %>%
 
 vcov <- model2 %>% 
   select(group, vcov) %>% 
-  mutate_if(is.list, map, as_data_frame) %>%
+  mutate_if(is.list, map, as_tibble, .name_repair='unique') %>%
   unnest(cols=vcov)
 
-write_feather(coeffs, filePath(param_dir, 'mortality_out_care.feather'))
-write_feather(vcov, filePath(param_dir, 'mortality_out_care_vcov.feather'))
+print(coeffs)
+write_csv(coeffs, filePath(param_dir, 'mortality_out_care.csv'))
+write_csv(vcov, filePath(param_dir, 'mortality_out_care_vcov.csv'))
 

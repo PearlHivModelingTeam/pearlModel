@@ -1,5 +1,4 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
@@ -21,4 +20,4 @@ on_art <- read.csv(filePath(input_dir, 'surveillance_estimates_cdc_2009.csv'), s
   mutate(on_art = floor(n_alive_2009*pct_art*.01)) %>%
   select(group, on_art)
 
-write_feather(on_art, filePath(param_dir, 'on_art_2009.feather'))
+write_csv(on_art, filePath(param_dir, 'on_art_2009.csv'))

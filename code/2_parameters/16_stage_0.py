@@ -47,8 +47,8 @@ smoking_prev_inits['group'] = smoking_prev_inits['pop2'] + '_' + smoking_prev_in
 smoking_prev_inits['prevalence'] /= 100.0
 smoking_prev_inits = smoking_prev_inits.rename(columns={'prevalence': 'proportion'})[['group', 'proportion']].copy()
 
-hcv_prev_users.to_feather(f'{out_dir}/hcv_prev_users.feather')
-hcv_prev_inits.to_feather(f'{out_dir}/hcv_prev_inits.feather')
-smoking_prev_users.to_feather(f'{out_dir}/smoking_prev_users.feather')
-smoking_prev_inits.to_feather(f'{out_dir}/smoking_prev_inits.feather')
+hcv_prev_users.to_csv(f'{out_dir}/hcv_prev_users.csv', index=False)
+hcv_prev_inits.to_csv(f'{out_dir}/hcv_prev_inits.csv', index=False)
+smoking_prev_users.to_csv(f'{out_dir}/smoking_prev_users.csv', index=False)
+smoking_prev_inits.to_csv(f'{out_dir}/smoking_prev_inits.csv', index=False)
 

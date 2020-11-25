@@ -1,10 +1,8 @@
 # Load packages ---------------------------------------------------------------
 suppressMessages(library(lubridate))
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
 
@@ -32,8 +30,8 @@ get_2009 <- function(df, dir) {
     semi_join(carestat, by = c("naid"))
 }
 
-naaccord <- read_feather(filePath(input_dir, 'naaccord.feather'))
+naaccord <- read_csv(filePath(input_dir, 'naaccord.csv'))
 
 naaccord_2009 <- get_2009(naaccord, input_dir)
 
-write_feather(naaccord_2009, filePath(input_dir, 'naaccord_2009.feather'))
+write_csv(naaccord_2009, filePath(input_dir, 'naaccord_2009.csv'))

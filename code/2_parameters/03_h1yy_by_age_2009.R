@@ -1,9 +1,7 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
@@ -13,13 +11,12 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_feather(filePath(input_dir, 'naaccord_2009.feather'))
+test <- read_csv(filePath(input_dir, 'naaccord_2009.csv'))
 
-# Nest by group 
+# Nest by group
 test <- test %>%
   group_by(group) %>%
-  nest(.key = "naaccord_2009")
-
+  nest()
 
 # Get proportion of H1YY within each age group in NA-ACCORD population -------
 get_h1yy_prop <- function(DF) {
@@ -52,11 +49,11 @@ get_h1yy_prop <- function(DF) {
 }
 
 h1yy_by_age_2009 <- test %>% 
-  mutate(h1yy_by_age_2009 = map(naaccord_2009, get_h1yy_prop)) %>%
+  mutate(h1yy_by_age_2009 = map(data, get_h1yy_prop)) %>%
   select(c(group, h1yy_by_age_2009)) %>%
-  unnest() %>% 
+  unnest(cols = h1yy_by_age_2009) %>%
   rename_all(tolower)
 
-write_feather(h1yy_by_age_2009, filePath(param_dir, 'h1yy_by_age_2009.feather'))
+write_csv(h1yy_by_age_2009, filePath(param_dir, 'h1yy_by_age_2009.csv'))
 
 

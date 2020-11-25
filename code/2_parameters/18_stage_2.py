@@ -56,7 +56,7 @@ df = pd.concat([df, df1, df2, df3, df4, df5])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/ckd_coeff.feather')
+df.to_csv(f'{out_dir}/ckd_coeff.csv', index=False)
 
 
 # ckd knots
@@ -99,8 +99,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/ckd_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/ckd_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/ckd_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/ckd_post_art_bmi.csv', index=False)
 
 
 
@@ -139,7 +139,7 @@ df = pd.concat([df, df1, df2, df3, df4])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/dm_coeff.feather')
+df.to_csv(f'{out_dir}/dm_coeff.csv', index=False)
 
 # dm knots
 df = pd.read_csv(f'{in_dir}/dm_bmi_percentiles.csv')
@@ -178,8 +178,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/dm_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/dm_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/dm_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/dm_post_art_bmi.csv', index=False)
 
 
 
@@ -217,7 +217,7 @@ df = pd.concat([df, df1, df2, df3, df4])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/ht_coeff.feather')
+df.to_csv(f'{out_dir}/ht_coeff.csv', index=False)
 
 
 # ht knots
@@ -257,8 +257,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/ht_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/ht_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/ht_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/ht_post_art_bmi.csv', index=False)
 
 # lipid coeff
 df = pd.read_csv(f'{in_dir}/lipid_coeff.csv')
@@ -289,7 +289,7 @@ df = pd.concat([df, df1, df2, df3])
 df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
-df.to_feather(f'{out_dir}/lipid_coeff.feather')
+df.to_csv(f'{out_dir}/lipid_coeff.csv', index=False)
 
 # lipid knots
 df = pd.read_csv(f'{in_dir}/lipid_bmi_percentiles.csv')
@@ -323,8 +323,8 @@ df = df.sort_values(['variable', 'group'])[['variable', 'group', 'p5', 'p35', 'p
 df1 = df.loc[df['variable'] == 'delta bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p95']].set_index('group').reset_index()
 
-df1.to_feather(f'{out_dir}/lipid_delta_bmi.feather')
-df2.to_feather(f'{out_dir}/lipid_post_art_bmi.feather')
+df1.to_csv(f'{out_dir}/lipid_delta_bmi.csv', index=False)
+df2.to_csv(f'{out_dir}/lipid_post_art_bmi.csv', index=False)
 
 
 # Load prev users csv file
@@ -338,16 +338,16 @@ df['prev'] /= 100.0
 df = df.rename(columns={'prev': 'proportion'})
 
 df1 = df.loc[df['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/ckd_prev_users.feather')
+df1.to_csv(f'{out_dir}/ckd_prev_users.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/dm_prev_users.feather')
+df1.to_csv(f'{out_dir}/dm_prev_users.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/ht_prev_users.feather')
+df1.to_csv(f'{out_dir}/ht_prev_users.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/lipid_prev_users.feather')
+df1.to_csv(f'{out_dir}/lipid_prev_users.csv', index=False)
 
 # Load prev ini csv file
 df = pd.read_csv(f'{in_dir}/ht_dm_ckd_lipid_prev_ini.csv')
@@ -361,15 +361,15 @@ df['prevalence'] /= 100.0
 df = df.rename(columns={'prevalence': 'proportion'})
 
 df1 = df.loc[df['dx'] == 'ckd'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/ckd_prev_inits.feather')
+df1.to_csv(f'{out_dir}/ckd_prev_inits.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'dm'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/dm_prev_inits.feather')
+df1.to_csv(f'{out_dir}/dm_prev_inits.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'ht'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/ht_prev_inits.feather')
+df1.to_csv(f'{out_dir}/ht_prev_inits.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
-df1.to_feather(f'{out_dir}/lipid_prev_inits.feather')
+df1.to_csv(f'{out_dir}/lipid_prev_inits.csv', index=False)
 
 

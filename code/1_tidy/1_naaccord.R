@@ -1,5 +1,4 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
@@ -32,4 +31,4 @@ naaccord <- read_sas(filePath(input_dir, 'popu17.sas7bdat')) %>%
 # Set deathdate to missing if reason for exit is not death
 naaccord <- mutate(naaccord, deathdate = replace(deathdate, deathdate!=obs_exit, NA))
 
-write_feather(naaccord, filePath(input_dir, 'naaccord.feather'))
+write_csv(naaccord, filePath(input_dir, 'naaccord.csv'))

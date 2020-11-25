@@ -47,7 +47,7 @@ plt.legend(frameon=False)
 
 years_out = pd.DataFrame({'years': x, 'probability': y})
 
-years_out.to_feather(f'{param_dir}/years_out_of_care.feather')
+years_out.to_csv(f'{param_dir}/years_out_of_care.csv', index=False)
 
 
 

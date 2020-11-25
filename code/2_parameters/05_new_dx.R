@@ -1,10 +1,8 @@
 # Load packages ---------------------------------------------------------------
 suppressMessages(library(gamlss))
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
@@ -220,6 +218,6 @@ new_dx_interval <- predict_new_dx(new_dx)
 new_dx_model <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
 new_dx_interval <- combine_models(new_dx_interval)
 
-write_feather(new_dx, filePath(param_dir, 'new_dx.feather'))
-write_feather(new_dx_model, filePath(param_dir, 'new_dx_model.feather'))
-write_feather(new_dx_interval, filePath(param_dir, 'new_dx_interval.feather'))
+write_csv(new_dx, filePath(param_dir, 'new_dx.csv'))
+write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
+write_csv(new_dx_interval, filePath(param_dir, 'new_dx_interval.csv'))

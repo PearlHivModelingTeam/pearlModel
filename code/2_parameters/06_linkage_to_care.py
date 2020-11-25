@@ -27,6 +27,5 @@ linkage_to_care['art_prob'] = 0.97
 linkage_to_care.loc[linkage_to_care['year'] < 2011, 'art_prob'] = 0.7
 linkage_to_care.loc[linkage_to_care['year'] == 2011, 'art_prob'] = 0.85
 
-
-linkage_to_care.to_feather(f'{param_dir}/linkage_to_care.feather')
+linkage_to_care.to_csv(f'{param_dir}/linkage_to_care.csv', index=False)
 

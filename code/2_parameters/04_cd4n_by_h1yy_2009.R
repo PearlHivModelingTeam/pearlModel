@@ -1,9 +1,7 @@
 # Load packages ---------------------------------------------------------------
-suppressMessages(library(feather))
 suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
-suppressMessages(library(feather))
 suppressMessages(library(lubridate))
 
 input_dir <- filePath(getwd(), '/../../data/input/aim1')
@@ -13,12 +11,12 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_feather(filePath(input_dir, 'naaccord_2009.feather'))
+test <- read_csv(filePath(input_dir, 'naaccord_2009.csv'))
 
 # Nest by group 
 test <- test %>%
   group_by(group) %>%
-  nest(.key = "naaccord_2009")
+  nest()
 
 # Get Mean/SD of CD4N at H1YY - stratified by H1YY ----------------------------
 get_cd4n_by_h1yy <- function(group, NAACCORD) {
@@ -53,16 +51,16 @@ fit_glm_to_cd4n_by_h1yy <- function(outdat) {
 }
 
 test <- test %>%
-  mutate(outdat = pmap(list(group, naaccord_2009), get_cd4n_by_h1yy))
+  mutate(outdat = pmap(list(group, data), get_cd4n_by_h1yy))
 
-test1 <- unnest(test, outdat) %>% select(-'naaccord_2009')
-write_feather(test1, filePath(param_dir, 'cd4n_by_h1yy_2009_raw.feather'))
+test1 <- unnest(test, outdat) %>% select(-'data')
+write_csv(test1, filePath(param_dir, 'cd4n_by_h1yy_2009_raw.csv'))
 
 
 cd4n_by_h1yy_2009 <- test %>% 
   mutate(cd4n_by_h1yy_2009 = map(outdat, fit_glm_to_cd4n_by_h1yy)) %>%
   select(c(group, cd4n_by_h1yy_2009)) %>%
-  unnest() %>% 
+  unnest(cols = cd4n_by_h1yy_2009) %>%
   rename_all(tolower)
 
-write_feather(cd4n_by_h1yy_2009, filePath(param_dir, 'cd4n_by_h1yy_2009.feather'))
+write_csv(cd4n_by_h1yy_2009, filePath(param_dir, 'cd4n_by_h1yy_2009.csv'))
