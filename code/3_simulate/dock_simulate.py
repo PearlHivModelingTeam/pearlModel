@@ -39,9 +39,9 @@ with open(yaml_file, 'r') as f:
 dock_mods_list = pd.DataFrame()
 for i in replications:
     dock_mods = pd.DataFrame.from_dict({'disengagement': np.random.uniform(0.5, 2.0),
-                                          'reengagement': np.random.uniform(0.5, 2.0),
-                                          'mortality_in_care': np.random.uniform(0.5, 2.0),
-                                          'mortality_out_care': np.random.uniform(0.5, 2.0)},
+                                         'reengagement': np.random.uniform(0.5, 2.0),
+                                         'mortality_in_care': np.random.uniform(0.5, 2.0),
+                                         'mortality_out_care': np.random.uniform(0.5, 2.0)},
                                          orient='index', columns=['value']).assign(replication=i).reset_index()
     dock_mods_list = pd.concat([dock_mods_list, dock_mods], ignore_index=True)
 dock_mods_list = dock_mods_list.set_index(['replication', 'index'])
