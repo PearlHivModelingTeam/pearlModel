@@ -3,7 +3,6 @@ data/input/*
 data/processed/*
 data/param/*
 data/parameters/*
-!data/parameters/parameters.h5
 !data/param/prob_reengage.csv
 code/3_simulate/config/*
 *.swp
