@@ -30,15 +30,6 @@ STAGE3 = ['malig', 'esld', 'mi']
 ###############################################################################
 
 
-def gather(df, key, value, cols):
-    """ Implementation of gather from the tidyverse """
-    id_vars = [col for col in df.columns if col not in cols]
-    id_values = cols
-    var_name = key
-    value_name = value
-    return pd.melt(df, id_vars, id_values, var_name, value_name)
-
-
 def draw_from_trunc_norm(a, b, mu, sigma, n):
     """ Draws n values from a truncated normal with the given parameters """
     if n != 0:
@@ -298,7 +289,7 @@ def create_ltfu_pop_matrix(pop, knots):
     return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy(dtype=float)
 
 
-def calculate_prob(pop, coeffs, sa, vcov):
+def calculate_prob(pop, coeffs, sa, vcov, dock_mod=None):
     """ Calculate the individual probability from logistic regression """
 
     log_odds = np.matmul(pop, coeffs)
@@ -316,6 +307,12 @@ def calculate_prob(pop, coeffs, sa, vcov):
 
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
+
+    # Additional modifier for docking
+    if dock_mod is not None:
+        prob = prob * dock_mod
+        prob = np.clip(prob, 0.0, 1.0)
+
     return prob
 
 
@@ -352,7 +349,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
     return n_initial_nonusers, new_agents
 
 
-def make_pop_2009(parameters, n_initial_nonusers, group_name):
+def make_pop_2009(parameters, n_initial_nonusers, group_name, replication):
     """ Create initial 2009 population. Draw ages from a mixed normal distribution truncated at 18 and 85. h1yy is
     assigned using proportions from NA-ACCORD data. Finally, sqrt cd4n is drawn from a 0-truncated normal for each
     h1yy """
@@ -426,6 +423,11 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name):
     population['status'] = ART_USER
     non_user = np.random.choice(a=len(population.index), size=n_initial_nonusers, replace=False)
     years_out_of_care = np.random.choice(a=parameters.years_out_of_care['years'], size=n_initial_nonusers, p=parameters.years_out_of_care['probability'])
+
+    dock_mod = parameters.dock_mods.loc[(replication, 'reengagement')].values[0]
+    if dock_mod is not None:
+        years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
+
     population.loc[non_user, 'status'] = ART_NONUSER
     population.loc[non_user, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
     population.loc[non_user, 'ltfu_year'] = 2009
@@ -479,9 +481,12 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
         population = pd.concat([population, grouped_pop])
 
     delayed = population['status'] == DELAYED
-    population.loc[delayed, 'h1yy'] = population.loc[delayed, 'h1yy'] + np.random.choice(a=parameters.years_out_of_care['years'],
-                                                                                         size=len(population.loc[delayed]),
-                                                                                         p=parameters.years_out_of_care['probability'])
+    years_out_of_care =  np.random.choice(a=parameters.years_out_of_care['years'], size=len(population.loc[delayed]), p=parameters.years_out_of_care['probability'])
+    dock_mod = parameters.dock_mods.loc[(replication, 'reengagement')].values[0]
+    if dock_mod is not None:
+        years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
+
+    population.loc[delayed, 'h1yy'] = population.loc[delayed, 'h1yy'] + years_out_of_care
     population.loc[delayed, 'status'] = ART_NAIVE
     population = population[population['h1yy'] <= 2030].copy()
 
@@ -558,7 +563,7 @@ def create_mm_detail_stats(pop):
 
 class Parameters:
     def __init__(self, path, group_name, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
-                 output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False):
+                 output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False, dock_mods=None):
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
@@ -678,6 +683,13 @@ class Parameters:
         self.mortality_out_care_delta_bmi = pd.read_hdf(path, 'mortality_out_care_delta_bmi').loc[group_name]
         self.mortality_out_care_post_art_bmi = pd.read_hdf(path, 'mortality_out_care_post_art_bmi').loc[group_name]
 
+        # Docking modification numbers
+        if dock_mods is not None:
+            self.dock_mods = dock_mods
+        else:
+            self.dock_mods = pd.DataFrame.from_dict({'disengagement': None, 'reengagement': None, 'mortality_in_care': None, 'mortality_out_care': None},
+                                                    orient='index', columns=['value'])
+
 
 class Statistics:
     def __init__(self, out_list=None, comorbidity_flag=None, mm_detail_flag=None, record_tv_cd4=None):
@@ -726,6 +738,8 @@ class Statistics:
                 self.mm_detail_inits = pd.concat([out.mm_detail_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_dead = pd.concat([out.mm_detail_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
+
+
     def save(self, output_folder):
         for name, df in self.__dict__.items():
             if isinstance(df, pd.DataFrame):
@@ -756,7 +770,7 @@ class Pearl:
         n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx, parameters.linkage_to_care)
 
         # Create 2009 population
-        self.population = make_pop_2009(parameters, n_initial_nonusers, self.group_name)
+        self.population = make_pop_2009(parameters, n_initial_nonusers, self.group_name, self.replication)
 
         # Create population of new art initiators
         self.population = self.population.append(
@@ -834,7 +848,8 @@ class Pearl:
                                                  self.parameters.mortality_in_care_delta_bmi,
                                                  self.parameters.mortality_in_care_post_art_bmi)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix,
+                                    self.parameters.dock_mods.loc[(self.replication, 'mortality_in_care')].values[0])
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DYING_ART_USER
         self.population.loc[died, 'year_died'] = self.year
@@ -846,7 +861,8 @@ class Pearl:
                                                  self.parameters.mortality_out_care_delta_bmi,
                                                  self.parameters.mortality_out_care_post_art_bmi)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix,
+                                    self.parameters.dock_mods.loc[(self.replication, 'mortality_out_care')].values[0])
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DYING_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
@@ -857,10 +873,15 @@ class Pearl:
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy(dtype=float)
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy(dtype=float)
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
-        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
+        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix,
+                                   self.parameters.dock_mods.loc[(self.replication, 'disengagement')].values[0])
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         n_lost = len(self.population.loc[lost])
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost, p=self.parameters.years_out_of_care['probability'])
+        dock_mod = self.parameters.dock_mods.loc[(self.replication, 'reengagement')].values[0]
+        if dock_mod is not None:
+            years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
+
         self.population.loc[lost, 'return_year'] = self.year + years_out_of_care
         self.population.loc[lost, 'status'] = LTFU
         self.population.loc[lost, 'sqrtcd4n_exit'] = self.population.loc[lost, 'time_varying_sqrtcd4n']
@@ -881,7 +902,7 @@ class Pearl:
 
         # Save years out of care
         years_out = (pd.DataFrame(self.population.loc[reengaged, 'years_out'].value_counts())
-                     .reindex(range(1, 8), fill_value=0).reset_index()
+                     .reindex(range(1, 16), fill_value=0).reset_index()
                      .rename(columns={'index': 'years', 'years_out': 'n'})
                      .assign(group=self.group_name, replication=self.replication, year=self.year))
         self.stats.years_out = self.stats.years_out.append(years_out)
@@ -1139,6 +1160,7 @@ class Pearl:
 
         # Number of unique people out of care 2010-2015
         self.stats.n_unique_out_care = pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]}).assign(replication=self.replication, group=self.group_name)
+
 
     def run(self):
         """ Simulate from 2010 to 2030 """
