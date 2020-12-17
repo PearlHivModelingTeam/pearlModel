@@ -1,9 +1,9 @@
 out/*
 data/input/*
 data/processed/*
-data/param/*
 data/parameters/*
-!data/param/prob_reengage.csv
+!data/parameters/prob_reengage.csv
+!data/parameters/parameters.h5
 code/3_simulate/config/*
 *.swp
 .idea/*
@@ -12,3 +12,4 @@ code/3_simulate/config/*
 *.xlsx
 *.feather
 venv/*
+venv3.6/*
