@@ -36,6 +36,7 @@ with open(yaml_file, 'r') as f:
     sa_dict = param_yaml['sa_dict']
     comorbidity_flag = param_yaml['comorbidity_flag']
     mm_detail_flag = param_yaml['mm_detail_flag']
+    smoking_intervention = param_yaml['smoking_intervention']
     new_dx = param_yaml['new_dx']
     record_tv_cd4 = param_yaml['record_tv_cd4']
     verbose = param_yaml['verbose']
@@ -59,7 +60,8 @@ for group_name in group_names:
     print(group_name)
     parameters = pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=comorbidity_flag,
                                   mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx,
-                                  output_folder=output_folder, record_tv_cd4=record_tv_cd4, verbose=verbose)
+                                  output_folder=output_folder, record_tv_cd4=record_tv_cd4, verbose=verbose,
+                                  smoking_intervention=smoking_intervention)
     futures = [run.remote(parameters, group_name, replication) for replication in replications]
     out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag, record_tv_cd4))
 

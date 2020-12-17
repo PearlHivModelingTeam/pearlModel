@@ -563,12 +563,14 @@ def create_mm_detail_stats(pop):
 
 class Parameters:
     def __init__(self, path, group_name, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
-                 output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False, dock_mods=None):
+                 output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False, smoking_intervention=False, dock_mods=None):
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
         self.record_tv_cd4 = record_tv_cd4
+        self.smoking_intervention = smoking_intervention
         self.verbose = verbose
+
         # Unpack Sensitivity Analysis List
         lambda1_sa = sa_dict['lambda1']
         mu1_sa = sa_dict['mu1']
@@ -688,7 +690,7 @@ class Parameters:
             self.dock_mods = dock_mods
         else:
             self.dock_mods = pd.DataFrame.from_dict({'disengagement': None, 'reengagement': None, 'mortality_in_care': None, 'mortality_out_care': None},
-                                                    orient='index', columns=['value'])
+                                                    orient='index', columns=['value']).assign(replication=0).reset_index().set_index(['replication', 'index'])
 
 
 class Statistics:
@@ -1165,6 +1167,10 @@ class Pearl:
     def run(self):
         """ Simulate from 2010 to 2030 """
         while self.year <= 2030:
+
+            # Apply smoking intervention
+            if (self.year == 2020) & self.parameters.smoking_intervention:
+                self.population['smoking'] = 0
 
             # Everybody ages
             self.increment_age()
