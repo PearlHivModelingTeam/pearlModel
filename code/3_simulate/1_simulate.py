@@ -53,12 +53,14 @@ if os.path.isdir(output_folder):
 else:
     os.makedirs(output_folder)
 
+print(replications[-1])
+
 # Run simulations
 ray.init(num_cpus=num_cpus)
 out_list = []
 for group_name in group_names:
     print(group_name)
-    parameters = pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=comorbidity_flag,
+    parameters = pearl.Parameters(path=param_file, group_name=group_name, replications=replications, comorbidity_flag=comorbidity_flag,
                                   mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx,
                                   output_folder=output_folder, record_tv_cd4=record_tv_cd4, verbose=verbose,
                                   smoking_intervention=smoking_intervention)
