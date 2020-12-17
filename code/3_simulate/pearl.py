@@ -562,7 +562,7 @@ def create_mm_detail_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
+    def __init__(self, path, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
                  output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False, smoking_intervention=False, dock_mods=None):
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
@@ -689,8 +689,8 @@ class Parameters:
         if dock_mods is not None:
             self.dock_mods = dock_mods
         else:
-            self.dock_mods = pd.DataFrame.from_dict({'disengagement': None, 'reengagement': None, 'mortality_in_care': None, 'mortality_out_care': None},
-                                                    orient='index', columns=['value']).assign(replication=0).reset_index().set_index(['replication', 'index'])
+            self.dock_mods = pd.DataFrame(index=pd.MultiIndex.from_product([replications, ['disengagement', 'reengagement', 'mortality_in_care', 'mortality_out_care']],
+                                                                           names=['replication', 'index']), columns=['value'], data=len(replications)*4*[None])
 
 
 class Statistics:
