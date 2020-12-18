@@ -53,7 +53,6 @@ if os.path.isdir(output_folder):
 else:
     os.makedirs(output_folder)
 
-print(replications[-1])
 
 # Run simulations
 ray.init(num_cpus=num_cpus)
