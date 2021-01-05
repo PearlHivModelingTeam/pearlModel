@@ -8,7 +8,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from datetime import datetime
-
+from smt.sampling_methods import LHS
 
 # Define parallel ray function
 @ray.remote
@@ -36,15 +36,13 @@ with open(yaml_file, 'r') as f:
     record_tv_cd4 = param_yaml['record_tv_cd4']
     verbose = param_yaml['verbose']
 
-dock_mods_list = pd.DataFrame()
-for i in replications:
-    dock_mods = pd.DataFrame.from_dict({'disengagement': np.random.uniform(0.5, 2.0),
-                                        'reengagement': np.random.uniform(0.5, 2.0),
-                                        'mortality_in_care': np.random.uniform(0.5, 2.0),
-                                        'mortality_out_care': np.random.uniform(0.5, 2.0)},
-                                        orient='index', columns=['value']).assign(replication=i).reset_index()
-    dock_mods_list = pd.concat([dock_mods_list, dock_mods], ignore_index=True)
-dock_mods_list = dock_mods_list.set_index(['replication', 'index'])
+
+limits = np.array([[0.5, 2.0], [0.5, 2.0], [0.5, 2.0], [0.5, 2.0]])
+sampling = LHS(xlimits=limits)
+x = sampling(len(replications))
+dock_mods_list = pd.DataFrame(x.flatten(), index=pd.MultiIndex.from_product([replications, ['disengagement', 'reengagement', 'mortality_in_care', 'mortality_out_care']], names=['replication', 'index']),
+                              columns=['value'])
+
 
 # Delete old files
 if os.path.isdir(output_folder):
@@ -65,7 +63,7 @@ ray.init(num_cpus=num_cpus)
 out_list = []
 for group_name in group_names:
     print(group_name)
-    parameters = pearl.Parameters(path=param_file, group_name=group_name, comorbidity_flag=comorbidity_flag,
+    parameters = pearl.Parameters(path=param_file, group_name=group_name, replications=replications, comorbidity_flag=comorbidity_flag,
                                   mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx,
                                   output_folder=output_folder, record_tv_cd4=record_tv_cd4, verbose=verbose,
                                   dock_mods=dock_mods_list)

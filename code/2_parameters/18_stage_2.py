@@ -140,6 +140,7 @@ df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
 df.to_csv(f'{out_dir}/dm_coeff.csv', index=False)
+print(df)
 
 # dm knots
 df = pd.read_csv(f'{in_dir}/dm_bmi_percentiles.csv')
