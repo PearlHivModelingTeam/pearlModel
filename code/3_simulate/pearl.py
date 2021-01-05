@@ -1171,7 +1171,6 @@ class Pearl:
             # Apply smoking intervention
             if (self.year == 2010) & self.parameters.smoking_intervention:
                 self.population['smoking'] = 0
-            print(self.year)
 
             # Everybody ages
             self.increment_age()
