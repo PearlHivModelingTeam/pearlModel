@@ -1125,17 +1125,18 @@ class Pearl:
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
 
         # Count of new initiators by year
-        self.stats.new_init_count = self.population.groupby(['h1yy']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        self.stats.new_init_count = self.population.groupby(['h1yy']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name).rename(columns={'h1yy': 'year'})
 
         # Count of new initiators by year and age
-        self.stats.new_init_age = self.population.groupby(['h1yy', 'init_age']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+        self.stats.new_init_age = self.population.groupby(['h1yy', 'init_age']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)\
+            .rename(columns={'h1yy': 'year', 'init_age': 'age'})
 
         # Record initial CD4 Counts
         initial_cd4n = self.population[['init_sqrtcd4n', 'h1yy']].copy()
         initial_cd4n['init_sqrtcd4n'] = initial_cd4n['init_sqrtcd4n'].astype(int)
         initial_cd4n = initial_cd4n.groupby(['h1yy', 'init_sqrtcd4n']).size()
         initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([np.arange(2000, 2030), np.arange(51)], names=['h1yy', 'init_sqrtcd4n']), fill_value=0).reset_index(name='n')
-        self.stats.initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication)
+        self.stats.initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication).rename(columns={'h1yy': 'year'})
 
         # Count how many times people left and tally them up
         self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
