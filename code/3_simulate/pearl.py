@@ -1083,24 +1083,24 @@ class Pearl:
                                    .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
                 self.stats.prevalence_dead = self.stats.prevalence_dead.append(prevalence_dead)
 
-            mm_in_care = (self.population.loc[in_care].groupby('mm').size()
-                          .reindex(index=np.arange(0, 8), fill_value=0).reset_index(name='n')
-                          .assign(year=self.year, replication=self.replication, group=self.group_name))
+            mm_in_care = (self.population.loc[in_care].groupby(['age_cat', 'mm']).size()
+                          .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                          .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_in_care = self.stats.mm_in_care.append(mm_in_care)
 
-            mm_out_care = (self.population.loc[out_care].groupby('mm').size()
-                           .reindex(index=np.arange(0, 8), fill_value=0).reset_index(name='n')
-                           .assign(year=self.year, replication=self.replication, group=self.group_name))
+            mm_out_care = (self.population.loc[out_care].groupby(['age_cat', 'mm']).size()
+                           .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                           .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_out_care = self.stats.mm_out_care.append(mm_out_care)
 
-            mm_inits = (self.population.loc[initiating].groupby('mm').size()
-                        .reindex(index=np.arange(0, 8), fill_value=0).reset_index(name='n')
-                        .assign(year=self.year, replication=self.replication, group=self.group_name))
+            mm_inits = (self.population.loc[initiating].groupby(['age_cat', 'mm']).size()
+                        .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                        .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_inits = self.stats.mm_inits.append(mm_inits)
 
-            mm_dead = (self.population.loc[dying].groupby('mm').size()
-                       .reindex(index=np.arange(0, 8), fill_value=0).reset_index(name='n')
-                       .assign(year=self.year, replication=self.replication, group=self.group_name))
+            mm_dead = (self.population.loc[dying].groupby(['age_cat', 'mm']).size()
+                       .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                       .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_dead = self.stats.mm_dead.append(mm_dead)
 
             if self.parameters.mm_detail_flag:
