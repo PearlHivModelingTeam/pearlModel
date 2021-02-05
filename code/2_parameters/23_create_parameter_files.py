@@ -149,6 +149,8 @@ loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
 ltfu_knots = clean_coeff(pd.read_sas(f'{param_dir}/aim1/ltfu_knots.sas7bdat'))
+print(loss_to_follow_up.loc['het_hisp_female'])
+print(ltfu_knots)
 
 # Coefficients for cd4 decline out of care
 cd4_decrease = pd.read_csv(f'{param_dir}/aim1/cd4_decrease.csv')
