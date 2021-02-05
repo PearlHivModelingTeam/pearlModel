@@ -279,11 +279,11 @@ def create_ltfu_pop_matrix(pop, knots):
 
     age = pop['age'].values
     pop['age_'] = (np.maximum(0, age - knots['p5']) ** 2
-                   - (np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5']))
+                   - (np.maximum(0, age - knots['p95']) ** 2)) / (knots['p95'] - knots['p5'])
     pop['age__'] = (np.maximum(0, age - knots['p35']) ** 2
-                    - (np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5']))
+                    - (np.maximum(0, age - knots['p95']) ** 2)) / (knots['p95'] - knots['p5'])
     pop['age___'] = (np.maximum(0, age - knots['p65']) ** 2
-                     - (np.maximum(0, age - knots['p95']) ** 2) / (knots['p95'] - knots['p5']))
+                     - (np.maximum(0, age - knots['p95']) ** 2)) / (knots['p95'] - knots['p5'])
 
     pop['haart_period'] = (pop['h1yy'].values > 2010).astype(int)
     return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy(dtype=float)
@@ -867,13 +867,10 @@ class Pearl:
         in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy(dtype=float)
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy(dtype=float)
-        print(self.parameters.ltfu_knots)
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
         ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
-        print(np.mean(ltfu_prob))
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         n_lost = len(self.population.loc[lost])
-        print(n_lost)
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost, p=self.parameters.years_out_of_care['probability'])
         dock_mod = self.parameters.dock_mods.loc[(self.replication, 'reengagement')].values[0]
         if dock_mod is not None:
