@@ -289,7 +289,7 @@ def create_ltfu_pop_matrix(pop, knots):
     return pop[['intercept', 'age', 'age_', 'age__', 'age___', 'year', 'init_sqrtcd4n', 'haart_period']].to_numpy(dtype=float)
 
 
-def calculate_prob(pop, coeffs, sa, vcov, dock_mod=None):
+def calculate_prob(pop, coeffs, sa, vcov):
     """ Calculate the individual probability from logistic regression """
 
     log_odds = np.matmul(pop, coeffs)
@@ -307,11 +307,6 @@ def calculate_prob(pop, coeffs, sa, vcov, dock_mod=None):
 
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
-
-    # Additional modifier for docking
-    if dock_mod is not None:
-        prob = prob * dock_mod
-        prob = np.clip(prob, 0.0, 1.0)
 
     return prob
 
@@ -850,8 +845,7 @@ class Pearl:
                                                  self.parameters.mortality_in_care_delta_bmi,
                                                  self.parameters.mortality_in_care_post_art_bmi)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix,
-                                    self.parameters.dock_mods.loc[(self.replication, 'mortality_in_care')].values[0])
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DYING_ART_USER
         self.population.loc[died, 'year_died'] = self.year
@@ -863,8 +857,7 @@ class Pearl:
                                                  self.parameters.mortality_out_care_delta_bmi,
                                                  self.parameters.mortality_out_care_post_art_bmi)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
-        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix,
-                                    self.parameters.dock_mods.loc[(self.replication, 'mortality_out_care')].values[0])
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DYING_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
@@ -874,11 +867,13 @@ class Pearl:
         in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy(dtype=float)
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy(dtype=float)
+        print(self.parameters.ltfu_knots)
         pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
-        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix,
-                                   self.parameters.dock_mods.loc[(self.replication, 'disengagement')].values[0])
+        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
+        print(np.mean(ltfu_prob))
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         n_lost = len(self.population.loc[lost])
+        print(n_lost)
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost, p=self.parameters.years_out_of_care['probability'])
         dock_mod = self.parameters.dock_mods.loc[(self.replication, 'reengagement')].values[0]
         if dock_mod is not None:
