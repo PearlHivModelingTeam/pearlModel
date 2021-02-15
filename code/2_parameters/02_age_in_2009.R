@@ -5,14 +5,16 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/param/raw')
+intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_csv(filePath(input_dir, 'naaccord_2009.csv'))
+test <- read_csv(filePath(intermediate_dir, 'naaccord_2009.csv'))
 
 # Nest by group 
 test <- test %>%

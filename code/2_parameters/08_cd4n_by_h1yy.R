@@ -5,14 +5,16 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(lubridate))
 suppressMessages(library(mixtools))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/param/raw')
+intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
                 'het_white_female', 'het_black_male', 'het_black_female', 'het_hisp_male', 'het_hisp_female')
 
-test <- read_csv(filePath(input_dir, 'naaccord.csv'))
+test <- read_csv(filePath(intermediate_dir, 'naaccord.csv'))
 
 # Nest by group 
 test <- test %>%
@@ -80,7 +82,7 @@ test <- test %>%
   mutate(ini1 = pmap(list(data, group), get_cd4n_by_h1yy))
 
 test1 <- unnest(test, ini1) %>% select(-'data')
-write_csv(test1, filePath(param_dir, 'cd4n_by_h1yy_raw.csv'))
+#write_csv(test1, filePath(param_dir, 'cd4n_by_h1yy_raw.csv'))
 
 cd4n_by_h1yy <- test %>%
   mutate(cd4n_by_h1yy = map(ini1, fit_glm_to_cd4n_by_h1yy)) %>%

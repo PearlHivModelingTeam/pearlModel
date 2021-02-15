@@ -1,0 +1,16 @@
+group,p5,p35,p65,p95
+het_black_female,-3.8,0.3,2.6,8.65
+het_black_male,-2.1,0.5,2.3,6.9
+het_hisp_female,-3.8,0.3,2.6,8.65
+het_hisp_male,-2.1,0.5,2.3,6.9
+het_white_female,-3.8,0.3,2.6,8.65
+het_white_male,-2.1,0.5,2.3,6.9
+idu_black_female,-3.8,0.3,2.6,8.65
+idu_black_male,-2.5,0.0,1.4,5.4
+idu_hisp_female,-3.8,0.3,2.6,8.65
+idu_hisp_male,-2.5,0.0,1.4,5.4
+idu_white_female,-3.8,0.3,2.6,8.65
+idu_white_male,-2.5,0.0,1.4,5.4
+msm_black_male,-2.25,0.25,1.75,6.15
+msm_hisp_male,-1.8,0.2,1.6,5.35
+msm_white_male,-1.8,0.2,1.6,5.35

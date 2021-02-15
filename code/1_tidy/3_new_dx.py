@@ -1,9 +1,13 @@
 # Imports
 import os
 import pandas as pd
+from pathlib import Path
 
 # Define directories
-input_dir = f'{os.getcwd()}/../../data/input/aim1'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+input_dir = f'{pearl_dir}/param/raw'
+intermediate_dir = f'{pearl_dir}/param/intermediate'
+param_dir = f'{pearl_dir}/param/param'
 
 races = ['black', 'white', 'hisp']
 
@@ -24,7 +28,7 @@ df = df.rename(columns={'n_hivdx_cdctable1': 'n_dx'})
 df_2 = pd.read_csv(f'{input_dir}/new_dx_2018.csv').set_index(['group', 'year'])
 df = pd.concat([df, df_2]).sort_index().reset_index()
 
-df.to_csv(f'{input_dir}/new_dx.csv', index=False)
+df.to_csv(f'{intermediate_dir}/new_dx.csv', index=False)
 
 
 

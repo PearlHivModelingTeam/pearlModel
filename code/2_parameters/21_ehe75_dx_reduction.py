@@ -1,12 +1,13 @@
 import os
 import numpy as np
 import pandas as pd
-
-pd.set_option("display.max_rows", 1001)
+from pathlib import Path
 
 # Define directories
-cwd = os.getcwd()
-param_dir = cwd + '/../../data/parameters/aim1'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+input_dir = f'{pearl_dir}/param/raw'
+intermediate_dir = f'{pearl_dir}/param/intermediate'
+param_dir = f'{pearl_dir}/param/param'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',

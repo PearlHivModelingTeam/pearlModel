@@ -5,8 +5,10 @@ suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 suppressMessages(library(lubridate))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/param/raw')
+intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -213,11 +215,11 @@ combine_models <- function(df) {
 }
 
 
-new_dx <- read.csv(filePath(input_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
+new_dx <- read.csv(filePath(intermediate_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
 new_dx_interval <- predict_new_dx(new_dx)
 new_dx_model <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
 new_dx_interval <- combine_models(new_dx_interval)
 
-write_csv(new_dx, filePath(param_dir, 'new_dx.csv'))
-write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
+#write_csv(new_dx, filePath(param_dir, 'new_dx.csv'))
+#write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
 write_csv(new_dx_interval, filePath(param_dir, 'new_dx_interval.csv'))

@@ -4,7 +4,10 @@ suppressMessages(library(haven))
 suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/param/raw')
+intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -30,8 +33,7 @@ get_2009 <- function(df, dir) {
     semi_join(carestat, by = c("naid"))
 }
 
-naaccord <- read_csv(filePath(input_dir, 'naaccord.csv'))
-
+naaccord <- read_csv(filePath(intermediate_dir, 'naaccord.csv'))
 naaccord_2009 <- get_2009(naaccord, input_dir)
 
-write_csv(naaccord_2009, filePath(input_dir, 'naaccord_2009.csv'))
+write_csv(naaccord_2009, filePath(intermediate_dir, 'naaccord_2009.csv'))
