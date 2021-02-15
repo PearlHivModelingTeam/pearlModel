@@ -25,12 +25,12 @@ else:
 
 date_string = datetime.today().strftime('%Y-%m-%d')
 output_folder = Path(f'../../out/{yaml_file.stem}_{date_string}/')
+param_file = Path(f'../../param/parameters.h5')
 
 # Load parameters
 with open(yaml_file, 'r') as f:
     param_yaml = yaml.load(f, Loader=yaml.FullLoader)
     num_cpus = param_yaml['num_cpus']
-    param_file = Path(param_yaml['param_file'])
     replications = range(param_yaml['replications'])
     group_names = param_yaml['group_names']
     sa_dict = param_yaml['sa_dict']

@@ -1,7 +1,6 @@
 group_names: ['het_black_male']
-num_cpus: 2
+num_cpus: 1
 replications: 1
-param_file: '../../param/parameters.h5'
 comorbidity_flag: 0
 mm_detail_flag: 0
 smoking_intervention: 0
