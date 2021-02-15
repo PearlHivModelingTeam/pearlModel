@@ -3,6 +3,7 @@ import os
 import ray
 import pearl
 import yaml
+import shutil
 from pathlib import Path
 import argparse
 from datetime import datetime
@@ -53,6 +54,8 @@ if os.path.isdir(output_folder):
 else:
     os.makedirs(output_folder)
 
+
+shutil.copyfile(yaml_file, f'{output_folder}/{yaml_file.stem}.yaml')
 
 # Run simulations
 ray.init(num_cpus=num_cpus)
