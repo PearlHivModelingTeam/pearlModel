@@ -4,8 +4,10 @@ suppressMessages(library(R.utils))
 suppressMessages(library(tidyverse))
 suppressMessages(library(broom))
 
-input_dir <- filePath(getwd(), '/../../data/input/aim1')
-param_dir <- filePath(getwd(), '/../../data/parameters/aim1')
+pearl_dir <- Sys.getenv("PEARL_DIR")
+input_dir <- filePath(pearl_dir, '/param/raw')
+intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
                 'idu_black_male', 'idu_black_female', 'idu_hisp_male', 'idu_hisp_female', 'het_white_male',
@@ -69,6 +71,5 @@ vcov <- model2 %>%
   mutate_if(is.list, map, as_tibble, .name_repair='unique') %>%
   unnest(cols=vcov)
 
-print(coeffs)
 write_csv(coeffs, filePath(param_dir, 'mortality_in_care.csv'))
 write_csv(vcov, filePath(param_dir, 'mortality_in_care_vcov.csv'))

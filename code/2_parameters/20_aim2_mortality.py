@@ -2,18 +2,13 @@
 import os
 import numpy as np
 import pandas as pd
-
-pd.set_option("display.max_rows", 1001)
-
-group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
-               'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
-               'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-group_names.sort()
+from pathlib import Path
 
 # Define directories
-cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/aim2/mortality'
-out_dir = cwd + '/../../data/parameters/aim2/mortality'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+in_dir = f'{pearl_dir}/param/raw/aim2/mortality'
+out_dir = f'{pearl_dir}/param/param/aim2/mortality'
+
 
 # mortality in care coeffs
 df = pd.read_csv(f'{in_dir}/mortality_in_care_coeff.csv')

@@ -1,13 +1,12 @@
 # Imports
 import os
 import pandas as pd
-
-pd.set_option("display.max_rows", 1001)
+from pathlib import Path
 
 # Define directories
-cwd = os.getcwd()
-in_dir = cwd + '/../../data/input/aim2/bmi'
-out_dir = cwd + '/../../data/parameters/aim2/bmi'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+in_dir = f'{pearl_dir}/param/raw/aim2/bmi'
+out_dir = f'{pearl_dir}/param/param/aim2/bmi'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',

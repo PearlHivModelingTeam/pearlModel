@@ -1,15 +1,7 @@
 out/*
-data/input/*
-data/processed/*
-data/parameters/*
-!data/parameters/prob_reengage.csv
-!data/parameters/parameters.h5
-code/3_simulate/config/*
 *.swp
 .idea/*
 *.pyc
 *.png
 *.xlsx
-*.feather
 venv/*
-venv3.6/*

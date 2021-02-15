@@ -3,10 +3,13 @@ import os
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as sm
+from pathlib import Path
 
 # Define directories
-input_dir = f'{os.getcwd()}/../../data/input/aim1'
-param_dir = f'{os.getcwd()}/../../data/parameters/aim1'
+pearl_dir = Path(os.getenv('PEARL_DIR'))
+input_dir = f'{pearl_dir}/param/raw'
+intermediate_dir = f'{pearl_dir}/param/intermediate'
+param_dir = f'{pearl_dir}/param/param'
 
 years = np.arange(2006, 2031)
 linkage_obs = pd.read_csv(f'{input_dir}/linkage_to_care.csv')
