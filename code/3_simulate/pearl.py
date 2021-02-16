@@ -764,12 +764,15 @@ class Pearl:
 
         # If this is a rerun, reload the random state
         if self.parameters.rerun_folder is not None:
-            state = pickle.load(open(f'{self.parameters.rerun_folder}/random_states/{self.group_name}_{self.replication}.state', 'rb'))
+            with open(f'{self.parameters.rerun_folder}/random_states/{self.group_name}_{self.replication}.state', 'rb') as state_file_load, \
+                    open(f'{self.parameters.output_folder}/random_states/{self.group_name}_{self.replication}.state', 'wb') as state_file_save:
+                state = pickle.load(state_file_load)
+                pickle.dump(state, state_file_save)
             np.random.set_state(state)
         else:
             state = np.random.get_state()
-            pickle.dump(np.random.get_state(), open(f'{self.parameters.output_folder}/random_states/{self.group_name}_{self.replication}.state', 'wb'))
-
+            with open(f'{self.parameters.output_folder}/random_states/{self.group_name}_{self.replication}.state', 'wb') as state_file:
+                pickle.dump(state, state_file)
 
         # Initiate output class
         self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag, mm_detail_flag=self.parameters.mm_detail_flag, record_tv_cd4=self.parameters.record_tv_cd4)

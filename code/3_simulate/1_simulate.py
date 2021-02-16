@@ -33,13 +33,14 @@ param_file = Path(f'{pearl_dir}/param/parameters.h5')
 with open(f'{pearl_dir}/requirements.txt', 'r') as requirements:
     pkg_resources.require(requirements)
 
+# Original run, rerun, or test run?
 rerun_folder = None
 if args.config:
     config_file = Path(f'config/{args.config}')
     output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
 elif args.rerun:
     rerun_folder = Path(f'{pearl_dir}/out/{args.rerun}')
-    config_file = Path(f'{rerun_folder}/rerun.yaml')
+    config_file = Path(f'{rerun_folder}/config.yaml')
     output_folder = Path(f'{pearl_dir}/out/{args.rerun}_rerun_{date_string}/')
 else:
     config_file = Path('config/test.yaml')
@@ -50,6 +51,7 @@ else:
 with open(config_file, 'r') as yaml_file:
     config_yaml = yaml.safe_load(yaml_file)
 
+# Get config options from config file
 num_cpus = config_yaml['num_cpus']
 replications = range(config_yaml['replications'])
 group_names = config_yaml['group_names']
@@ -60,8 +62,10 @@ smoking_intervention = config_yaml['smoking_intervention']
 new_dx = config_yaml['new_dx']
 record_tv_cd4 = config_yaml['record_tv_cd4']
 verbose = config_yaml['verbose']
+
+# If it's a rerun check that python version and commit hash are correct else save those details for future runs
 if args.rerun:
-    print('rerun')
+    print('This is a rerun')
     python_version = config_yaml['python_version']
     if python_version != platform.python_version():
         raise EnvironmentError("Incorrect python version for rerun")
@@ -70,27 +74,18 @@ if args.rerun:
         raise EnvironmentError("Incorrect commit hash for rerun")
 else:
     config_yaml['python_version'] = platform.python_version()
-    print(config_yaml['python_version'])
     config_yaml['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
-    print(config_yaml['commit_hash'])
 
 
-# Delete old files
+# Create Output folder structure
 if os.path.isdir(output_folder):
-    for filename in os.listdir(output_folder):
-        file_path = os.path.join(output_folder, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
+    raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
     os.makedirs(f'{output_folder}/random_states')
 
 # Copy config file to output dir
-
-with open(f'{output_folder}/rerun.yaml', 'w') as yaml_file:
+with open(f'{output_folder}/config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config_yaml, yaml_file)
 
 
