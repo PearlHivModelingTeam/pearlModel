@@ -1,5 +1,6 @@
 # Imports
 import os
+import pickle
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -557,8 +558,9 @@ def create_mm_detail_stats(pop):
 ###############################################################################
 
 class Parameters:
-    def __init__(self, path, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
+    def __init__(self, path, rerun_folder, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
                  output_folder=f'{os.getcwd()}/../../out/raw', record_tv_cd4=False, verbose=False, smoking_intervention=False, dock_mods=None):
+        self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
@@ -759,6 +761,15 @@ class Pearl:
         self.replication = replication
         self.year = 2009
         self.parameters = parameters
+
+        # If this is a rerun, reload the random state
+        if self.parameters.rerun_folder is not None:
+            state = pickle.load(open(f'{self.parameters.rerun_folder}/random_states/{self.group_name}_{self.replication}.state', 'rb'))
+            np.random.set_state(state)
+        else:
+            state = np.random.get_state()
+            pickle.dump(np.random.get_state(), open(f'{self.parameters.output_folder}/random_states/{self.group_name}_{self.replication}.state', 'wb'))
+
 
         # Initiate output class
         self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag, mm_detail_flag=self.parameters.mm_detail_flag, record_tv_cd4=self.parameters.record_tv_cd4)
