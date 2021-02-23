@@ -20,10 +20,17 @@ DEAD_ART_NONUSER = 9
 # Smearing correction
 SMEARING = 1.4
 
+# Comorbidity stages
 STAGE0 = ['hcv', 'smoking']
 STAGE1 = ['anx', 'dpr']
 STAGE2 = ['ckd', 'lipid', 'dm', 'ht']
 STAGE3 = ['malig', 'esld', 'mi']
+
+AGES = np.arange(18, 87)
+AGE_CATS = np.arange(2, 8)
+SIMULATION_YEARS = np.arange(2010, 2031)
+ALL_YEARS = np.arange(2000, 2031)
+
 
 
 ###############################################################################
@@ -339,7 +346,7 @@ def simulate_new_dx(new_dx_param, linkage_to_care):
     n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
 
     # Compile list of number of new agents to be introduced in the model
-    new_agents = new_dx.loc[np.arange(2010, 2031), ['art_users', 'art_nonusers']]
+    new_agents = new_dx.loc[SIMULATION_YEARS, ['art_users', 'art_nonusers']]
     new_agents['total'] = new_agents['art_users'] + new_agents['art_nonusers']
 
     return n_initial_nonusers, new_agents
@@ -737,18 +744,11 @@ class Statistics:
                 self.mm_detail_inits = pd.concat([out.mm_detail_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_dead = pd.concat([out.mm_detail_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
-
-
     def save(self, output_folder):
         for name, df in self.__dict__.items():
             if isinstance(df, pd.DataFrame):
                 df.to_csv(f'{output_folder}/{name}.csv', index=False)
 
-
-def output_reindex(df):
-    """ Helper function for reindexing output tables """
-    return df.reindex(pd.MultiIndex.from_product([df.index.levels[0], np.arange(2.0, 8.0)], names=['year', 'age_cat']),
-                      fill_value=0)
 
 
 ###############################################################################
@@ -941,13 +941,13 @@ class Pearl:
             new = rand & (in_care | out_care) & ~old
 
             incidence_in_care = (self.population.loc[new & in_care].groupby(['age_cat']).size()
-                                 .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                 .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                  .assign(year=self.year, replication=self.replication,
                                          group=self.group_name, condition=condition))
             self.stats.incidence_in_care = self.stats.incidence_in_care.append(incidence_in_care)
 
             incidence_out_care = (self.population.loc[new & out_care].groupby(['age_cat']).size()
-                                  .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                  .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                   .assign(year=self.year, replication=self.replication,
                                           group=self.group_name, condition=condition))
             self.stats.incidence_out_care = self.stats.incidence_out_care.append(incidence_out_care)
@@ -969,13 +969,13 @@ class Pearl:
             new = rand & (in_care | out_care) & ~old
 
             incidence_in_care = (self.population.loc[new & in_care].groupby(['age_cat']).size()
-                                 .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                 .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                  .assign(year=self.year, replication=self.replication,
                                          group=self.group_name, condition=condition))
             self.stats.incidence_in_care = self.stats.incidence_in_care.append(incidence_in_care)
 
             incidence_out_care = (self.population.loc[new & out_care].groupby(['age_cat']).size()
-                                  .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                  .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                   .assign(year=self.year, replication=self.replication,
                                           group=self.group_name, condition=condition))
             self.stats.incidence_out_care = self.stats.incidence_out_care.append(incidence_out_care)
@@ -999,49 +999,49 @@ class Pearl:
 
         # Count of those in care by age_cat and year
         in_care_count = (self.population.loc[in_care].groupby(['age_cat']).size()
-                         .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                         .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_count = self.stats.in_care_count.append(in_care_count)
 
         # Count of those out of care by age_cat and year
         out_care_count = (self.population.loc[out_care].groupby(['age_cat']).size()
-                          .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                          .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                           .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_count = self.stats.out_care_count.append(out_care_count)
 
         # Count of those reengaging in care by age_cat and year
         reengaged_count = (self.population.loc[reengaged].groupby(['age_cat']).size()
-                           .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                           .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                            .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.reengaged_count = self.stats.reengaged_count.append(reengaged_count)
 
         # Count of those lost to care by age_cat and year
         ltfu_count = (self.population.loc[ltfu].groupby(['age_cat']).size()
-                      .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                      .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                       .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.ltfu_count = self.stats.ltfu_count.append(ltfu_count)
 
         # Count of those in care by age and year
         in_care_age = (self.population.loc[in_care].groupby(['age']).size()
-                       .reindex(index=np.arange(18, 87), fill_value=0).reset_index(name='n')
+                       .reindex(index=AGES, fill_value=0).reset_index(name='n')
                        .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.in_care_age = self.stats.in_care_age.append(in_care_age)
 
         # Count of those in care by age and year
         out_care_age = (self.population.loc[out_care].groupby(['age']).size()
-                        .reindex(index=np.arange(18, 87), fill_value=0).reset_index(name='n')
+                        .reindex(index=AGES, fill_value=0).reset_index(name='n')
                         .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.out_care_age = self.stats.out_care_age.append(out_care_age)
 
         # Count of those reengaging in care by age and year
         reengaged_age = (self.population.loc[reengaged].groupby(['age']).size()
-                         .reindex(index=np.arange(18, 87), fill_value=0).reset_index(name='n')
+                         .reindex(index=AGES, fill_value=0).reset_index(name='n')
                          .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.reengaged_age = self.stats.reengaged_age.append(reengaged_age)
 
         # Count of those lost to care by age and year
         ltfu_age = (self.population.loc[ltfu].groupby(['age']).size()
-                    .reindex(index=np.arange(18, 87), fill_value=0).reset_index(name='n')
+                    .reindex(index=AGES, fill_value=0).reset_index(name='n')
                     .assign(year=self.year, replication=self.replication, group=self.group_name))
         self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
@@ -1070,42 +1070,42 @@ class Pearl:
                 has_condition = self.population[condition] == 1
 
                 prevalence_in_care = (self.population.loc[in_care & has_condition].groupby(['age_cat']).size()
-                                      .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                      .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                       .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
                 self.stats.prevalence_in_care = self.stats.prevalence_in_care.append(prevalence_in_care)
 
                 prevalence_out_care = (self.population.loc[out_care & has_condition].groupby(['age_cat']).size()
-                                       .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                       .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                        .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
                 self.stats.prevalence_out_care = self.stats.prevalence_out_care.append(prevalence_out_care)
 
                 prevalence_inits = (self.population.loc[initiating & has_condition].groupby(['age_cat']).size()
-                                    .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                    .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                     .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
                 self.stats.prevalence_inits = self.stats.prevalence_inits.append(prevalence_inits)
 
                 prevalence_dead = (self.population.loc[dying & has_condition].groupby(['age_cat']).size()
-                                   .reindex(index=np.arange(2.0, 8.0), fill_value=0).reset_index(name='n')
+                                   .reindex(index=AGE_CATS, fill_value=0).reset_index(name='n')
                                    .assign(year=self.year, replication=self.replication, group=self.group_name, condition=condition))
                 self.stats.prevalence_dead = self.stats.prevalence_dead.append(prevalence_dead)
 
             mm_in_care = (self.population.loc[in_care].groupby(['age_cat', 'mm']).size()
-                          .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                          .reindex(index=pd.MultiIndex.from_product([AGE_CATS, np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
                           .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_in_care = self.stats.mm_in_care.append(mm_in_care)
 
             mm_out_care = (self.population.loc[out_care].groupby(['age_cat', 'mm']).size()
-                           .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                           .reindex(index=pd.MultiIndex.from_product([AGE_CATS, np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
                            .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_out_care = self.stats.mm_out_care.append(mm_out_care)
 
             mm_inits = (self.population.loc[initiating].groupby(['age_cat', 'mm']).size()
-                        .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                        .reindex(index=pd.MultiIndex.from_product([AGE_CATS, np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
                         .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_inits = self.stats.mm_inits.append(mm_inits)
 
             mm_dead = (self.population.loc[dying].groupby(['age_cat', 'mm']).size()
-                       .reindex(index=pd.MultiIndex.from_product([np.arange(2.0, 8.0), np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
+                       .reindex(index=pd.MultiIndex.from_product([AGE_CATS, np.arange(0, 8)], names=['age_cat', 'mm']), fill_value=0)
                        .reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name))
             self.stats.mm_dead = self.stats.mm_dead.append(mm_dead)
 
@@ -1129,47 +1129,49 @@ class Pearl:
     def record_final_stats(self):
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
+        new_inits = self.population['h1yy'] >= 2010
 
         # Count of new initiators by year
-        self.stats.new_init_count = self.population.groupby(['h1yy']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name).rename(columns={'h1yy': 'year'})
+        self.stats.new_init_count = self.population.loc[new_inits].groupby(['h1yy']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name).rename(columns={'h1yy': 'year'})
 
         # Count of new initiators by year and age
-        self.stats.new_init_age = self.population.groupby(['h1yy', 'init_age']).size().reset_index(name='n').assign(replication=self.replication, group=self.group_name)\
-            .rename(columns={'h1yy': 'year', 'init_age': 'age'})
+        new_init_age = self.population.loc[new_inits].groupby(['h1yy', 'init_age']).size()
+        new_init_age = new_init_age.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, AGES], names=['year', 'age']), fill_value=0)
+        self.stats.new_init_age = new_init_age.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
         # Record initial CD4 Counts
         initial_cd4n = self.population[['init_sqrtcd4n', 'h1yy']].copy()
         initial_cd4n['init_sqrtcd4n'] = initial_cd4n['init_sqrtcd4n'].astype(int)
         initial_cd4n = initial_cd4n.groupby(['h1yy', 'init_sqrtcd4n']).size()
-        initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([np.arange(2000, 2030), np.arange(51)], names=['h1yy', 'init_sqrtcd4n']), fill_value=0).reset_index(name='n')
+        initial_cd4n = initial_cd4n.reindex(pd.MultiIndex.from_product([ALL_YEARS, np.arange(51)], names=['h1yy', 'init_sqrtcd4n']), fill_value=0).reset_index(name='n')
         self.stats.initial_cd4n = initial_cd4n.assign(group=self.group_name, replication=self.replication).rename(columns={'h1yy': 'year'})
 
         # Count how many times people left and tally them up
-        self.stats.n_times_lost = (pd.DataFrame(self.population['n_lost'].value_counts()).reset_index()
-                                   .rename(columns={'n_lost': 'n', 'index': 'n_times_lost'}))
-        self.stats.n_times_lost = (self.stats.n_times_lost.assign(
-            pct=100.0 * self.stats.n_times_lost['n'] / self.stats.n_times_lost['n'].sum())
-                                   .assign(replication=self.replication, group=self.group_name))
+        n_times_lost = pd.DataFrame(self.population['n_lost'].value_counts()).reset_index().rename(columns={'n_lost': 'n', 'index': 'n_times_lost'})
+        self.stats.n_times_lost = n_times_lost.assign(replication=self.replication, group=self.group_name)
 
         # Count of those that died in care by age_cat and year
-        self.stats.dead_in_care_count = (output_reindex(self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size())
-                                         .reset_index(name='n').rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+        dead_in_care_count = self.population.loc[dead_in_care].groupby(['year_died', 'age_cat']).size()
+        dead_in_care_count = dead_in_care_count.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, AGE_CATS], names=['year', 'age_cat']), fill_value=0)
+        self.stats.dead_in_care_count = dead_in_care_count.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
-        # Count of those that died in care by age_cat and year
-        self.stats.dead_out_care_count = (output_reindex(self.population.loc[dead_out_care].groupby(['year_died', 'age_cat']).size())
-                                          .reset_index(name='n').rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+        # Count of those that died out care by age_cat and year
+        dead_out_care_count = self.population.loc[dead_out_care].groupby(['year_died', 'age_cat']).size()
+        dead_out_care_count = dead_out_care_count.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, AGE_CATS], names=['year', 'age_cat']), fill_value=0)
+        self.stats.dead_out_care_count = dead_out_care_count.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
         # Count of those that died in care by age and year
-        self.stats.dead_in_care_age = (self.population.loc[dead_in_care].groupby(['year_died', 'age']).size().reset_index(name='n')
-                                       .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+        dead_in_care_age = self.population.loc[dead_in_care].groupby(['year_died', 'age']).size()
+        dead_in_care_age = dead_in_care_age.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, AGES], names=['year', 'age']), fill_value=0)
+        self.stats.dead_in_care_age = dead_in_care_age.reset_index(name='n').rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name)
 
         # Count of those that died out of care by age and year
-        self.stats.dead_out_care_age = (self.population.loc[dead_out_care].groupby(['year_died', 'age']).size().reset_index(name='n')
-                                        .rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name))
+        dead_out_care_age = self.population.loc[dead_out_care].groupby(['year_died', 'age']).size()
+        dead_out_care_age = dead_out_care_age.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, AGES], names=['year', 'age']), fill_value=0)
+        self.stats.dead_out_care_age = dead_out_care_age.reset_index(name='n').rename(columns={'year_died': 'year'}).assign(replication=self.replication, group=self.group_name)
 
         # Number of unique people out of care 2010-2015
         self.stats.n_unique_out_care = pd.DataFrame({'count': [len(self.stats.unique_out_care_ids)]}).assign(replication=self.replication, group=self.group_name)
-
 
     def run(self):
         """ Simulate from 2010 to 2030 """
