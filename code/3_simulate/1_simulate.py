@@ -75,10 +75,10 @@ else:
     config_yaml['python_version'] = platform.python_version()
     config_yaml['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
-
 # Create Output folder structure
 if os.path.isdir(output_folder):
-    raise FileExistsError("Output folder already exists")
+    if config_file.stem != 'test':
+        raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
     os.makedirs(f'{output_folder}/random_states')

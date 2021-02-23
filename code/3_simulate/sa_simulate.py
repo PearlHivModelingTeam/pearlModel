@@ -77,7 +77,8 @@ else:
 
 # Create Output folder structure
 if os.path.isdir(output_folder):
-    raise FileExistsError("Output folder already exists")
+    if config_file.stem != 'test_sa':
+        raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
     for key in sa_dict:
