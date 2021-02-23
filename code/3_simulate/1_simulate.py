@@ -39,7 +39,8 @@ if args.config:
     output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
 elif args.rerun:
     rerun_folder = Path(f'{pearl_dir}/out/{args.rerun}')
-    config_file = Path(f'{rerun_folder}/config.yaml') output_folder = Path(f'{pearl_dir}/out/{args.rerun}_rerun_{date_string}/')
+    config_file = Path(f'{rerun_folder}/config.yaml')
+    output_folder = Path(f'{pearl_dir}/out/{args.rerun}_rerun_{date_string}/')
 else:
     config_file = Path('config/test.yaml')
     output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
