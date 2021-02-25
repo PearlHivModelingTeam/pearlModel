@@ -36,14 +36,14 @@ with open(f'{pearl_dir}/requirements.txt', 'r') as requirements:
 rerun_folder = None
 if args.config:
     config_file = Path(f'config/{args.config}')
-    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
+    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_sa_{date_string}/')
 elif args.rerun:
     rerun_folder = Path(f'{pearl_dir}/out/{args.rerun}')
     config_file = Path(f'{rerun_folder}/config.yaml')
     output_folder = Path(f'{pearl_dir}/out/{args.rerun}_rerun_{date_string}/')
 else:
-    config_file = Path('config/test_sa.yaml')
-    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
+    config_file = Path('config/test.yaml')
+    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_sa_{date_string}/')
 
 # Load config_file
 with open(config_file, 'r') as yaml_file:
@@ -76,7 +76,7 @@ else:
 
 # Create Output folder structure
 if os.path.isdir(output_folder):
-    if config_file.stem != 'test_sa':
+    if config_file.stem != 'test':
         raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
