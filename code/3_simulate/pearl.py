@@ -425,10 +425,6 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name, replication):
     non_user = np.random.choice(a=len(population.index), size=n_initial_nonusers, replace=False)
     years_out_of_care = np.random.choice(a=parameters.years_out_of_care['years'], size=n_initial_nonusers, p=parameters.years_out_of_care['probability'])
 
-    dock_mod = parameters.dock_mods.loc[(replication, 'reengagement')].values[0]
-    if dock_mod is not None:
-        years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
-
     population.loc[non_user, 'status'] = ART_NONUSER
     population.loc[non_user, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
     population.loc[non_user, 'ltfu_year'] = 2009
@@ -483,9 +479,6 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
 
     delayed = population['status'] == DELAYED
     years_out_of_care =  np.random.choice(a=parameters.years_out_of_care['years'], size=len(population.loc[delayed]), p=parameters.years_out_of_care['probability'])
-    dock_mod = parameters.dock_mods.loc[(replication, 'reengagement')].values[0]
-    if dock_mod is not None:
-        years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
 
     population.loc[delayed, 'h1yy'] = population.loc[delayed, 'h1yy'] + years_out_of_care
     population.loc[delayed, 'status'] = ART_NAIVE
@@ -564,7 +557,7 @@ def create_mm_detail_stats(pop):
 
 class Parameters:
     def __init__(self, path, rerun_folder, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
-                 output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False, dock_mods=None):
+                 output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False):
         self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
@@ -685,13 +678,6 @@ class Parameters:
         self.mortality_out_care_co = pd.read_hdf(path, 'mortality_out_care_co').loc[group_name]
         self.mortality_out_care_delta_bmi = pd.read_hdf(path, 'mortality_out_care_delta_bmi').loc[group_name]
         self.mortality_out_care_post_art_bmi = pd.read_hdf(path, 'mortality_out_care_post_art_bmi').loc[group_name]
-
-        # Docking modification numbers
-        if dock_mods is not None:
-            self.dock_mods = dock_mods
-        else:
-            self.dock_mods = pd.DataFrame(index=pd.MultiIndex.from_product([replications, ['disengagement', 'reengagement', 'mortality_in_care', 'mortality_out_care']],
-                                                                           names=['replication', 'index']), columns=['value'], data=len(replications)*4*[None])
 
 
 class Statistics:
@@ -870,9 +856,6 @@ class Pearl:
         lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
         n_lost = len(self.population.loc[lost])
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_lost, p=self.parameters.years_out_of_care['probability'])
-        dock_mod = self.parameters.dock_mods.loc[(self.replication, 'reengagement')].values[0]
-        if dock_mod is not None:
-            years_out_of_care = np.round(years_out_of_care * dock_mod).astype(int)
 
         self.population.loc[lost, 'return_year'] = self.year + years_out_of_care
         self.population.loc[lost, 'status'] = LTFU
