@@ -5,7 +5,6 @@ comorbidity_flag: 1
 mm_detail_flag: 1
 smoking_intervention: 0
 new_dx: 'base'
-record_tv_cd4: True
 verbose: True
 sa_dict: {'lambda1':               null,
           'mu1':                   null,
