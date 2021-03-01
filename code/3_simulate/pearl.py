@@ -456,13 +456,13 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
 
     # Draw a random value between predicted and 2018 predicted value for years greater than 2018
     rand = np.random.rand(len(parameters.age_by_h1yy.index))
-    parameters.age_by_h1yy['estimate'] = rand * (
-            parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value']) + parameters.age_by_h1yy['low_value']
-
-    stats_new_pop.art_coeffs = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication).reset_index()
+    parameters.age_by_h1yy['estimate'] = (rand * (parameters.age_by_h1yy['high_value'] - parameters.age_by_h1yy['low_value'])) + parameters.age_by_h1yy['low_value']
+    stats_new_pop.art_coeffs = parameters.age_by_h1yy[['estimate']].assign(group=group_name, replication=replication, variable='age').reset_index()
 
     rand = np.random.rand(len(parameters.cd4n_by_h1yy.index))
     parameters.cd4n_by_h1yy['estimate'] = (rand * (parameters.cd4n_by_h1yy['high_value'] - parameters.cd4n_by_h1yy['low_value'])) + parameters.cd4n_by_h1yy['low_value']
+    art_coeffs_cd4 = parameters.cd4n_by_h1yy[['estimate']].assign(group=group_name, replication=replication, variable='cd4').reset_index()
+    stats_new_pop.art_coeffs = pd.concat([stats_new_pop.art_coeffs, art_coeffs_cd4])
 
     # Create population
     population = pd.DataFrame()
