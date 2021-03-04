@@ -8,6 +8,7 @@ suppressMessages(library(mixtools))
 pearl_dir <- Sys.getenv("PEARL_DIR")
 input_dir <- filePath(pearl_dir, '/param/raw')
 intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+validation_dir <- filePath(pearl_dir, '/param/validation')
 param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
@@ -95,7 +96,7 @@ test <- test %>%
   mutate(ini1 = pmap(list(naaccord, group), get_age_by_h1yy))
 
 test1 <- unnest(test, ini1) %>% select(-'naaccord')
-#write_csv(test1, filePath(param_dir, 'age_by_h1yy_raw.csv'))
+write_csv(test1, filePath(validation_dir, 'age_by_h1yy_raw.csv'))
 
 age_by_h1yy <- test %>%
   mutate(age_by_h1yy = map(ini1, fit_glm_to_age_by_h1yy)) %>%
