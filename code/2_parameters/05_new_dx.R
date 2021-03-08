@@ -8,6 +8,7 @@ suppressMessages(library(lubridate))
 pearl_dir <- Sys.getenv("PEARL_DIR")
 input_dir <- filePath(pearl_dir, '/param/raw')
 intermediate_dir <- filePath(pearl_dir, '/param/intermediate')
+validation_dir <- filePath(pearl_dir, '/param/validation')
 param_dir <- filePath(pearl_dir, '/param/param')
 
 group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_white_female',
@@ -220,6 +221,5 @@ new_dx_interval <- predict_new_dx(new_dx)
 new_dx_model <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
 new_dx_interval <- combine_models(new_dx_interval)
 
-#write_csv(new_dx, filePath(param_dir, 'new_dx.csv'))
-#write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
+write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
 write_csv(new_dx_interval, filePath(param_dir, 'new_dx_interval.csv'))
