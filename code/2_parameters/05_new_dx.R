@@ -221,5 +221,5 @@ new_dx_interval <- predict_new_dx(new_dx)
 new_dx_model <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
 new_dx_interval <- combine_models(new_dx_interval)
 
-write_csv(new_dx_model, filePath(param_dir, 'new_dx_model.csv'))
+write_csv(new_dx_model, filePath(validation_dir, 'new_dx_model.csv'))
 write_csv(new_dx_interval, filePath(param_dir, 'new_dx_interval.csv'))
