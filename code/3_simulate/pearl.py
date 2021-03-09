@@ -1082,10 +1082,10 @@ class Pearl:
         self.stats.dead_out_care_age = dead_out_care_age.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
         # Count of discretized cd4 count at ART initiation
-        cd4_inits = self.population[new_inits][['init_sqrtcd4n', 'h1yy']].copy()
+        cd4_inits = self.population[['init_sqrtcd4n', 'h1yy']].copy()
         cd4_inits['cd4_count'] = (cd4_inits['init_sqrtcd4n'] ** 2).round(0).astype(int)
         cd4_inits = cd4_inits.groupby(['h1yy', 'cd4_count']).size()
-        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, np.arange(2501)], names=['year', 'cd4_count']), fill_value=0)
+        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([ALL_YEARS, np.arange(2501)], names=['year', 'cd4_count']), fill_value=0)
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
     def run(self):
