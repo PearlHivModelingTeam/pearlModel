@@ -259,7 +259,13 @@ def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy, initial_pop=False):
     return pre_art_bmi
 
 
-def calculate_post_art_bmi(pop, coeffs, t_age, t_pre_sqrt, t_sqrtcd4, initial_pop=False):
+def calculate_post_art_bmi(pop, parameters, initial_pop=False):
+    coeffs = parameters.post_art_bmi
+    t_age = parameters.post_art_bmi_age_knots
+    t_pre_sqrt = parameters.post_art_bmi_pre_art_bmi_knots
+    t_sqrtcd4 = parameters.post_art_bmi_cd4_knots
+    t_sqrtcd4_post = parameters.post_art_bmi_cd4_post_knots
+
     if initial_pop:
         pop['age_init'] = (pop['age'] - pop['year'] + pop['h1yy'])
     else:
@@ -273,7 +279,18 @@ def calculate_post_art_bmi(pop, coeffs, t_age, t_pre_sqrt, t_sqrtcd4, initial_po
     pop['sqrtcd4'] = pop['init_sqrtcd4n']
     pop['sqrtcd4_'] = restricted_cubic_spline_var(pop['sqrtcd4'], t_sqrtcd4, 1)
     pop['sqrtcd4__'] = restricted_cubic_spline_var(pop['sqrtcd4'], t_sqrtcd4, 2)
-    pop_matrix = pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'pre_sqrt', 'pre_sqrt_', 'pre_sqrt_', 'sqrtcd4', 'sqrtcd4_', 'sqrtcd4__']].to_numpy(dtype=float)
+
+    pop_future = pop.copy().assign(age=pop['age_init'] + 2)
+    post_art_year = pop['h1yy'] + 2
+    pop_future['age_cat'] = np.floor(pop_future['age'] / 10)
+    pop_future.loc[pop_future['age_cat'] < 2, 'age_cat'] = 2
+    pop_future.loc[pop_future['age_cat'] > 7, 'age_cat'] = 7
+    pop['sqrtcd4_post'] = calculate_cd4_increase(pop_future, parameters.cd4_increase_knots, post_art_year, parameters.cd4_increase.to_numpy(dtype=float),
+                                                 parameters.cd4_increase_vcov.to_numpy(dtype=float), parameters.cd4_increase_sa)
+    pop['sqrtcd4_post_'] = restricted_cubic_spline_var(pop['sqrtcd4_post'], t_sqrtcd4_post, 1)
+    pop['sqrtcd4_post__'] = restricted_cubic_spline_var(pop['sqrtcd4_post'], t_sqrtcd4_post, 2)
+    pop_matrix = pop[['age_init', 'age_', 'age__', 'h1yy', 'intercept', 'pre_sqrt', 'pre_sqrt_', 'pre_sqrt_', 'sqrtcd4',
+                      'sqrtcd4_', 'sqrtcd4__', 'sqrtcd4_post', 'sqrtcd4_post_', 'sqrtcd4_post__']].to_numpy(dtype=float)
     sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
     post_art_bmi = sqrt_post_art_bmi ** 2.0
 
@@ -435,8 +452,7 @@ def make_pop_2009(parameters, n_initial_nonusers, group_name, replication):
         # Bmi
         population['pre_art_bmi'] = calculate_pre_art_bmi(population, parameters.pre_art_bmi_model, parameters.pre_art_bmi,
                                                           parameters.pre_art_bmi_age_knots, parameters.pre_art_bmi_h1yy_knots, True)
-        population['post_art_bmi'] = calculate_post_art_bmi(population, parameters.post_art_bmi, parameters.post_art_bmi_age_knots,
-                                                            parameters.post_art_bmi_pre_art_bmi_knots, parameters.post_art_bmi_cd4_knots, True)
+        population['post_art_bmi'] = calculate_post_art_bmi(population, parameters, True)
         population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
         # Apply comorbidities
@@ -522,8 +538,7 @@ def make_new_population(parameters, n_new_agents, pop_size_2009, group_name, rep
 
     if parameters.comorbidity_flag:
         population['pre_art_bmi'] = calculate_pre_art_bmi(population, parameters.pre_art_bmi_model, parameters.pre_art_bmi, parameters.pre_art_bmi_age_knots, parameters.pre_art_bmi_h1yy_knots)
-        population['post_art_bmi'] = calculate_post_art_bmi(population, parameters.post_art_bmi, parameters.post_art_bmi_age_knots,
-                                                            parameters.post_art_bmi_pre_art_bmi_knots, parameters.post_art_bmi_cd4_knots)
+        population['post_art_bmi'] = calculate_post_art_bmi(population, parameters)
         population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
         # Apply comorbidities
@@ -663,6 +678,7 @@ class Parameters:
         self.post_art_bmi_age_knots = pd.read_hdf(path, 'post_art_bmi_age_knots').loc[group_name]
         self.post_art_bmi_pre_art_bmi_knots = pd.read_hdf(path, 'post_art_bmi_pre_art_bmi_knots').loc[group_name]
         self.post_art_bmi_cd4_knots = pd.read_hdf(path, 'post_art_bmi_cd4_knots').loc[group_name]
+        self.post_art_bmi_cd4_post_knots = pd.read_hdf(path, 'post_art_bmi_cd4_post_knots').loc[group_name]
 
         # Comorbidities
         self.prev_users_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_users').loc[group_name] for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}

@@ -182,6 +182,7 @@ post_art_bmi = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi.csv').set_index([
 post_art_bmi_age_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_age_knots.csv').set_index(['group'])
 post_art_bmi_pre_art_bmi_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_pre_art_bmi_knots.csv').set_index(['group'])
 post_art_bmi_cd4_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_cd4_knots.csv').set_index(['group'])
+post_art_bmi_cd4_post_knots = pd.read_csv(f'{param_dir}/aim2/bmi/post_art_bmi_cd4_post_knots.csv').set_index(['group'])
 
 # Stage 0 comorbidities
 hcv_prev_users = pd.read_csv(f'{param_dir}/aim2/stage0/hcv_prev_users.csv').set_index('group')
@@ -294,6 +295,7 @@ with pd.HDFStore(out_file) as store:
     store['post_art_bmi_age_knots'] = post_art_bmi_age_knots
     store['post_art_bmi_pre_art_bmi_knots'] = post_art_bmi_pre_art_bmi_knots
     store['post_art_bmi_cd4_knots'] = post_art_bmi_cd4_knots
+    store['post_art_bmi_cd4_post_knots'] = post_art_bmi_cd4_post_knots
 
     # Stage 0 comorbidities
     store['hcv_prev_users'] = hcv_prev_users
