@@ -95,6 +95,7 @@ df['group'] = df['pop'] + '_' + df['sex']
 del df['pop'], df['sex']
 df.loc[df['parameter'] == 'sqrt(pre-ART BMI)', 'parameter'] = 'pre_sqrt'
 df.loc[df['parameter'] == 'sqrt(CD4) at ART initiation', 'parameter'] = 'sqrtcd4'
+df.loc[df['parameter'] == 'sqrt(CD4) 1-2 years after ART initiation', 'parameter'] = 'sqrtcd4_post'
 df = df.set_index(['parameter', 'group', 'knotnum']).sort_index()
 
 # age
@@ -111,3 +112,8 @@ df1.to_csv(f'{out_dir}/post_art_bmi_pre_art_bmi_knots.csv', index=False)
 df1 = df.loc['sqrtcd4'].reset_index().pivot_table(index='group', columns='knotnum', values='knotvalue').reset_index()
 df1.columns = df1.columns.astype(str)
 df1.to_csv(f'{out_dir}/post_art_bmi_cd4_knots.csv', index=False)
+
+# sqrtcd4_post
+df1 = df.loc['sqrtcd4_post'].reset_index().pivot_table(index='group', columns='knotnum', values='knotvalue').reset_index()
+df1.columns = df1.columns.astype(str)
+df1.to_csv(f'{out_dir}/post_art_bmi_cd4_post_knots.csv', index=False)
