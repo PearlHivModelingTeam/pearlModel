@@ -154,7 +154,7 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
             pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
             pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
-            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'year']].to_numpy(dtype=float)
+            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'sqrtcd4n', 'year']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
             pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
@@ -857,6 +857,7 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
+        print(self.parameters.mortality_in_care)
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
         pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True, self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
