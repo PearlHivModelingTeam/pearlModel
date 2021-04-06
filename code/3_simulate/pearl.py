@@ -139,26 +139,36 @@ def calculate_cd4_decrease(pop, coeffs, sa, vcov):
     return new_cd4
 
 
-def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, delta_bmi_knots=pd.DataFrame(),
-                                post_art_bmi_knots=pd.DataFrame()):
-    if comorbidity_flag:
-        pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], delta_bmi_knots, 1)
-        pop['delta_bmi__'] = restricted_cubic_spline_var(pop['delta_bmi'], delta_bmi_knots, 2)
-        pop['post_art_bmi_'] = restricted_cubic_spline_var(pop['post_art_bmi'], post_art_bmi_knots, 1)
-        pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], post_art_bmi_knots, 2)
+def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters):
 
     if in_care_flag:
         if comorbidity_flag:
+            pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_in_care_delta_bmi, 1)
+            pop['delta_bmi__'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_in_care_delta_bmi, 2)
+            pop['post_art_bmi_'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_in_care_post_art_bmi, 1)
+            pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_in_care_post_art_bmi, 2)
             return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
                         'dm', 'dpr', 'esld', 'h1yy', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
         else:
-            return pop[['intercept', 'year', 'age_cat', 'init_sqrtcd4n', 'h1yy']].to_numpy(dtype=float)
+            pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 1)
+            pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
+            pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
+            pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
+            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'year']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
+            pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
+            pop['delta_bmi__'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 2)
+            pop['post_art_bmi_'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_out_care_post_art_bmi, 1)
+            pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_out_care_post_art_bmi, 2)
             return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
                         'dm', 'dpr', 'esld', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'time_varying_sqrtcd4n', 'year']].to_numpy(dtype=float)
         else:
-            return pop[['intercept', 'year', 'age_cat', 'time_varying_sqrtcd4n']].to_numpy(dtype=float)
+            pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 1)
+            pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 2)
+            pop['time_varying_sqrtcd4n_'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 1)
+            pop['time_varying_sqrtcd4n__'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 2)
+            return pop[['age', 'age_', 'age__', 'intercept', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__', 'year']].to_numpy(dtype=float)
 
 
 def create_comorbidity_pop_matrix(pop, condition, delta_bmi_knots=pd.DataFrame(), post_art_bmi_knots=pd.DataFrame()):
@@ -642,12 +652,18 @@ class Parameters:
 
         # Mortality In Care
         self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
-        self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
+        self.mortality_in_care_age = pd.read_hdf(path, 'mortality_in_care_age').loc[group_name]
+        self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, 'mortality_in_care_sqrtcd4').loc[group_name]
+        #self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
+        self.mortality_in_care_vcov = pd.DataFrame()
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
 
         # Mortality Out Of Care
         self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
-        self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
+        self.mortality_out_care_age = pd.read_hdf(path, 'mortality_out_care_age').loc[group_name]
+        self.mortality_out_care_tv_sqrtcd4 = pd.read_hdf(path, 'mortality_out_care_tv_sqrtcd4').loc[group_name]
+        #self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
+        self.mortality_out_care_vcov = pd.DataFrame()
         self.mortality_out_care_sa = sa_dict['mortality_out_care']
 
         # Loss To Follow Up
@@ -842,9 +858,7 @@ class Pearl:
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
-        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True,
-                                                 self.parameters.mortality_in_care_delta_bmi,
-                                                 self.parameters.mortality_in_care_post_art_bmi)
+        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True, self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
@@ -854,9 +868,7 @@ class Pearl:
     def kill_out_care(self):
         out_care = self.population['status'] == ART_NONUSER
         coeff_matrix = self.parameters.mortality_out_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_out_care.to_numpy(dtype=float)
-        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, False,
-                                                 self.parameters.mortality_out_care_delta_bmi,
-                                                 self.parameters.mortality_out_care_post_art_bmi)
+        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, False, self.parameters)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
