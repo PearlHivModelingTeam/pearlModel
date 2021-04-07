@@ -154,7 +154,8 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
             pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
             pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
-            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
+            pop['year_'] = pop['year'] if pop['year'].iloc[0] <= 2018 else 2018
+            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year_']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
             pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
@@ -168,7 +169,9 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 2)
             pop['time_varying_sqrtcd4n_'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 1)
             pop['time_varying_sqrtcd4n__'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 2)
-            return pop[['age', 'age_', 'age__', 'intercept', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__', 'year']].to_numpy(dtype=float)
+            pop['year_'] = pop['year'] if pop['year'].iloc[0] <= 2018 else 2018
+            print(pop['year_'])
+            return pop[['age', 'age_', 'age__', 'intercept', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__', 'year_']].to_numpy(dtype=float)
 
 
 def create_comorbidity_pop_matrix(pop, condition, delta_bmi_knots=pd.DataFrame(), post_art_bmi_knots=pd.DataFrame()):
