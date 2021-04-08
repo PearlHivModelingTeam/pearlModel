@@ -103,12 +103,14 @@ for group in group_names:
     mu['high_value'] = mu['low_value']
     mu_2018 = mu.loc[mu['h1yy']==2018, 'high_value'].to_numpy()[0]
     mu.loc[mu['h1yy'] >=2018, 'low_value'] = mu_2018
+    mu.loc[mu['h1yy'] >=2018, 'high_value'] = mu_2018
     mu = mu.set_index('h1yy')
 
     sigma = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'stdint'] + cd4n_by_h1yy.loc[group, 'stdslp'] * years})
     sigma['high_value'] = sigma['low_value']
     sigma_2018 = sigma.loc[sigma['h1yy']==2018, 'high_value'].to_numpy()[0]
     sigma.loc[sigma['h1yy'] >=2018, 'low_value'] = sigma_2018
+    sigma.loc[sigma['h1yy'] >=2018, 'high_value'] = sigma_2018
     sigma = sigma.set_index('h1yy')
 
     df.loc[(group, 'mu'), 'low_value'] = mu['low_value'].to_numpy()
@@ -129,8 +131,6 @@ cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
 mortality_in_care_age = pd.read_csv(f'{param_dir}/mortality_in_care_age.csv').set_index('group')
 mortality_in_care_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_in_care_sqrtcd4.csv').set_index('group')
-print(mortality_in_care_age)
-print(mortality_in_care_sqrtcd4)
 #mortality_in_care_vcov = pd.read_csv(f'{param_dir}/mortality_in_care_vcov.csv')
 #mortality_in_care_vcov.columns = cols
 #mortality_in_care_vcov['covariate'] = 15*(cols[1:])
@@ -143,8 +143,6 @@ cols = mortality_out_care.columns.tolist()
 mortality_out_care = mortality_out_care.set_index('group')
 mortality_out_care_age = pd.read_csv(f'{param_dir}/mortality_out_care_age.csv').set_index('group')
 mortality_out_care_tv_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_out_care_tv_sqrtcd4.csv').set_index('group')
-print(mortality_out_care_age)
-print(mortality_out_care_tv_sqrtcd4)
 #mortality_out_care_vcov = pd.read_csv(f'{param_dir}/mortality_out_care_vcov.csv')
 #mortality_out_care_vcov.columns = cols
 #mortality_out_care_vcov['covariate'] = 15*(cols[1:])
