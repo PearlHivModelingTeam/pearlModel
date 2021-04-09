@@ -1,4 +1,4 @@
-# Imports
+﻿# Imports
 import os
 import pickle
 import numpy as np
@@ -150,12 +150,15 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
                         'dm', 'dpr', 'esld', 'h1yy', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
         else:
+            pop['years_art'] = pop['year'] - pop['h1yy']
+            pop['years_art_'] = restricted_cubic_spline_var(pop['years_art'], parameters.mortality_in_care_years_art, 1)
+            pop['years_art__'] = restricted_cubic_spline_var(pop['years_art'], parameters.mortality_in_care_years_art, 2)
             pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 1)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
             pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
             pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
             pop['year_'] = pop['year'] if pop['year'].iloc[0] <= 2018 else 2018
-            return pop[['age', 'age_', 'age__', 'h1yy', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year_']].to_numpy(dtype=float)
+            return pop[['age', 'age_', 'age__', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'years_art', 'years_art_', 'years_art__', 'year_']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
             pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
@@ -170,7 +173,6 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             pop['time_varying_sqrtcd4n_'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 1)
             pop['time_varying_sqrtcd4n__'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 2)
             pop['year_'] = pop['year'] if pop['year'].iloc[0] <= 2018 else 2018
-            print(pop['year_'])
             return pop[['age', 'age_', 'age__', 'intercept', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__', 'year_']].to_numpy(dtype=float)
 
 
@@ -657,6 +659,7 @@ class Parameters:
         self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
         self.mortality_in_care_age = pd.read_hdf(path, 'mortality_in_care_age').loc[group_name]
         self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, 'mortality_in_care_sqrtcd4').loc[group_name]
+        self.mortality_in_care_years_art = pd.read_hdf(path, 'mortality_in_care_years_art').loc[group_name]
         #self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_vcov = pd.DataFrame()
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
@@ -860,6 +863,7 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
+        print(self.parameters.mortality_in_care)
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
         pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True, self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)

@@ -26,6 +26,7 @@ df['sex'] = '-'
 df.loc[df['pop3'].str.contains('_men'), 'sex'] = 'male'
 df.loc[df['pop3'].str.contains('_women'), 'sex'] = 'female'
 
+
 group_split = df['pop3'].str.split('_', expand=True)
 df['group'] = group_split[0] + '_' + group_split[1] + '_' + df['sex']
 df = df[['group', 'parm', 'estimate']]
@@ -49,7 +50,8 @@ df1 = df.loc['age'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).rese
 df1.to_csv(f'{out_dir}/mortality_in_care_age.csv', index=False)
 df2 = df.loc['sqrt(cd4 at art ini)'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
 df2.to_csv(f'{out_dir}/mortality_in_care_sqrtcd4.csv', index=False)
-print(df2)
+df3 = df.loc['years from art ini'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
+df3.to_csv(f'{out_dir}/mortality_in_care_years_art.csv', index=False)
 
 
 

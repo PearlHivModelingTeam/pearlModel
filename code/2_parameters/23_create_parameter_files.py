@@ -131,6 +131,7 @@ cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
 mortality_in_care_age = pd.read_csv(f'{param_dir}/mortality_in_care_age.csv').set_index('group')
 mortality_in_care_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_in_care_sqrtcd4.csv').set_index('group')
+mortality_in_care_years_art = pd.read_csv(f'{param_dir}/mortality_in_care_years_art.csv').set_index('group')
 #mortality_in_care_vcov = pd.read_csv(f'{param_dir}/mortality_in_care_vcov.csv')
 #mortality_in_care_vcov.columns = cols
 #mortality_in_care_vcov['covariate'] = 15*(cols[1:])
@@ -281,6 +282,7 @@ with pd.HDFStore(out_file) as store:
     store['mortality_in_care'] = mortality_in_care
     store['mortality_in_care_age'] = mortality_in_care_age
     store['mortality_in_care_sqrtcd4'] = mortality_in_care_sqrtcd4
+    store['mortality_in_care_years_art'] = mortality_in_care_sqrtcd4
     #store['mortality_in_care_vcov'] = mortality_in_care_vcov
     store['mortality_out_care'] = mortality_out_care
     store['mortality_out_care_age'] = mortality_out_care_age
