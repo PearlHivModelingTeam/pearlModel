@@ -863,7 +863,6 @@ class Pearl:
 
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
-        print(self.parameters.mortality_in_care)
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
         pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True, self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
