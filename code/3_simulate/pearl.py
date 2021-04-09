@@ -150,15 +150,13 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
                         'dm', 'dpr', 'esld', 'h1yy', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
         else:
-            pop['years_art'] = pop['year'] - pop['h1yy']
-            pop['years_art_'] = restricted_cubic_spline_var(pop['years_art'], parameters.mortality_in_care_years_art, 1)
-            pop['years_art__'] = restricted_cubic_spline_var(pop['years_art'], parameters.mortality_in_care_years_art, 2)
+            pop['age_art'] = pop['age'] - (pop['year'] - pop['h1yy'])
             pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 1)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
             pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
             pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
             pop['year_'] = pop['year'] if pop['year'].iloc[0] <= 2018 else 2018
-            return pop[['age', 'age_', 'age__', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'years_art', 'years_art_', 'years_art__', 'year_']].to_numpy(dtype=float)
+            return pop[['age', 'age_', 'age__', 'age_art', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year_']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
             pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
@@ -659,7 +657,6 @@ class Parameters:
         self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
         self.mortality_in_care_age = pd.read_hdf(path, 'mortality_in_care_age').loc[group_name]
         self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, 'mortality_in_care_sqrtcd4').loc[group_name]
-        self.mortality_in_care_years_art = pd.read_hdf(path, 'mortality_in_care_years_art').loc[group_name]
         #self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_vcov = pd.DataFrame()
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
