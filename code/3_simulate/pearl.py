@@ -153,9 +153,11 @@ def create_mortality_pop_matrix(pop, comorbidity_flag, in_care_flag, parameters)
             pop['age_art'] = pop['age'] - (pop['year'] - pop['h1yy'])
             pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 1)
             pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
+            pop['age_art_'] = restricted_cubic_spline_var(pop['age_art'], parameters.mortality_in_care_age, 1)
+            pop['age_art__'] = restricted_cubic_spline_var(pop['age_art'], parameters.mortality_in_care_age, 2)
             pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
             pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
-            return pop[['age', 'age_', 'age__', 'age_art', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
+            return pop[['age', 'age_', 'age__', 'age_art', 'age_art_', 'age_art__', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
     else:
         if comorbidity_flag:
             pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)

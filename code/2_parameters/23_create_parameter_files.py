@@ -131,6 +131,7 @@ cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
 mortality_in_care_age = pd.read_csv(f'{param_dir}/mortality_in_care_age.csv').set_index('group')
 mortality_in_care_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_in_care_sqrtcd4.csv').set_index('group')
+mortality_in_care_age_art = pd.read_csv(f'{param_dir}/mortality_in_care_age_art.csv').set_index('group')
 #mortality_in_care_vcov = pd.read_csv(f'{param_dir}/mortality_in_care_vcov.csv')
 #mortality_in_care_vcov.columns = cols
 #mortality_in_care_vcov['covariate'] = 15*(cols[1:])
