@@ -33,7 +33,6 @@ df = df[['group', 'parm', 'estimate']]
 df = df.set_index(['group', 'parm']).sort_index().reset_index()
 df = df.pivot_table(index='group', columns='parm', values='estimate').reset_index()
 df.to_csv(f'{out_dir}/mortality_in_care.csv', index=False)
-print(df)
 
 df = pd.read_csv(f'{in_dir}/mortality_in_care_knots.csv')
 df.columns = df.columns.str.lower()
@@ -51,6 +50,8 @@ df1 = df.loc['age'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).rese
 df1.to_csv(f'{out_dir}/mortality_in_care_age.csv', index=False)
 df2 = df.loc['sqrt(cd4 at art ini)'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
 df2.to_csv(f'{out_dir}/mortality_in_care_sqrtcd4.csv', index=False)
+df3 = df.loc['age at art ini'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
+df3.to_csv(f'{out_dir}/mortality_in_care_age_art.csv', index=False)
 
 
 
