@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-pd.set_option('display.max_rows', None)
+#pd.set_option('display.max_rows', None)
 
 # Status Constants
 ART_NAIVE = 0
@@ -586,7 +586,7 @@ def create_mm_detail_stats(pop):
 
 class Parameters:
     def __init__(self, path, rerun_folder, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
-                 output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False):
+                 output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False, mortality_threshold=False):
         self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
@@ -660,6 +660,9 @@ class Parameters:
         #self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_vcov = pd.DataFrame()
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
+        self.mortality_threshold = pd.read_hdf(path, 'mortality_threshold').loc[group_name]
+        self.mortality_threshold_flag = mortality_threshold
+
 
         # Mortality Out Of Care
         self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
@@ -754,7 +757,6 @@ class Statistics:
         for name, df in self.__dict__.items():
             if isinstance(df, pd.DataFrame):
                 df.to_csv(f'{output_folder}/{name}.csv', index=False)
-
 
 
 ###############################################################################
@@ -865,6 +867,25 @@ class Pearl:
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
+        self.population.loc[died, 'status'] = DYING_ART_USER
+        self.population.loc[died, 'year_died'] = self.year
+
+    def kill_in_care_threshold(self):
+        in_care = self.population['status'] == ART_USER
+        pop = self.population.copy()
+        coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
+        pop_matrix = create_mortality_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, True, self.parameters)
+        vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
+        pop['death_prob'] = death_prob
+        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+        mean_mortality = pd.DataFrame(pop.loc[in_care].groupby(['mortality_age_group'])['death_prob'].mean())
+        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+        for mortality_age_group in np.arange(14):
+            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+            pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DYING_ART_USER
         self.population.loc[died, 'year_died'] = self.year
 
@@ -1140,7 +1161,10 @@ class Pearl:
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care
             self.add_new_user()  # Add in newly diagnosed ART initiators
-            self.kill_in_care()  # Kill some people in care
+            if self.parameters.mortality_threshold_flag:
+                self.kill_in_care_threshold()
+            else:
+                self.kill_in_care()  # Kill some people in care
             self.lose_to_follow_up()  # Lose some people to follow up
 
             # Out of care operations
