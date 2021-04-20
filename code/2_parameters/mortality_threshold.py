@@ -25,7 +25,6 @@ df.loc[df['racecat'] == 'non-Hispanic White', 'racecat'] = 'white'
 df['gender'] = df['gender'].str.lower()
 
 mortality_age_groups = {i: j for i, j in zip(df['five_year_age_groups'].unique(), np.arange(14))}
-print(mortality_age_groups)
 df['mortality_age_group'] = df['five_year_age_groups'].replace(to_replace=mortality_age_groups)
 df = pd.concat([df.assign(risk='msm'), df.assign(risk='het'), df.assign(risk='idu')])
 df.loc[df['risk'] == 'idu', 'ir_1000'] = df.loc[df['risk'] == 'idu', 'ir_1000'] * IDU_MODIFIER

@@ -6,6 +6,7 @@ mm_detail_flag: 0
 smoking_intervention: 0
 new_dx: 'base'
 verbose: False
+mortality_threshold: 0
 sa_dict: {'lambda1':               null,
           'mu1':                   null,
           'mu2':                   null,

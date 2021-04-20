@@ -17,6 +17,8 @@ df = pd.read_csv(f'{in_dir}/mortality_in_care_coeffs.csv')
 df.columns = df.columns.str.lower()
 df['pop3'] = df['pop3'].str.lower()
 df['parm'] = df['parm'].str.lower()
+df.loc[df['level1'] == '2009-2012', 'parm'] = 'h1yy_cat_1'
+df.loc[df['level1'] == '2013-2017', 'parm'] = 'h1yy_cat_2'
 df = df[['pop3', 'parm', 'estimate']]
 df1 = df.loc[df['pop3'] == 'idu_hisp + idu_white_women'].copy()
 df = df.loc[df['pop3'] != 'idu_hisp + idu_white_women'].copy()
@@ -48,10 +50,7 @@ df['group'] = df['pop2'] + '_' + df['sex']
 df = df[['variable', 'group', 'p5', 'p35', 'p65', 'p95']].set_index(['variable', 'group']).sort_index()
 df1 = df.loc['age'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
 df1.to_csv(f'{out_dir}/mortality_in_care_age.csv', index=False)
-df2 = df.loc['sqrt(cd4 at art ini)'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
-df2.to_csv(f'{out_dir}/mortality_in_care_sqrtcd4.csv', index=False)
-df3 = df.loc['age at art ini'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
-df3.to_csv(f'{out_dir}/mortality_in_care_age_art.csv', index=False)
+print(df1)
 
 
 
