@@ -135,6 +135,8 @@ mortality_in_care_age_art = pd.read_csv(f'{param_dir}/mortality_in_care_age_art.
 #mortality_in_care_vcov['covariate'] = 15*(cols[1:])
 #mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
 
+mortality_threshold = pd.read_csv(f'{param_dir}/cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
+
 
 # Coefficients for mortality out of care
 mortality_out_care = pd.read_csv(f'{param_dir}/mortality_out_care.csv')
@@ -280,6 +282,7 @@ with pd.HDFStore(out_file) as store:
     store['mortality_in_care'] = mortality_in_care
     store['mortality_in_care_age'] = mortality_in_care_age
     store['mortality_in_care_sqrtcd4'] = mortality_in_care_sqrtcd4
+    store['mortality_threshold'] = mortality_threshold
     #store['mortality_in_care_vcov'] = mortality_in_care_vcov
     store['mortality_out_care'] = mortality_out_care
     store['mortality_out_care_age'] = mortality_out_care_age

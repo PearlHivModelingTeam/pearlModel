@@ -60,6 +60,7 @@ mm_detail_flag = config_yaml['mm_detail_flag']
 smoking_intervention = config_yaml['smoking_intervention']
 new_dx = config_yaml['new_dx']
 verbose = config_yaml['verbose']
+mortality_threshold = config_yaml['mortality_threshold']
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
 if args.rerun:
@@ -93,7 +94,7 @@ out_list = []
 for group_name in group_names:
     print(group_name)
     parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder, group_name=group_name, replications=replications, comorbidity_flag=comorbidity_flag,
-                                  mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx, output_folder=output_folder, verbose=verbose, smoking_intervention=smoking_intervention)
+                                  mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx, output_folder=output_folder, verbose=verbose, smoking_intervention=smoking_intervention, mortality_threshold=mortality_threshold)
     futures = [run.remote(parameters, group_name, replication) for replication in replications]
     out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
 
