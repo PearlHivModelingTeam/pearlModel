@@ -34,5 +34,4 @@ df['group'] = df['risk'] + '_' + df['racecat'] + '_' + df['gender']
 df = df.loc[~((df['risk'] == 'msm') & (df['gender'] == 'female'))]
 df = df[['group', 'mortality_age_group', 'p']]
 df.to_csv(f'{out_dir}/cdc_mortality.csv', index=False)
-print(df.group.unique())
 

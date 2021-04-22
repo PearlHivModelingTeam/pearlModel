@@ -864,7 +864,7 @@ class Pearl:
     def kill_in_care(self):
         in_care = self.population['status'] == ART_USER
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
-        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, True, self.parameters)
+        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, in_care_flag=True, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
@@ -875,7 +875,7 @@ class Pearl:
         in_care = self.population['status'] == ART_USER
         pop = self.population.copy()
         coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_in_care.to_numpy(dtype=float)
-        pop_matrix = create_mortality_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, True, self.parameters)
+        pop_matrix = create_mortality_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, in_care_flag=True, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
         pop['death_prob'] = death_prob
@@ -893,10 +893,30 @@ class Pearl:
     def kill_out_care(self):
         out_care = self.population['status'] == ART_NONUSER
         coeff_matrix = self.parameters.mortality_out_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_out_care.to_numpy(dtype=float)
-        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, False, self.parameters)
+        pop_matrix = create_mortality_pop_matrix(self.population.copy(), self.parameters.comorbidity_flag, in_care_flag=False, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
         death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
         died = ((death_prob > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
+        self.population.loc[died, 'status'] = DYING_ART_NONUSER
+        self.population.loc[died, 'year_died'] = self.year
+        self.population.loc[died, 'return_year'] = 0
+
+    def kill_out_care_threshold(self):
+        out_care = self.population['status'] == ART_NONUSER
+        pop = self.population.copy()
+        coeff_matrix = self.parameters.mortality_out_care_co.to_numpy(dtype=float) if self.parameters.comorbidity_flag else self.parameters.mortality_out_care.to_numpy(dtype=float)
+        pop_matrix = create_mortality_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, in_care_flag=False, parameters=self.parameters)
+        vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
+        death_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
+        pop['death_prob'] = death_prob
+        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+        mean_mortality = pd.DataFrame(pop.loc[out_care].groupby(['mortality_age_group'])['death_prob'].mean())
+        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+        for mortality_age_group in np.arange(14):
+            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+            pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DYING_ART_NONUSER
         self.population.loc[died, 'year_died'] = self.year
         self.population.loc[died, 'return_year'] = 0
@@ -1170,7 +1190,10 @@ class Pearl:
 
             # Out of care operations
             self.decrease_cd4_count()  # Decrease cd4n in people out of care
-            self.kill_out_care()  # Kill some people out of care
+            if self.parameters.mortality_threshold_flag:
+                self.kill_out_care_threshold()
+            else:
+                self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
             # Record output statistics

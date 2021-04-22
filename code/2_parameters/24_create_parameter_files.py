@@ -38,7 +38,7 @@ def clean_coeff(df):
     df = df.drop(columns='sex')
     df = df.sort_values(by='group')
     df = df.set_index('group')
-    return(df)
+    return df
 
 
 # Number of people on art in 2009: on_art_2009
