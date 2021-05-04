@@ -23,8 +23,10 @@ df1 = df.loc[df['pop3'] == 'idu_hisp + idu_white_women'].copy()
 df1 = pd.concat([df1.assign(pop3='idu_hisp_women'), df1.assign(pop3='idu_white_women')])
 df2 = df.loc[df['pop3'] == 'het_hisp + het_white_women'].copy()
 df2 = pd.concat([df2.assign(pop3='het_hisp_women'), df2.assign(pop3='het_white_women')])
-df = df.loc[(df['pop3'] != 'idu_hisp + idu_white_women') & (df['pop3'] != 'het_hisp + het_white_women')].copy()
-df = pd.concat([df, df1, df2], ignore_index=True)
+df3 = df.loc[df['pop3'] == 'het_hisp + het_white_men'].copy()
+df3 = pd.concat([df3.assign(pop3='het_hisp_men'), df3.assign(pop3='het_white_men')])
+df = df.loc[(df['pop3'] != 'idu_hisp + idu_white_women') & (df['pop3'] != 'het_hisp + het_white_women') & (df['pop3'] != 'het_hisp + het_white_men')].copy()
+df = pd.concat([df, df1, df2, df3], ignore_index=True)
 df['sex'] = '-'
 df.loc[df['pop3'].str.contains('_men'), 'sex'] = 'male'
 df.loc[df['pop3'].str.contains('_women'), 'sex'] = 'female'
@@ -49,6 +51,7 @@ df.loc[df['sex'] == 1, 'sex'] = 'male'
 df.loc[df['sex'] == 2, 'sex'] = 'female'
 df['group'] = df['pop2'] + '_' + df['sex']
 df = df[['variable', 'group', 'p5', 'p35', 'p65', 'p95']].set_index(['variable', 'group']).sort_index()
+print(df)
 df1 = df.loc['age'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
 df1.to_csv(f'{out_dir}/mortality_out_care_age.csv', index=False)
 df2 = df.loc['time-varying sqrt(cd4)'].rename(columns={'p5': 1, 'p35': 2, 'p65': 3, 'p95': 4}).reset_index()
