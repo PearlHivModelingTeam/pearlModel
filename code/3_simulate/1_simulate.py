@@ -11,9 +11,9 @@ import argparse
 from datetime import datetime
 
 
-# Define parallel ray function
 @ray.remote
 def run(parameters, group_name, replication):
+    """Initialized a single instance of PEARL with the given Parameters class, group name, and replication."""
     simulation = pearl.Pearl(parameters, group_name, replication)
     return simulation.stats
 
@@ -87,17 +87,19 @@ else:
 with open(f'{output_folder}/config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config_yaml, yaml_file)
 
-
-# Run simulations
+# Initialize ray with the desired number of threads
 ray.init(num_cpus=num_cpus)
 out_list = []
 for group_name in group_names:
     print(group_name)
+    # Create Parameters class
     parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder, group_name=group_name, replications=replications, comorbidity_flag=comorbidity_flag,
                                   mm_detail_flag=mm_detail_flag, sa_dict=sa_dict, new_dx=new_dx, output_folder=output_folder, verbose=verbose, smoking_intervention=smoking_intervention,
                                   mortality_threshold=mortality_threshold)
+    # Tell Ray to call the run function in parallel
     futures = [run.remote(parameters, group_name, replication) for replication in replications]
+    # Append all output for each replication together
     out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
-
+# Append all output for each subpopulation together and save as csv
 out = pearl.Statistics(out_list, comorbidity_flag, mm_detail_flag)
 out.save(output_folder)
