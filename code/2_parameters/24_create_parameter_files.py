@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-pd.set_option("display.max_rows", 1001)
+pd.set_option("display.max_rows", None)
 
 # Define directories
 pearl_dir = Path(os.getenv('PEARL_DIR'))
@@ -45,7 +45,15 @@ def clean_coeff(df):
 on_art_2009 = pd.read_csv(f'{param_dir}/on_art_2009.csv').set_index(['group']).sort_index()
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
-h1yy_by_age_2009 = pd.read_csv(f'{param_dir}/h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()
+h1yy_by_age_2009 = pd.read_csv(f'{param_dir}/h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()[['pct']]
+
+# If there is no data for a specific age group, then use the values for msm_white_male
+h1yy_by_age_2009 = h1yy_by_age_2009.reindex(pd.MultiIndex.from_product([h1yy_by_age_2009.index.levels[0].unique(), h1yy_by_age_2009.index.levels[1].unique(), h1yy_by_age_2009.index.levels[2].unique()],
+                                                          names=['group', 'age_cat', 'h1yy']))
+for group in h1yy_by_age_2009.index.levels[0].unique():
+    for age_cat in h1yy_by_age_2009.index.levels[1].unique():
+        if h1yy_by_age_2009.loc[group, age_cat].isnull().values.any():
+            h1yy_by_age_2009.loc[group, age_cat] = h1yy_by_age_2009.loc['msm_white_male', age_cat].values
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
 cd4n_by_h1yy_2009 = pd.read_csv(f'{param_dir}/cd4n_by_h1yy_2009.csv').set_index(['group']).sort_index()
