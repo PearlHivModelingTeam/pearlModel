@@ -98,7 +98,6 @@ def calculate_cd4_increase(pop, knots, coeffs, vcov, sa):
     """Return new cd4 count of the given population as calculated via a linear function of time since art initiation modeled as a spline, initial
     cd4 count category, age category and cross terms.
     """
-
     # Calculate spline variables
     pop['time_from_h1yy'] = pop['year'] - pop['last_h1yy']
     pop['time_from_h1yy_'] = restricted_quadratic_spline_var(pop['time_from_h1yy'], knots.to_numpy(), 1)
@@ -493,20 +492,14 @@ class Pearl:
             h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
             population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data['h1yy'], size=len(grouped), p=h1yy_data['pct'])
 
-        # Pull cd4 count coefficients
-        mean_intercept = self.parameters.cd4n_by_h1yy_2009['meanint']
-        mean_slope = self.parameters.cd4n_by_h1yy_2009['meanslp']
-        std_intercept = self.parameters.cd4n_by_h1yy_2009['stdint']
-        std_slope = self.parameters.cd4n_by_h1yy_2009['stdslp']
-
         # Reindex for group operation
         population['h1yy'] = population['h1yy'].astype(int)
         population = population.reset_index().set_index(['h1yy', 'id']).sort_index()
 
-        # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 using
+        # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
         for h1yy, group in population.groupby(level=0):
-            mu = mean_intercept + (h1yy * mean_slope)
-            sigma = std_intercept + (h1yy * std_slope)
+            mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, 'mu'), 'estimate']
+            sigma = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, 'sigma'), 'estimate']
             size = group.shape[0]
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
             population.loc[(h1yy,), 'init_sqrtcd4n'] = sqrt_cd4n

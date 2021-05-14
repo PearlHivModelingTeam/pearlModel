@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-pd.set_option("display.max_rows", None)
+#pd.set_option("display.max_rows", None)
 
 # Define directories
 pearl_dir = Path(os.getenv('PEARL_DIR'))
@@ -12,7 +12,6 @@ input_dir = f'{pearl_dir}/param/raw'
 intermediate_dir = f'{pearl_dir}/param/intermediate'
 param_dir = f'{pearl_dir}/param/param'
 
-msm = ['msm_white_male', 'msm_black_male', 'msm_hisp_male']
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
@@ -46,30 +45,40 @@ on_art_2009 = pd.read_csv(f'{param_dir}/on_art_2009.csv').set_index(['group']).s
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
 h1yy_by_age_2009 = pd.read_csv(f'{param_dir}/h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()[['pct']]
-
 # If there is no data for a specific age group, then use the values for msm_white_male
-h1yy_by_age_2009 = h1yy_by_age_2009.reindex(pd.MultiIndex.from_product([h1yy_by_age_2009.index.levels[0].unique(), h1yy_by_age_2009.index.levels[1].unique(), h1yy_by_age_2009.index.levels[2].unique()],
-                                                          names=['group', 'age_cat', 'h1yy']))
+h1yy_by_age_2009 = h1yy_by_age_2009.reindex(pd.MultiIndex.from_product([h1yy_by_age_2009.index.levels[0].unique(),
+                                                                        h1yy_by_age_2009.index.levels[1].unique(),
+                                                                        h1yy_by_age_2009.index.levels[2].unique()],
+                                            names=['group', 'age_cat', 'h1yy']))
 for group in h1yy_by_age_2009.index.levels[0].unique():
     for age_cat in h1yy_by_age_2009.index.levels[1].unique():
         if h1yy_by_age_2009.loc[group, age_cat].isnull().values.any():
             h1yy_by_age_2009.loc[group, age_cat] = h1yy_by_age_2009.loc['msm_white_male', age_cat].values
 
-# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009: cd4n_by_h1yy_2009
+# Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009
 cd4n_by_h1yy_2009 = pd.read_csv(f'{param_dir}/cd4n_by_h1yy_2009.csv').set_index(['group']).sort_index()
+years = np.arange(2000, 2010)
 
-# Mixed gaussian coefficients for age of patients alive in 2009: age_in_2009
+# Unpack values for each year
+df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, ['mu', 'sigma'], years], names=['group', 'param', 'h1yy']), columns=['estimate']).sort_index()
+for group in group_names:
+    mu = pd.DataFrame({'h1yy': years, 'estimate': cd4n_by_h1yy_2009.loc[group, 'meanint'] + cd4n_by_h1yy_2009.loc[group, 'meanslp'] * years})
+    mu = mu.set_index('h1yy')
+    sigma = pd.DataFrame({'h1yy': years, 'estimate': cd4n_by_h1yy_2009.loc[group, 'stdint'] + cd4n_by_h1yy_2009.loc[group, 'stdslp'] * years})
+    sigma = sigma.set_index('h1yy')
+    df.loc[(group, 'mu'), 'estimate'] = mu['estimate'].to_numpy()
+    df.loc[(group, 'sigma'), 'estimate'] = sigma['estimate'].to_numpy()
+df = df.reset_index().sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
+df['estimate'] = df['estimate'].astype(float)
+cd4n_by_h1yy_2009 = df
+
+# Mixed gaussian coefficients for age of patients alive in 2009
 age_in_2009 = pd.read_csv(f'{param_dir}/age_in_2009.csv')
-neg = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)].copy()
-neg['conf_low'] = 0.0
-neg['conf_high'] = 2.0 * neg['estimate']
-age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_low'] < 0.0)] = neg
-pos = age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)].copy()
-pos['conf_high'] = 1.0
-pos['conf_low'] = 1.0 - (2.0 * (1.0 - pos['estimate']))
-age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009['conf_high'] > 1.0)] = pos
+# Truncate all numeric values at 0 and all lambda1 values at 1
+for col in age_in_2009.select_dtypes(include=np.number).columns.tolist():
+    age_in_2009.loc[age_in_2009[col] < 0, col] = 0
+    age_in_2009.loc[(age_in_2009['term'] == 'lambda1') & (age_in_2009[col] > 1), col] = 1
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
-age_in_2009.loc[('idu_hisp_female', 'lambda1'), :] = 0.0
 
 # New dx prediction intervals
 new_dx = pd.read_csv(f'{param_dir}/new_dx_interval.csv').set_index(['group', 'year'])
@@ -82,23 +91,19 @@ linkage_to_care = pd.read_csv(f'{param_dir}/linkage_to_care.csv').set_index(['gr
 # Age at art init mixed gaussian coefficients
 age_by_h1yy = pd.read_csv(f'{param_dir}/age_by_h1yy.csv')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
-
 # No values less than 0 and no lambda1 greater than 1
 age_by_h1yy.loc[age_by_h1yy['pred'] < 0, 'pred'] = 0
 age_by_h1yy.loc[(age_by_h1yy['param'] == 'lambda1') & (age_by_h1yy['pred'] > 1), 'pred'] = 1.0
-
 # Create column of 2018 values
 values_2018 = age_by_h1yy.loc[age_by_h1yy['h1yy'] == 2018]['pred'].to_numpy()
 total_years = len(age_by_h1yy['h1yy'].unique())
 age_by_h1yy['value_2018'] = np.array([total_years*[value_2018] for value_2018 in values_2018]).flatten()
-
 # Create range after 2018
 age_by_h1yy['le_2018'] = (age_by_h1yy['h1yy'] <= 2018)
 age_by_h1yy['pred2'] = age_by_h1yy['le_2018'].astype(int) * age_by_h1yy['pred'] + (~age_by_h1yy['le_2018']).astype(int) * age_by_h1yy['value_2018']
 age_by_h1yy['low_value'] = age_by_h1yy[['pred', 'pred2']].min(axis=1)
 age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
-
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = pd.read_csv(f'{param_dir}/cd4n_by_h1yy.csv').set_index('group').sort_index()
@@ -107,21 +112,21 @@ params = ['mu', 'sigma']
 
 df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years], names=['group', 'param', 'h1yy']), columns=['low_value', 'high_value']).sort_index()
 for group in group_names:
+    # Create a range between the 2018 value and the predicted value
     mu = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'meanint'] + cd4n_by_h1yy.loc[group, 'meanslp'] * years})
     mu['high_value'] = mu['low_value']
-    mu_2018 = mu.loc[mu['h1yy']==2018, 'high_value'].to_numpy()[0]
-    mu.loc[mu['h1yy'] >=2018, 'low_value'] = mu_2018
+    mu_2018 = mu.loc[mu['h1yy'] == 2018, 'high_value'].to_numpy()[0]
+    mu.loc[mu['h1yy'] >= 2018, 'low_value'] = mu_2018
     mu = mu.set_index('h1yy')
-
     sigma = pd.DataFrame({'h1yy': years, 'low_value': cd4n_by_h1yy.loc[group, 'stdint'] + cd4n_by_h1yy.loc[group, 'stdslp'] * years})
     sigma['high_value'] = sigma['low_value']
     sigma_2018 = sigma.loc[sigma['h1yy']==2018, 'high_value'].to_numpy()[0]
     sigma.loc[sigma['h1yy'] >=2018, 'low_value'] = sigma_2018
     sigma = sigma.set_index('h1yy')
 
+    # Save subpopulation dataframe to overall dataframe
     df.loc[(group, 'mu'), 'low_value'] = mu['low_value'].to_numpy()
     df.loc[(group, 'mu'), 'high_value'] = mu['high_value'].to_numpy()
-
     df.loc[(group, 'sigma'), 'low_value'] = sigma['low_value'].to_numpy()
     df.loc[(group, 'sigma'), 'high_value'] = sigma['high_value'].to_numpy()
 
@@ -129,7 +134,6 @@ df = df.reset_index().sort_values(['group', 'h1yy', 'param']).set_index(['group'
 df['low_value'] = df['low_value'].astype(float)
 df['high_value'] = df['high_value'].astype(float)
 cd4n_by_h1yy = df
-
 
 # Coefficients for mortality in care
 mortality_in_care = pd.read_csv(f'{param_dir}/mortality_in_care.csv')
@@ -174,7 +178,7 @@ cd4_decrease = cd4_decrease.set_index('group')
 cd4_decrease_vcov = pd.read_csv(f'{param_dir}/cd4_decrease_vcov.csv')
 cd4_decrease_vcov.columns = cols
 
-# Coefficients of cd4 increase over time
+# Coefficients and knots of cd4 increase over time
 cd4_increase = pd.read_csv(f'{param_dir}/cd4_increase.csv')
 cols = cd4_increase.columns.tolist()
 cd4_increase = cd4_increase.set_index('group')
@@ -270,11 +274,7 @@ mortality_out_care_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/morta
 
 # Save everything
 out_file = f'{pearl_dir}/param/parameters.h5'
-try:
-    os.remove(out_file)
-except:
-    print('Error while deleting old parameter file')
-
+os.remove(out_file)
 with pd.HDFStore(out_file) as store:
     store['on_art_2009'] = on_art_2009
     store['h1yy_by_age_2009'] = h1yy_by_age_2009
