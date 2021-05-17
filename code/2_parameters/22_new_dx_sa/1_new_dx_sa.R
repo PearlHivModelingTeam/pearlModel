@@ -38,9 +38,6 @@ surv_fx1 <- function(df) {
            sex = replace(sex, sex=="Females", 'female'),
            sex = replace(sex, sex=='Males', 'male'))
   
-  # Filter to groups of interest
-  #df <- filterfx(df, filtergroup)
-  
   # Aggregate by group, sex, and year
   df <- df %>%
     group_by(group, sex, year) %>%
@@ -143,43 +140,28 @@ predict_new_dx <- function(DF) {
   #################################################
   fit_all <- bind_rows(fit4, fit5, fit6)
   
-  # NEW 11/05/18: Set negative predictions to 1
+  #Set negative predictions to 1
   fit_all <- fit_all %>%
     mutate(lower = replace(lower, lower <= 0, 1),
            upper = replace(upper, upper <= 0, 1))
   
-  #################################################
-  #' Create predicted #s of new Dx's
-  #' IDU: use gamma, poisson, and NS2 models
-  #' MSM: use gamma, poisson models
-  #################################################
-
-  #remove <- fit_all %>%
-  #  filter(grepl("msm", group), model %in% c("NS 2"))
-  
-  #fit_all <- fit_all %>%
-  #  anti_join(remove, by=c("group", "model"))
-
-  #remove <- fit_all %>%
-  #  filter(grepl("idu_black", group), model %in% c("Gamma"))
-
-  #fit_all <- fit_all %>%
-  #  anti_join(remove, by=c("group", "model"))
-
   return(fit_all)
 }
 
+# Predict new diagnoses range for each model using all years 2009 to 2018
 new_dx <- read.csv(filePath(intermediate_dir, 'new_dx.csv'), stringsAsFactors = FALSE)
 new_dx_interval <- predict_new_dx(new_dx)
 new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
-write_csv(new_dx_interval, filePath(intermediate_dir, '/new_dx_all.csv'))
+write_csv(new_dx_interval, filePath(intermediate_dir, '/new_dx_model_all.csv'))
 
+# Predict new diagnoses range for each model using data from yr to 2018 where yr continually increases from 2009 to 2014
 for (yr in seq(from=2009, to=2014, by=1)) {
   new_dx <- new_dx %>% filter(year != yr)
-  filename <- paste0(intermediate_dir, '/new_dx_', yr, '.csv')
+  filename <- paste0(intermediate_dir, '/new_dx_model_', yr, '.csv')
   new_dx_interval <- predict_new_dx(new_dx)
   new_dx_interval <- new_dx_interval %>% select(group, model, year, pred.fit, lower, upper)
   write_csv(new_dx_interval, filePath(filename))
+  print(new_dx_interval)
 }
 
 

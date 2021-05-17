@@ -16,20 +16,25 @@ group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_m
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 group_names.sort()
 
+# Read in cdc general population mortality data
 df = pd.read_csv(f'{in_dir}/cdc_mortality.csv')
+
+# Filter to year and populations of interest
 df = df.loc[df['year'] == 2018]
 df = df.loc[df['racecat'] != 'All']
 df.loc[df['racecat'] == 'Hispanic', 'racecat'] = 'hisp'
 df.loc[df['racecat'] == 'non-Hispanic Black', 'racecat'] = 'black'
 df.loc[df['racecat'] == 'non-Hispanic White', 'racecat'] = 'white'
 df['gender'] = df['gender'].str.lower()
-
 mortality_age_groups = {i: j for i, j in zip(df['five_year_age_groups'].unique(), np.arange(14))}
 df['mortality_age_group'] = df['five_year_age_groups'].replace(to_replace=mortality_age_groups)
 df = pd.concat([df.assign(risk='msm'), df.assign(risk='het'), df.assign(risk='idu')])
-df.loc[df['risk'] == 'idu', 'ir_1000'] = df.loc[df['risk'] == 'idu', 'ir_1000'] * IDU_MODIFIER
-df['p'] = df['ir_1000'] / 1000
 
+# IDU have an IDU_MODIFIER greater chance of mortality
+df.loc[df['risk'] == 'idu', 'ir_1000'] = df.loc[df['risk'] == 'idu', 'ir_1000'] * IDU_MODIFIER
+
+# Some reorganizing
+df['p'] = df['ir_1000'] / 1000
 df['group'] = df['risk'] + '_' + df['racecat'] + '_' + df['gender']
 df = df.loc[~((df['risk'] == 'msm') & (df['gender'] == 'female'))]
 df = df[['group', 'mortality_age_group', 'p']]
