@@ -6,8 +6,10 @@ from scipy.optimize import curve_fit
 from scipy.stats import poisson
 from pathlib import Path
 
+
 def pois_fit(x, mu, C):
     return C * poisson(mu).pmf(x)
+
 
 # Define directories
 pearl_dir = Path(os.getenv('PEARL_DIR'))
