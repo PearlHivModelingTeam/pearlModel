@@ -9,7 +9,6 @@ pearl_dir = Path(os.getenv('PEARL_DIR'))
 in_dir = f'{pearl_dir}/param/raw/aim2/stage2'
 out_dir = f'{pearl_dir}/param/param/aim2/stage2'
 
-
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
@@ -55,7 +54,6 @@ df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
 df.to_csv(f'{out_dir}/ckd_coeff.csv', index=False)
 
-
 # ckd knots
 df = pd.read_csv(f'{in_dir}/ckd_bmi_percentiles.csv')
 df.columns = df.columns.str.lower()
@@ -99,9 +97,6 @@ df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p9
 df1.to_csv(f'{out_dir}/ckd_delta_bmi.csv', index=False)
 df2.to_csv(f'{out_dir}/ckd_post_art_bmi.csv', index=False)
 
-
-
-
 # dm coeff
 df = pd.read_csv(f'{in_dir}/dm_coeff.csv')
 
@@ -137,7 +132,6 @@ df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
 df.to_csv(f'{out_dir}/dm_coeff.csv', index=False)
-print(df)
 
 # dm knots
 df = pd.read_csv(f'{in_dir}/dm_bmi_percentiles.csv')
@@ -179,8 +173,6 @@ df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p9
 df1.to_csv(f'{out_dir}/dm_delta_bmi.csv', index=False)
 df2.to_csv(f'{out_dir}/dm_post_art_bmi.csv', index=False)
 
-
-
 # ht coeff
 df = pd.read_csv(f'{in_dir}/ht_coeff.csv')
 
@@ -216,7 +208,6 @@ df['group'] = df['pop2_'] + '_' + df['sex']
 df['param'] = df['parm']
 df = df.copy().sort_values(by=['group', 'param']).reset_index()[['group', 'param', 'estimate']]
 df.to_csv(f'{out_dir}/ht_coeff.csv', index=False)
-
 
 # ht knots
 df = pd.read_csv(f'{in_dir}/ht_bmi_percentiles.csv')
@@ -324,7 +315,6 @@ df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p9
 df1.to_csv(f'{out_dir}/lipid_delta_bmi.csv', index=False)
 df2.to_csv(f'{out_dir}/lipid_post_art_bmi.csv', index=False)
 
-
 # Load prev users csv file
 df = pd.read_csv(f'{in_dir}/ht_dm_ckd_lipid_prev_users.csv')
 
@@ -369,5 +359,3 @@ df1.to_csv(f'{out_dir}/ht_prev_inits.csv', index=False)
 
 df1 = df.loc[df['dx'] == 'lipid'].reset_index()[['group', 'proportion']].copy()
 df1.to_csv(f'{out_dir}/lipid_prev_inits.csv', index=False)
-
-

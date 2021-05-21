@@ -80,7 +80,6 @@ df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p9
 df1.to_csv(f'{out_dir}/malig_delta_bmi.csv', index=False)
 df2.to_csv(f'{out_dir}/malig_post_art_bmi.csv', index=False)
 
-
 # Malignancy prevalence users
 df = pd.read_csv(f'{in_dir}/malig_prev_users_2009.csv')
 df.columns = df.columns.str.lower()
@@ -126,7 +125,6 @@ df2 = pd.concat([df2.assign(pop2_='het_hisp'), df2.assign(pop2_='het_white'), df
                  df2.assign(pop2_='idu_hisp'), df2.assign(pop2_='idu_white'), df2.assign(pop2_='idu_black')])
 df = df.loc[~((df['pop2_'] == group) & (df['sex'] == 'female'))].copy()
 
-
 group = df['pop2_'].values[1]
 df3 = df.loc[df['pop2_'] == group].copy()
 df3 = pd.concat([df3.assign(pop2_='msm_hisp'), df3.assign(pop2_='msm_white')])
@@ -137,7 +135,6 @@ df['group'] = df['pop2_'] + '_' + df['sex']
 df['proportion'] = df['prev'] / 100.0
 df = df[['group', 'proportion']].set_index('group').sort_index().reset_index()
 df.to_csv(f'{out_dir}/malig_prev_ini.csv', index=False)
-
 
 # mi incidence coeff
 df = pd.read_csv(f'{in_dir}/mi_coeff.csv')
@@ -182,7 +179,6 @@ df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
 df.to_csv(f'{out_dir}/mi_prev_ini.csv', index=False)
 
-
 # esld incidence coeff
 df = pd.read_csv(f'{in_dir}/esld_coeff.csv')
 df.columns = df.columns.str.lower()
@@ -207,7 +203,6 @@ df2 = df.loc[df['variable'] == 'post art bmi'][['group', 'p5', 'p35', 'p65', 'p9
 df1.to_csv(f'{out_dir}/esld_delta_bmi.csv', index=False)
 df2.to_csv(f'{out_dir}/esld_post_art_bmi.csv', index=False)
 
-
 # esld prevalence users
 df = pd.read_csv(f'{in_dir}/esld_prev_users_2009.csv')
 df.columns = df.columns.str.lower()
@@ -227,4 +222,3 @@ df = pd.concat([df.assign(group=group_name) for group_name in group_names])
 df['proportion'] = df['prev'] / 100.0
 df = df.set_index('group').sort_index().reset_index()[['group', 'proportion']]
 df.to_csv(f'{out_dir}/esld_prev_ini.csv', index=False)
-
