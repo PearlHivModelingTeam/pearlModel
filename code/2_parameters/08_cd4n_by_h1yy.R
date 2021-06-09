@@ -39,7 +39,7 @@ get_cd4n_by_h1yy <- function(data, group) {
                                group %in% c("idu_hisp_male") & H1YY %in% c(2012, 2013) ~ 2012,
                                group %in% c("idu_hisp_male") & H1YY %in% c(2015, 2016, 2017) ~ 2015,
                                group %in% c("idu_hisp_female") ~ 2010,
-                               group %in% c("idu_white_female") & H1YY %in% c(2010,2011) ~ 2009,
+                               group %in% c("idu_white_female") & H1YY %in% c(2010,2011) ~ 2010,
                                group %in% c("idu_white_female") & H1YY %in% c(2012,2013) ~ 2012,
                                group %in% c("idu_white_female") & H1YY %in% c(2014,2015,2016,2017) ~ 2014,
                                group %in% c("idu_white_male") & H1YY %in% c(2016,2017) ~ 2016,
