@@ -178,7 +178,7 @@ def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
         pop.loc[pop['h1yy'] >= 2013, 'h1yy_cat_2'] = 1
         pop['init_sqrtcd4n_'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 1)
         pop['init_sqrtcd4n__'] = restricted_cubic_spline_var(pop['init_sqrtcd4n'], parameters.mortality_in_care_sqrtcd4, 2)
-        return pop[['age', 'age_', 'age__', 'h1yy_cat_1', 'h1yy_cat_2', 'intercept', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
+        return pop[['intercept', 'year', 'age', 'age_', 'age__', 'init_sqrtcd4n', 'init_sqrtcd4n_', 'init_sqrtcd4n__', 'h1yy_cat_1', 'h1yy_cat_2']].to_numpy(dtype=float)
 
 
 def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
@@ -199,7 +199,7 @@ def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
         pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 2)
         pop['time_varying_sqrtcd4n_'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 1)
         pop['time_varying_sqrtcd4n__'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 2)
-        return pop[['age', 'age_', 'age__', 'intercept', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__', 'year']].to_numpy(dtype=float)
+        return pop[['intercept', 'year', 'age', 'age_', 'age__', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__']].to_numpy(dtype=float)
 
 
 def create_comorbidity_pop_matrix(pop, condition, parameters):
@@ -347,6 +347,7 @@ def calculate_prob(pop, coeffs, sa, vcov):
     if sa is not None:
         # Calculate variance of prediction using matrix multiplication
         a = np.matmul(pop, vcov)
+
         b = a * pop
         c = np.sum(b, axis=1)
 
@@ -1099,8 +1100,7 @@ class Parameters:
         self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
         self.mortality_in_care_age = pd.read_hdf(path, 'mortality_in_care_age').loc[group_name]
         self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, 'mortality_in_care_sqrtcd4').loc[group_name]
-        # self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
-        self.mortality_in_care_vcov = pd.DataFrame()
+        self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
         self.mortality_threshold = pd.read_hdf(path, 'mortality_threshold').loc[group_name]
         self.mortality_threshold_flag = mortality_threshold
@@ -1109,8 +1109,7 @@ class Parameters:
         self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
         self.mortality_out_care_age = pd.read_hdf(path, 'mortality_out_care_age').loc[group_name]
         self.mortality_out_care_tv_sqrtcd4 = pd.read_hdf(path, 'mortality_out_care_tv_sqrtcd4').loc[group_name]
-        # self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
-        self.mortality_out_care_vcov = pd.DataFrame()
+        self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
         self.mortality_out_care_sa = sa_dict['mortality_out_care']
 
         # Loss To Follow Up

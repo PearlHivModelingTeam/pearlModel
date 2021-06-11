@@ -141,10 +141,7 @@ cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
 mortality_in_care_age = pd.read_csv(f'{param_dir}/mortality_in_care_age.csv').set_index('group')
 mortality_in_care_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_in_care_sqrtcd4.csv').set_index('group')
-#mortality_in_care_vcov = pd.read_csv(f'{param_dir}/mortality_in_care_vcov.csv')
-#mortality_in_care_vcov.columns = cols
-#mortality_in_care_vcov['covariate'] = 15*(cols[1:])
-#mortality_in_care_vcov = mortality_in_care_vcov.set_index(['group', 'covariate'])
+mortality_in_care_vcov = pd.read_csv(f'{param_dir}/mortality_in_care_vcov.csv').set_index(['group', 'covariate'])
 
 mortality_threshold = pd.read_csv(f'{param_dir}/cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
 
@@ -155,10 +152,7 @@ cols = mortality_out_care.columns.tolist()
 mortality_out_care = mortality_out_care.set_index('group')
 mortality_out_care_age = pd.read_csv(f'{param_dir}/mortality_out_care_age.csv').set_index('group')
 mortality_out_care_tv_sqrtcd4 = pd.read_csv(f'{param_dir}/mortality_out_care_tv_sqrtcd4.csv').set_index('group')
-#mortality_out_care_vcov = pd.read_csv(f'{param_dir}/mortality_out_care_vcov.csv')
-#mortality_out_care_vcov.columns = cols
-#mortality_out_care_vcov['covariate'] = 15*(cols[1:])
-#mortality_out_care_vcov = mortality_out_care_vcov.set_index(['group', 'covariate'])
+mortality_out_care_vcov = pd.read_csv(f'{param_dir}/mortality_out_care_vcov.csv').set_index(['group', 'covariate'])
 
 # Coefficients for loss to follow up
 loss_to_follow_up = pd.read_csv(f'{param_dir}/loss_to_follow_up.csv')
@@ -168,6 +162,7 @@ loss_to_follow_up_vcov = pd.read_csv(f'{param_dir}/loss_to_follow_up_vcov.csv')
 loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
+
 ltfu_knots = clean_coeff(pd.read_sas(f'{input_dir}/ltfu_knots.sas7bdat'))
 
 # Coefficients for cd4 decline out of care
@@ -290,11 +285,11 @@ with pd.HDFStore(out_file) as store:
     store['mortality_in_care_age'] = mortality_in_care_age
     store['mortality_in_care_sqrtcd4'] = mortality_in_care_sqrtcd4
     store['mortality_threshold'] = mortality_threshold
-    #store['mortality_in_care_vcov'] = mortality_in_care_vcov
+    store['mortality_in_care_vcov'] = mortality_in_care_vcov
     store['mortality_out_care'] = mortality_out_care
     store['mortality_out_care_age'] = mortality_out_care_age
     store['mortality_out_care_tv_sqrtcd4'] = mortality_out_care_tv_sqrtcd4
-    #store['mortality_out_care_vcov'] = mortality_out_care_vcov
+    store['mortality_out_care_vcov'] = mortality_out_care_vcov
     store['loss_to_follow_up'] = loss_to_follow_up
     store['loss_to_follow_up_vcov'] = loss_to_follow_up_vcov
     store['ltfu_knots'] = ltfu_knots
