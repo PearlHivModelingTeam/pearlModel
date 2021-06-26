@@ -163,12 +163,10 @@ def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
     splines, and presence of each individual comorbidity modeled as binary variables.
     """
     if comorbidity_flag:
-        pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_in_care_delta_bmi, 1)
-        pop['delta_bmi__'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_in_care_delta_bmi, 2)
         pop['post_art_bmi_'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_in_care_post_art_bmi, 1)
         pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_in_care_post_art_bmi, 2)
-        return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
-                    'dm', 'dpr', 'esld', 'h1yy', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
+        return pop[['age_cat', 'anx', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd', 'dm', 'dpr', 'esld', 'h1yy',
+                    'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'init_sqrtcd4n', 'year']].to_numpy(dtype=float)
     else:
         pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 1)
         pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_in_care_age, 2)
@@ -188,12 +186,10 @@ def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
     as binary variables.
     """
     if comorbidity_flag:
-        pop['delta_bmi_'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 1)
-        pop['delta_bmi__'] = restricted_cubic_spline_var(pop['delta_bmi'], parameters.mortality_out_care_delta_bmi, 2)
         pop['post_art_bmi_'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_out_care_post_art_bmi, 1)
         pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.mortality_out_care_post_art_bmi, 2)
-        return pop[['age_cat', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd',
-                    'dm', 'dpr', 'esld', 'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'time_varying_sqrtcd4n', 'year']].to_numpy(dtype=float)
+        return pop[['age_cat', 'anx', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'ckd', 'dm', 'dpr', 'esld',
+                    'hcv', 'ht', 'intercept', 'lipid', 'malig', 'mi', 'smoking', 'time_varying_sqrtcd4n', 'year']].to_numpy(dtype=float)
     else:
         pop['age_'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 1)
         pop['age__'] = restricted_cubic_spline_var(pop['age'], parameters.mortality_out_care_age, 2)
