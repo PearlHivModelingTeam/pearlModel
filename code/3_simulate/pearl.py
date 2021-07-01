@@ -465,7 +465,7 @@ class Pearl:
 
     def make_pop_2009(self, n_initial_nonusers):
         """ Create and return initial 2009 population dataframe. Draw ages from a mixed normal distribution truncated at 18
-        and 85. ART initiation year is assigned using proportions from NA-ACCORD data. Sqrt CD4 count is drawn from a normal
+        and 85. Assign ART initiation year using proportions from NA-ACCORD data. Draw sqrt CD4 count from a normal
         distribution truncated at 0 and sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
         using their respective models.
         """
@@ -651,7 +651,7 @@ class Pearl:
             if (self.year == 2010) & self.parameters.smoking_intervention:
                 self.population['smoking'] = 0
 
-            # Everybody calendar year, ages, age_cat and years out of care
+            # Increment calendar year, ages, age_cat and years out of care
             self.increment_years()
 
             # Apply comorbidities
@@ -702,21 +702,48 @@ class Pearl:
     def increase_cd4_count(self):
         """Calculate and set new CD4 count for ART using population."""
         in_care = self.population['status'] == ART_USER
-        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = calculate_cd4_increase(
+
+        new_sqrt_cd4 = calculate_cd4_increase(
             self.population.loc[in_care].copy(),
             self.parameters.cd4_increase_knots,
             self.parameters.cd4_increase.to_numpy(dtype=float),
             self.parameters.cd4_increase_vcov.to_numpy(dtype=float),
             self.parameters.cd4_increase_sa)
 
+        old_sqrt_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n']
+        diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
+
+        # Record classic one-way sa input
+        sa_cd4_increase_in_care = pd.DataFrame(data={'mean_diff': diff_cd4,
+                                                     'n': len(old_sqrt_cd4),
+                                                     'year': self.year,
+                                                     'group': self.group_name,
+                                                     'replication': self.replication}, index=[0])
+        self.stats.sa_cd4_increase_in_care = self.stats.sa_cd4_increase_in_care.append(sa_cd4_increase_in_care, ignore_index=True)
+
+        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
+
     def decrease_cd4_count(self):
         """Calculate and set new CD4 count for ART non-using population."""
         out_care = self.population['status'] == ART_NONUSER
-        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = calculate_cd4_decrease(
+        new_sqrt_cd4 = calculate_cd4_decrease(
             self.population.loc[out_care].copy(),
             self.parameters.cd4_decrease.to_numpy(dtype=float),
             self.parameters.cd4_decrease_sa,
             self.parameters.cd4_decrease_vcov.to_numpy(dtype=float))
+
+        old_sqrt_cd4 = self.population.loc[out_care, 'time_varying_sqrtcd4n']
+        diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
+
+        # Record classic one-way sa input
+        sa_cd4_decrease_out_care = pd.DataFrame(data={'mean_diff': diff_cd4,
+                                                      'n': len(old_sqrt_cd4),
+                                                      'year': self.year,
+                                                      'group': self.group_name,
+                                                      'replication': self.replication}, index=[0])
+        self.stats.sa_cd4_decrease_out_care = self.stats.sa_cd4_decrease_out_care.append(sa_cd4_decrease_out_care, ignore_index=True)
+
+        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
 
     def add_new_user(self):
         """Add newly initiating ART users."""
@@ -746,6 +773,14 @@ class Pearl:
                 excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
                 pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
+        # Record classic one-way sa input
+        sa_mortality_in_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[in_care]['death_prob'].mean(),
+                                                       'n': len(pop.loc[in_care]),
+                                                       'year': self.year,
+                                                       'group': self.group_name,
+                                                       'replication': self.replication}, index=[0])
+        self.stats.sa_mortality_in_care_prob = self.stats.sa_mortality_in_care_prob.append(sa_mortality_in_care_prob, ignore_index=True)
+
         # Draw for mortality
         died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
         self.population.loc[died, 'status'] = DYING_ART_USER
@@ -774,6 +809,14 @@ class Pearl:
                 excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
                 pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
+        # Record classic one-way sa input
+        sa_mortality_out_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[out_care]['death_prob'].mean(),
+                                                        'n': len(pop.loc[out_care]),
+                                                        'year': self.year,
+                                                        'group': self.group_name,
+                                                        'replication': self.replication}, index=[0])
+        self.stats.sa_mortality_out_care_prob = self.stats.sa_mortality_out_care_prob.append(sa_mortality_out_care_prob, ignore_index=True)
+
         # Draw for mortality
         died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
         self.population.loc[died, 'status'] = DYING_ART_NONUSER
@@ -786,14 +829,29 @@ class Pearl:
         """
         # Calculate probability and draw
         in_care = self.population['status'] == ART_USER
+        pop = self.population.copy()
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy(dtype=float)
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy(dtype=float)
-        pop_matrix = create_ltfu_pop_matrix(self.population.copy(), self.parameters.ltfu_knots)
-        ltfu_prob = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
-        lost = (ltfu_prob > np.random.rand(len(self.population.index))) & in_care
+        pop_matrix = create_ltfu_pop_matrix(pop.copy(), self.parameters.ltfu_knots)
+        pop['ltfu_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
+        lost = (pop['ltfu_prob'] > np.random.rand(len(self.population.index))) & in_care
+
+        # Record classic one-way sa input
+        sa_ltfu_prob = pd.DataFrame(data={'mean_prob': pop.loc[in_care]['ltfu_prob'].mean(),
+                                          'n': len(pop.loc[in_care]),
+                                          'year': self.year,
+                                          'group': self.group_name,
+                                          'replication': self.replication}, index=[0])
+        self.stats.sa_ltfu_prob = self.stats.sa_ltfu_prob.append(sa_ltfu_prob, ignore_index=True)
 
         # Draw years spent out of care for those lost
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(self.population.loc[lost]), p=self.parameters.years_out_of_care['probability'])
+        sa_years_out_input = pd.DataFrame(data={'mean_years': years_out_of_care.mean(),
+                                             'n': len(years_out_of_care),
+                                             'year': self.year,
+                                             'group': self.group_name,
+                                             'replication': self.replication}, index=[0])
+        self.stats.sa_years_out_input = self.stats.sa_years_out_input.append(sa_years_out_input, ignore_index=True)
 
         # Set variables for lost population
         self.population.loc[lost, 'return_year'] = self.year + years_out_of_care
@@ -818,6 +876,7 @@ class Pearl:
                      .reindex(range(1, 16), fill_value=0).reset_index()
                      .rename(columns={'index': 'years', 'years_out': 'n'})
                      .assign(group=self.group_name, replication=self.replication, year=self.year))
+
         self.stats.years_out = self.stats.years_out.append(years_out)
         self.population.loc[reengaged, 'years_out'] = 0
 
@@ -871,9 +930,8 @@ class Pearl:
 
     def record_stats(self):
         """"Record in care age breakdown, out of care age breakdown, reengaging pop age breakdown, leaving care age breakdown, and CD4
-        statistics for both in and out of care populations. If it is an Aim 2 simulation, record the prevalence of all comorbidities
-        and the multimorbidity for the in care, out of care, initiating, and dying populations. If the multimorbidity detail flag is set,
-        record the detailed comorbidity information.
+        statistics for both in and out of care populations. If it is an Aim 2 simulation, record the prevalence of all comorbidities, and the
+        multimorbidity for the in care, out of care, initiating, and dying populations. Record the detailed comorbidity information if the multimorbidity detail flag is set.
         """
         stay_in_care = self.population['status'] == ART_USER
         stay_out_care = self.population['status'] == ART_NONUSER
@@ -1016,7 +1074,7 @@ class Pearl:
 ###############################################################################
 
 class Parameters:
-    """This class holds all of the parameters needed for PEARL to run."""
+    """This class holds all the parameters needed for PEARL to run."""
     def __init__(self, path, rerun_folder, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
                  output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False, mortality_threshold=False):
         """Takes the path to the parameters.h5 file, the path to the config file if the run is a rerun, the group name, the number of replications,
@@ -1189,6 +1247,13 @@ class Statistics:
                 self.mm_detail_out_care = pd.concat([out.mm_detail_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_inits = pd.concat([out.mm_detail_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_dead = pd.concat([out.mm_detail_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        # Classic one-way sensitivity analysis
+        self.sa_mortality_in_care_prob = pd.concat([out.sa_mortality_in_care_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_mortality_out_care_prob = pd.concat([out.sa_mortality_out_care_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_ltfu_prob = pd.concat([out.sa_ltfu_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_years_out_input = pd.concat([out.sa_years_out_input for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_cd4_increase_in_care = pd.concat([out.sa_cd4_increase_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_cd4_decrease_out_care = pd.concat([out.sa_cd4_decrease_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
 
     def save(self, output_folder):
         """Save all internal dataframes as csv files."""
