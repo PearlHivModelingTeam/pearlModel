@@ -32,7 +32,7 @@ AGES = np.arange(18, 87)
 AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
-CD4_BINS = np.arange(2001)
+CD4_BINS = np.arange(45)
 
 
 ###############################################################################
@@ -549,6 +549,18 @@ class Pearl:
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
 
+        # Record classic one-way sa input
+        sa_initial_cd4_in_care = pd.DataFrame(data={'mean_cd4': (population.loc[population['status'] == ART_USER]['init_sqrtcd4n'] ** 2).mean(),
+                                                    'n': len(population.loc[population['status'] == ART_USER]),
+                                                    'group': self.group_name,
+                                                    'replication': self.replication}, index=[0])
+        self.stats.sa_initial_cd4_in_care = self.stats.sa_initial_cd4_in_care.append(sa_initial_cd4_in_care, ignore_index=True)
+        sa_initial_cd4_out_care = pd.DataFrame(data={'mean_cd4': (population.loc[population['status'] == ART_NONUSER]['init_sqrtcd4n'] ** 2).mean(),
+                                                     'n': len(population.loc[population['status'] == ART_NONUSER]),
+                                                     'group': self.group_name,
+                                                     'replication': self.replication}, index=[0])
+        self.stats.sa_initial_cd4_out_care = self.stats.sa_initial_cd4_out_care.append(sa_initial_cd4_out_care, ignore_index=True)
+
         # Save population as pearl population
         self.population = population
 
@@ -640,6 +652,10 @@ class Pearl:
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
+
+        # Record classic one-way sa input
+        sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size').reset_index().assign(group=self.group_name, replication=self.replication)
+        self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
 
         # Append new population to pearl population
         self.population = self.population.append(population)
@@ -975,13 +991,13 @@ class Pearl:
         self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
         # Discretize cd4 count and count those in care
-        cd4_in_care = pd.DataFrame(np.power(self.population.loc[in_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_in_care = pd.DataFrame((self.population.loc[in_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
         cd4_in_care = cd4_in_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_in_care = cd4_in_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_in_care = self.stats.cd4_in_care.append(cd4_in_care)
 
         # Discretize cd4 count and count those out care
-        cd4_out_care = pd.DataFrame(np.power(self.population.loc[out_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_out_care = pd.DataFrame((self.population.loc[out_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
         cd4_out_care = cd4_out_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_out_care = cd4_out_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_out_care = self.stats.cd4_out_care.append(cd4_out_care)
@@ -1069,9 +1085,9 @@ class Pearl:
 
         # Count of discretized cd4 count at ART initiation
         cd4_inits = self.population[['init_sqrtcd4n', 'h1yy']].copy()
-        cd4_inits['cd4_count'] = np.power(cd4_inits['init_sqrtcd4n'], 2).round(0).astype(int)
+        cd4_inits['cd4_count'] = cd4_inits['init_sqrtcd4n'].round(0).astype(int)
         cd4_inits = cd4_inits.groupby(['h1yy', 'cd4_count']).size()
-        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([ALL_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
+        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
 
@@ -1253,7 +1269,11 @@ class Statistics:
                 self.mm_detail_out_care = pd.concat([out.mm_detail_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_inits = pd.concat([out.mm_detail_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
                 self.mm_detail_dead = pd.concat([out.mm_detail_dead for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+
         # Classic one-way sensitivity analysis
+        self.sa_initial_cd4_in_care = pd.concat([out.sa_initial_cd4_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_initial_cd4_out_care = pd.concat([out.sa_initial_cd4_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.sa_initial_cd4_inits = pd.concat([out.sa_initial_cd4_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.sa_mortality_in_care_prob = pd.concat([out.sa_mortality_in_care_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.sa_mortality_out_care_prob = pd.concat([out.sa_mortality_out_care_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.sa_ltfu_prob = pd.concat([out.sa_ltfu_prob for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
