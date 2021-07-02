@@ -32,6 +32,7 @@ AGES = np.arange(18, 87)
 AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
+CD4_BINS = np.arange(2001)
 
 
 ###############################################################################
@@ -135,7 +136,7 @@ def calculate_cd4_increase(pop, knots, coeffs, vcov, sa):
         high = new_cd4 + 1.96 * se
         new_cd4 = (sa * (high - low)) + low
 
-    return new_cd4
+    return pd.Series(new_cd4)
 
 
 def calculate_cd4_decrease(pop, coeffs, sa, vcov):
@@ -153,7 +154,7 @@ def calculate_cd4_decrease(pop, coeffs, sa, vcov):
         diff = (sa * (high - low)) + low
 
     new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy(dtype=float) ** 2) * np.exp(diff) * SMEARING)
-    return new_cd4
+    return pd.Series(new_cd4)
 
 
 def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
@@ -710,6 +711,9 @@ class Pearl:
             self.parameters.cd4_increase_vcov.to_numpy(dtype=float),
             self.parameters.cd4_increase_sa)
 
+        # Truncate at 0 and sqrt(2000)
+        new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
+        new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
         old_sqrt_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
@@ -721,7 +725,7 @@ class Pearl:
                                                      'replication': self.replication}, index=[0])
         self.stats.sa_cd4_increase_in_care = self.stats.sa_cd4_increase_in_care.append(sa_cd4_increase_in_care, ignore_index=True)
 
-        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
+        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4.to_numpy()
 
     def decrease_cd4_count(self):
         """Calculate and set new CD4 count for ART non-using population."""
@@ -732,6 +736,8 @@ class Pearl:
             self.parameters.cd4_decrease_sa,
             self.parameters.cd4_decrease_vcov.to_numpy(dtype=float))
 
+        new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
+        new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
         old_sqrt_cd4 = self.population.loc[out_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
@@ -743,7 +749,7 @@ class Pearl:
                                                       'replication': self.replication}, index=[0])
         self.stats.sa_cd4_decrease_out_care = self.stats.sa_cd4_decrease_out_care.append(sa_cd4_decrease_out_care, ignore_index=True)
 
-        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
+        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4.to_numpy()
 
     def add_new_user(self):
         """Add newly initiating ART users."""
@@ -969,14 +975,14 @@ class Pearl:
         self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
         # Discretize cd4 count and count those in care
-        cd4_in_care = pd.DataFrame((self.population.loc[in_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
-        cd4_in_care = cd4_in_care.groupby('cd4_count').size().reindex(np.arange(51), fill_value=0)
+        cd4_in_care = pd.DataFrame(np.power(self.population.loc[in_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_in_care = cd4_in_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_in_care = cd4_in_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_in_care = self.stats.cd4_in_care.append(cd4_in_care)
 
         # Discretize cd4 count and count those out care
-        cd4_out_care = pd.DataFrame((self.population.loc[out_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
-        cd4_out_care = cd4_out_care.groupby('cd4_count').size().reindex(np.arange(51), fill_value=0)
+        cd4_out_care = pd.DataFrame(np.power(self.population.loc[out_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_out_care = cd4_out_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_out_care = cd4_out_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_out_care = self.stats.cd4_out_care.append(cd4_out_care)
 
@@ -1063,9 +1069,9 @@ class Pearl:
 
         # Count of discretized cd4 count at ART initiation
         cd4_inits = self.population[['init_sqrtcd4n', 'h1yy']].copy()
-        cd4_inits['cd4_count'] = (cd4_inits['init_sqrtcd4n']).round(0).astype(int)
+        cd4_inits['cd4_count'] = np.power(cd4_inits['init_sqrtcd4n'], 2).round(0).astype(int)
         cd4_inits = cd4_inits.groupby(['h1yy', 'cd4_count']).size()
-        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([ALL_YEARS, np.arange(51)], names=['year', 'cd4_count']), fill_value=0)
+        cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([ALL_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
 
