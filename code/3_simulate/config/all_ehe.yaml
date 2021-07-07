@@ -5,5 +5,5 @@ num_cpus: 50
 replications: 200
 comorbidity_flag: 0
 mm_detail_flag: 0
-new_dx: 'base'
+new_dx: 'ehe'
 verbose: 0
