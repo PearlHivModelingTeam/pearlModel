@@ -3,18 +3,5 @@ num_cpus: 50
 replications: 200
 comorbidity_flag: 0
 mm_detail_flag: 0
-smoking_intervention: 0
 new_dx: 'base'
-verbose: False
-mortality_threshold: 0
-sa_dict: {'lambda1':               null,
-          'mu1':                   null,
-          'mu2':                   null,
-          'sigma1':                null,
-          'sigma2':                null,
-          'mortality_in_care':     null,
-          'mortality_out_care':    null,
-          'loss_to_follow_up':     null,
-          'cd4_increase':          null,
-          'cd4_decrease':          null,
-          'new_pop_size':          null}
+verbose: 0
