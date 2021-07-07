@@ -6,6 +6,10 @@ import pandas as pd
 import scipy.stats as stats
 #pd.set_option('display.max_rows', None)
 
+###############################################################################
+# Constants                                                                   #
+###############################################################################
+
 # Status Constants
 ART_NAIVE = 0
 DELAYED = 1
@@ -33,6 +37,16 @@ AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
 CD4_BINS = np.arange(45)
+
+# Sensitivity analysis default values
+SA_DICT = {i: j for i, j in zip(['lambda1', 'mu1', 'mu2', 'sigma1', 'sigma2', 'mortality_in_care', 'mortality_out_care',
+                                 'loss_to_follow_up', 'cd4_increase', 'cd4_decrease', 'new_pop_size'], 11 * [None])}
+
+CLASSIC_SA_DICT = {i: j for i, j in zip(['users_2009_n', 'users_2009_age', 'users_2009_cd4',
+                                         'nonusers_2009_n', 'nonusers_2009_age', 'nonusers_2009_cd4',
+                                         'initiators_n', 'initiators_age', 'initiators_cd4',
+                                         'disengagement', 'reengagement', 'mortality_in_care',
+                                         'mortality_out_care', 'cd4_increase', 'cd4_decrease'], 15 * [1.0])}
 
 
 ###############################################################################
@@ -380,15 +394,14 @@ def simulate_new_dx(new_dx, linkage_to_care):
     new_dx['total_linked'] = new_dx['year0'] + new_dx['year1'] + new_dx['year2'] + new_dx['year3']
 
     # Proportion of those linked to care start ART
-    new_dx['art_users'] = (new_dx['total_linked'] * linkage_to_care['art_prob']).astype(int)
-    new_dx['art_nonusers'] = (new_dx['total_linked'] * (1 - linkage_to_care['art_prob'])).astype(int)
+    new_dx['art_initiators'] = (new_dx['total_linked'] * linkage_to_care['art_prob']).astype(int)
+    new_dx['art_delayed'] = (new_dx['total_linked'] * (1 - linkage_to_care['art_prob'])).astype(int)
 
     # Count those not starting art 2006 - 2009 as initial ART nonusers
-    n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_nonusers'].sum()
+    n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_delayed'].sum()
 
     # Compile list of number of new agents to be introduced in the model
-    new_agents = new_dx.loc[SIMULATION_YEARS, ['art_users', 'art_nonusers']]
-    new_agents['total'] = new_agents['art_users'] + new_agents['art_nonusers']
+    new_agents = new_dx.loc[SIMULATION_YEARS, ['art_initiators', 'art_delayed']]
 
     return n_initial_nonusers, new_agents
 
@@ -421,14 +434,17 @@ class Pearl:
         # Initiate output class
         self.stats = Statistics(comorbidity_flag=self.parameters.comorbidity_flag, mm_detail_flag=self.parameters.mm_detail_flag)
 
-        # Simulate number of new art initiators
+        # Simulate number of new art initiators and initial nonusers
         n_initial_nonusers, n_new_agents = simulate_new_dx(parameters.new_dx.copy(), parameters.linkage_to_care)
 
         # Initialize population dataframe
         self.population = pd.DataFrame()
 
-        # Create 2009 population
-        self.make_pop_2009(n_initial_nonusers)
+        # Create art using 2009 population
+        self.make_user_pop_2009()
+
+        # Create art non-using 2009 population
+        self.make_nonuser_pop_2009(n_initial_nonusers)
 
         # Create population of new art initiators
         self.make_new_population(n_new_agents)
@@ -464,7 +480,7 @@ class Pearl:
         string += 'Uninitiated User Size: ' + str(uninitiated_user) + '\n'
         return string
 
-    def make_pop_2009(self, n_initial_nonusers):
+    def make_user_pop_2009(self):
         """ Create and return initial 2009 population dataframe. Draw ages from a mixed normal distribution truncated at 18
         and 85. Assign ART initiation year using proportions from NA-ACCORD data. Draw sqrt CD4 count from a normal
         distribution truncated at 0 and sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
@@ -474,8 +490,12 @@ class Pearl:
         population = pd.DataFrame()
 
         # Draw ages from the truncated mixed gaussian
-        pop_size = self.parameters.on_art_2009[0] + n_initial_nonusers
-        population['age'] = simulate_ages(self.parameters.age_in_2009, pop_size)
+        n_initial_users = self.parameters.on_art_2009[0]
+        n_initial_users = int(self.parameters.classic_sa_dict['users_2009_n'] * n_initial_users)  # Sensitivity analysis
+        population['age'] = simulate_ages(self.parameters.age_in_2009, n_initial_users)
+        population['age'] = self.parameters.classic_sa_dict['users_2009_age'] * population['age']  # Sensitivity analysis
+        population.loc[population['age'] < 18, 'age'] = 18
+        population.loc[population['age'] > 85, 'age'] = 85
 
         # Create age categories
         population['age'] = np.floor(population['age'])
@@ -503,6 +523,9 @@ class Pearl:
             population.loc[(h1yy,), 'init_sqrtcd4n'] = sqrt_cd4n
         population = population.reset_index().set_index('id').sort_index()
 
+        # Sensitivity Analysis
+        population['init_sqrtcd4n'] = np.sqrt(self.parameters.classic_sa_dict['users_2009_cd4'] * np.power(population['init_sqrtcd4n'], 2))
+
         # Toss out age_cat < 2
         population.loc[population['age_cat'] < 2, 'age_cat'] = 2
 
@@ -525,13 +548,6 @@ class Pearl:
 
         # Set status and initiate out of care variables
         population['status'] = ART_USER
-        non_user = np.random.choice(a=len(population.index), size=n_initial_nonusers, replace=False)
-        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_initial_nonusers, p=self.parameters.years_out_of_care['probability'])
-        population.loc[non_user, 'status'] = ART_NONUSER
-        population.loc[non_user, 'sqrtcd4n_exit'] = population.loc[n_initial_nonusers, 'time_varying_sqrtcd4n']
-        population.loc[non_user, 'ltfu_year'] = 2009
-        population.loc[non_user, 'return_year'] = 2009 + years_out_of_care
-        population.loc[non_user, 'n_lost'] += 1
 
         # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
         if self.parameters.comorbidity_flag:
@@ -550,19 +566,113 @@ class Pearl:
         population = population.reindex(sorted(population), axis=1)
 
         # Record classic one-way sa input
-        sa_initial_cd4_in_care = pd.DataFrame(data={'mean_cd4': (population.loc[population['status'] == ART_USER]['init_sqrtcd4n'] ** 2).mean(),
-                                                    'n': len(population.loc[population['status'] == ART_USER]),
+        sa_initial_cd4_in_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
+                                                    'n': len(population),
                                                     'group': self.group_name,
                                                     'replication': self.replication}, index=[0])
         self.stats.sa_initial_cd4_in_care = self.stats.sa_initial_cd4_in_care.append(sa_initial_cd4_in_care, ignore_index=True)
-        sa_initial_cd4_out_care = pd.DataFrame(data={'mean_cd4': (population.loc[population['status'] == ART_NONUSER]['init_sqrtcd4n'] ** 2).mean(),
-                                                     'n': len(population.loc[population['status'] == ART_NONUSER]),
+
+        # Save population as pearl population
+        self.population = population
+
+    def make_nonuser_pop_2009(self, n_initial_nonusers):
+        """ Create and return initial 2009 population dataframe. Draw ages from a mixed normal distribution truncated at 18
+        and 85. Assign ART initiation year using proportions from NA-ACCORD data. Draw sqrt CD4 count from a normal
+        distribution truncated at 0 and sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
+        using their respective models.
+        """
+        # Create population dataframe
+        population = pd.DataFrame()
+
+        # Draw ages from the truncated mixed gaussian
+        n_initial_nonusers = int(self.parameters.classic_sa_dict['nonusers_2009_n'] * n_initial_nonusers)  # Sensitivity analysis
+        population['age'] = simulate_ages(self.parameters.age_in_2009, n_initial_nonusers)
+        population['age'] = self.parameters.classic_sa_dict['nonusers_2009_age'] * population['age']  # Sensitivity analysis
+        population.loc[population['age'] < 18, 'age'] = 18
+        population.loc[population['age'] > 85, 'age'] = 85
+
+        # Create age categories
+        population['age'] = np.floor(population['age'])
+        population['age_cat'] = np.floor(population['age'] / 10)
+        population.loc[population['age_cat'] > 7, 'age_cat'] = 7
+        population['id'] = range(population.index.size)
+        population = population.sort_values('age')
+        population = population.set_index(['age_cat', 'id'])
+
+        # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
+        for age_cat, grouped in population.groupby('age_cat'):
+            h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
+            population.loc[age_cat, 'h1yy'] = np.random.choice(h1yy_data['h1yy'], size=len(grouped), p=h1yy_data['pct'])
+
+        # Reindex for group operation
+        population['h1yy'] = population['h1yy'].astype(int)
+        population = population.reset_index().set_index(['h1yy', 'id']).sort_index()
+
+        # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
+        for h1yy, group in population.groupby(level=0):
+            mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, 'mu'), 'estimate']
+            sigma = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, 'sigma'), 'estimate']
+            size = group.shape[0]
+            sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
+            population.loc[(h1yy,), 'init_sqrtcd4n'] = sqrt_cd4n
+        population = population.reset_index().set_index('id').sort_index()
+
+        # Sensitivity Analysis
+        population['init_sqrtcd4n'] = np.sqrt(self.parameters.classic_sa_dict['nonusers_2009_cd4'] * np.power(population['init_sqrtcd4n'], 2))
+
+        # Toss out age_cat < 2
+        population.loc[population['age_cat'] < 2, 'age_cat'] = 2
+
+        # Add final columns used for calculations and output
+        population['last_h1yy'] = population['h1yy']
+        population['last_init_sqrtcd4n'] = population['init_sqrtcd4n']
+        population['init_age'] = population['age'] - (2009 - population['h1yy'])
+        population['n_lost'] = 0
+        population['years_out'] = 0
+        population['year_died'] = np.nan
+        population['sqrtcd4n_exit'] = 0
+        population['ltfu_year'] = 0
+        population['return_year'] = 0
+        population['intercept'] = 1.0
+        population['year'] = 2009
+
+        # Calculate time varying cd4 count
+        population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), self.parameters.cd4_increase_knots, self.parameters.cd4_increase.to_numpy(dtype=float),
+                                                                     self.parameters.cd4_increase_vcov.to_numpy(dtype=float), self.parameters.cd4_increase_sa)
+
+        # Set status and initiate out of care variables
+        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=n_initial_nonusers, p=self.parameters.years_out_of_care['probability'])
+        population['status'] = ART_NONUSER
+        population['sqrtcd4n_exit'] = population['time_varying_sqrtcd4n']
+        population['ltfu_year'] = 2009
+        population['return_year'] = 2009 + years_out_of_care
+        population['n_lost'] += 1
+
+        # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
+        if self.parameters.comorbidity_flag:
+            # Bmi
+            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
+                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots)
+            population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
+            population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
+
+            # Apply comorbidities
+            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+                population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_users_dict[condition].values).astype(int)
+            population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
+
+        # Sort columns alphabetically
+        population = population.reindex(sorted(population), axis=1)
+
+        # Record classic one-way sa input
+        sa_initial_cd4_out_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
+                                                     'n': len(population),
                                                      'group': self.group_name,
                                                      'replication': self.replication}, index=[0])
         self.stats.sa_initial_cd4_out_care = self.stats.sa_initial_cd4_out_care.append(sa_initial_cd4_out_care, ignore_index=True)
 
-        # Save population as pearl population
-        self.population = population
+        # Append new population to pearl population
+        self.population = self.population.append(population)
 
     def make_new_population(self, n_new_agents):
         """Create and return the population initiating ART during the simulation. Age and CD4 count distribution parameters are taken from a
@@ -586,17 +696,23 @@ class Pearl:
         # Create population
         population = pd.DataFrame()
 
+        n_new_agents = (self.parameters.classic_sa_dict['initiators_n'] * n_new_agents).astype(int)  # Sensitivity analysis
+
         # Generate ages and art status for each new initiator based on year of initiation
         for h1yy in self.parameters.age_by_h1yy.index.levels[0]:
             grouped_pop = pd.DataFrame()
-            n_users = n_new_agents.loc[h1yy, 'art_users']
-            n_nonusers = n_new_agents.loc[h1yy, 'art_nonusers']
-            grouped_pop['age'] = simulate_ages(self.parameters.age_by_h1yy.loc[h1yy], n_users + n_nonusers)
+            n_initiators = n_new_agents.loc[h1yy, 'art_initiators']
+            n_delayed = n_new_agents.loc[h1yy, 'art_delayed']
+            grouped_pop['age'] = simulate_ages(self.parameters.age_by_h1yy.loc[h1yy], n_initiators + n_delayed)
             grouped_pop['h1yy'] = h1yy
             grouped_pop['status'] = ART_NAIVE
-            non_users = np.random.choice(a=len(grouped_pop.index), size=n_nonusers, replace=False)
-            grouped_pop.loc[non_users, 'status'] = DELAYED
+            delayed = np.random.choice(a=len(grouped_pop.index), size=n_delayed, replace=False)
+            grouped_pop.loc[delayed, 'status'] = DELAYED
             population = pd.concat([population, grouped_pop])
+
+        population['age'] = self.parameters.classic_sa_dict['initiators_age'] * population['age']  # Sensitivity analysis
+        population.loc[population['age'] < 18, 'age'] = 18
+        population.loc[population['age'] > 85, 'age'] = 85
 
         # Generate number of years for delayed initiators to wait before beginning care and modify their start year accordingly
         delayed = population['status'] == DELAYED
@@ -621,12 +737,15 @@ class Pearl:
             sigma = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'sigma'), 'estimate']
             size = group.shape[0]
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
-            population.loc[h1yy, 'time_varying_sqrtcd4n'] = sqrt_cd4n
+            population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
         population = population.reset_index().set_index('id').sort_index()
+
+        # Sensitivity Analysis
+        population['init_sqrtcd4n'] = np.sqrt(self.parameters.classic_sa_dict['initiators_cd4'] * np.power(population['init_sqrtcd4n'], 2))
 
         # Calculate time varying cd4 count and other needed variables
         population['last_h1yy'] = population['h1yy']
-        population['init_sqrtcd4n'] = population['time_varying_sqrtcd4n']
+        population['time_varying_sqrtcd4n'] = population['init_sqrtcd4n']
         population['last_init_sqrtcd4n'] = population['init_sqrtcd4n']
         population['init_age'] = population['age']
         population['n_lost'] = 0
@@ -663,10 +782,6 @@ class Pearl:
     def run(self):
         """ Simulate from 2010 to 2030 """
         while self.year <= 2030:
-
-            # Apply smoking intervention
-            if (self.year == 2010) & self.parameters.smoking_intervention:
-                self.population['smoking'] = 0
 
             # Increment calendar year, ages, age_cat and years out of care
             self.increment_years()
@@ -727,6 +842,9 @@ class Pearl:
             self.parameters.cd4_increase_vcov.to_numpy(dtype=float),
             self.parameters.cd4_increase_sa)
 
+        # Sensitivity Analysis
+        new_sqrt_cd4 = np.sqrt(self.parameters.classic_sa_dict['cd4_increase'] * np.power(new_sqrt_cd4, 2))
+
         # Truncate at 0 and sqrt(2000)
         new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
         new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
@@ -751,6 +869,9 @@ class Pearl:
             self.parameters.cd4_decrease.to_numpy(dtype=float),
             self.parameters.cd4_decrease_sa,
             self.parameters.cd4_decrease_vcov.to_numpy(dtype=float))
+
+        # Sensitivity Analysis
+        new_sqrt_cd4 = np.sqrt(self.parameters.classic_sa_dict['cd4_decrease'] * np.power(new_sqrt_cd4, 2))
 
         new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
         new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
@@ -784,16 +905,16 @@ class Pearl:
         pop_matrix = create_mortality_in_care_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
+        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_in_care'] * pop['death_prob']
 
-        # Optionally increase mortality to general population threshold
-        if self.parameters.mortality_threshold_flag:
-            pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
-            mean_mortality = pd.DataFrame(pop.loc[in_care].groupby(['mortality_age_group'])['death_prob'].mean())
-            mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
-            mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
-            for mortality_age_group in np.arange(14):
-                excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
-                pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        # Increase mortality to general population threshold
+        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+        mean_mortality = pd.DataFrame(pop.loc[in_care].groupby(['mortality_age_group'])['death_prob'].mean())
+        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+        for mortality_age_group in np.arange(14):
+            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+            pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
         # Record classic one-way sa input
         sa_mortality_in_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[in_care]['death_prob'].mean(),
@@ -820,16 +941,16 @@ class Pearl:
         pop_matrix = create_mortality_out_care_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
+        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_out_care'] * pop['death_prob']
 
-        # Optionally increase mortality to general population threshold
-        if self.parameters.mortality_threshold_flag:
-            pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
-            mean_mortality = pd.DataFrame(pop.loc[out_care].groupby(['mortality_age_group'])['death_prob'].mean())
-            mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
-            mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
-            for mortality_age_group in np.arange(14):
-                excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
-                pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        # Increase mortality to general population threshold
+        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+        mean_mortality = pd.DataFrame(pop.loc[out_care].groupby(['mortality_age_group'])['death_prob'].mean())
+        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+        for mortality_age_group in np.arange(14):
+            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+            pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
         # Record classic one-way sa input
         sa_mortality_out_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[out_care]['death_prob'].mean(),
@@ -856,6 +977,8 @@ class Pearl:
         vcov_matrix = self.parameters.loss_to_follow_up_vcov.to_numpy(dtype=float)
         pop_matrix = create_ltfu_pop_matrix(pop.copy(), self.parameters.ltfu_knots)
         pop['ltfu_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.loss_to_follow_up_sa, vcov_matrix)
+        pop['ltfu_prob'] = self.parameters.classic_sa_dict['disengagement'] * pop['ltfu_prob']
+
         lost = (pop['ltfu_prob'] > np.random.rand(len(self.population.index))) & in_care
 
         # Record classic one-way sa input
@@ -868,6 +991,8 @@ class Pearl:
 
         # Draw years spent out of care for those lost
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(self.population.loc[lost]), p=self.parameters.years_out_of_care['probability'])
+        years_out_of_care = np.round(self.parameters.classic_sa_dict['reengagement'] * years_out_of_care).astype(int)
+
         sa_years_out_input = pd.DataFrame(data={'mean_years': years_out_of_care.mean(),
                                              'n': len(years_out_of_care),
                                              'year': self.year,
@@ -1097,19 +1222,22 @@ class Pearl:
 
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
-    def __init__(self, path, rerun_folder, group_name, replications, comorbidity_flag, mm_detail_flag, sa_dict, new_dx='base',
-                 output_folder=f'{os.getcwd()}/../../out/raw', verbose=False, smoking_intervention=False, mortality_threshold=False):
+    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, verbose, sa_dict=None, classic_sa_dict=None):
         """Takes the path to the parameters.h5 file, the path to the config file if the run is a rerun, the group name, the number of replications,
         a flag indicating if the simulation is for aim 2, a flag indicating whether to record detailed comorbidity information, the sensitivity
         analysis dictionary, a string indicating which new diagnosis input file to use, the output folder, the verbose flag, a flag indicating
         whether to use the smoking intervention, and a flag indicating whether to use a threshold when calculating mortality.
         """
         # Save parameters as class attributes
+        if sa_dict is None:
+            sa_dict = SA_DICT
+        if classic_sa_dict is None:
+            classic_sa_dict = CLASSIC_SA_DICT
+
         self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
-        self.smoking_intervention = smoking_intervention
         self.verbose = verbose
 
         # Unpack Sensitivity Analysis List
@@ -1179,7 +1307,6 @@ class Parameters:
         self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
         self.mortality_threshold = pd.read_hdf(path, 'mortality_threshold').loc[group_name]
-        self.mortality_threshold_flag = mortality_threshold
 
         # Mortality Out Of Care
         self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
@@ -1233,6 +1360,9 @@ class Parameters:
         self.mortality_out_care_co = pd.read_hdf(path, 'mortality_out_care_co').loc[group_name]
         self.mortality_out_care_delta_bmi = pd.read_hdf(path, 'mortality_out_care_delta_bmi').loc[group_name]
         self.mortality_out_care_post_art_bmi = pd.read_hdf(path, 'mortality_out_care_post_art_bmi').loc[group_name]
+
+        # Classic One-Way Sensitivity Analysis
+        self.classic_sa_dict = classic_sa_dict
 
 
 class Statistics:

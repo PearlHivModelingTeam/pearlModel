@@ -11,9 +11,9 @@ import argparse
 from datetime import datetime
 
 
+# Define parallel ray function
 @ray.remote
 def run(parameters, group_name, replication):
-    """Initialized a single instance of PEARL with the given Parameters class, group name, and replication."""
     simulation = pearl.Pearl(parameters, group_name, replication)
     return simulation.stats
 
@@ -36,15 +36,14 @@ with open(f'{pearl_dir}/requirements.txt', 'r') as requirements:
 rerun_folder = None
 if args.config:
     config_file = Path(f'config/{args.config}')
-    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
+    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_c_sa_{date_string}/')
 elif args.rerun:
     rerun_folder = Path(f'{pearl_dir}/out/{args.rerun}')
     config_file = Path(f'{rerun_folder}/config.yaml')
     output_folder = Path(f'{pearl_dir}/out/{args.rerun}_rerun_{date_string}/')
 else:
     config_file = Path('config/test.yaml')
-    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_{date_string}/')
-
+    output_folder = Path(f'{pearl_dir}/out/{config_file.stem}_c_sa_{date_string}/')
 
 # Load config_file
 with open(config_file, 'r') as yaml_file:
@@ -54,6 +53,7 @@ with open(config_file, 'r') as yaml_file:
 num_cpus = config_yaml['num_cpus']
 replications = range(config_yaml['replications'])
 group_names = config_yaml['group_names']
+classic_sa_dict = pearl.CLASSIC_SA_DICT
 comorbidity_flag = config_yaml['comorbidity_flag']
 mm_detail_flag = config_yaml['mm_detail_flag']
 new_dx = config_yaml['new_dx']
@@ -72,30 +72,49 @@ else:
     config_yaml['python_version'] = platform.python_version()
     config_yaml['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
+
 # Create Output folder structure
 if os.path.isdir(output_folder):
     if config_file.stem != 'test':
         raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
-    os.makedirs(f'{output_folder}/random_states')
+    for param in classic_sa_dict.keys:
+        for i in [0, 1]:
+            output_folder_sa = f'{output_folder}/{param}_{i}'
+            os.makedirs(output_folder_sa)
+            os.makedirs(f'{output_folder_sa}/random_states')
 
 # Copy config file to output dir
 with open(f'{output_folder}/config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config_yaml, yaml_file)
 
-# Initialize ray with the desired number of threads
+# Run the simulations
 ray.init(num_cpus=num_cpus)
-out_list = []
-for group_name in group_names:
-    print(group_name)
-    # Create Parameters class
-    parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder, output_folder=output_folder, group_name=group_name, comorbidity_flag=comorbidity_flag, mm_detail_flag=mm_detail_flag,
-                                  new_dx=new_dx, verbose=verbose)
-    # Tell Ray to call the run function in parallel
-    futures = [run.remote(parameters, group_name, replication) for replication in replications]
-    # Append all output for each replication together
-    out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
-# Append all output for each subpopulation together and save as csv
-out = pearl.Statistics(out_list, comorbidity_flag, mm_detail_flag)
-out.save(output_folder)
+for param in ['cd4_decrease']:
+    for i in [0, 1]:
+        output_folder_sa = f'{output_folder}/{param}_{i}'
+        if rerun_folder is not None:
+            rerun_folder_sa = f'{rerun_folder}/{param}_{i}'
+        else:
+            rerun_folder_sa = None
+
+        classic_sa_dict_run = classic_sa_dict.copy()
+        if i == 0:
+            classic_sa_dict_run[param] = 0.9
+        elif i == 1:
+            classic_sa_dict_run[param] = 1.1
+
+        # Run simulations
+        out_list = []
+
+        print(f'{param}_{i}')
+        for group_name in group_names:
+            print(group_name)
+            parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder_sa, output_folder=output_folder_sa, group_name=group_name, comorbidity_flag=comorbidity_flag,
+                                          mm_detail_flag=mm_detail_flag, new_dx=new_dx, verbose=verbose, classic_sa_dict=classic_sa_dict_run)
+            futures = [run.remote(parameters, group_name, replication) for replication in replications]
+            out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
+
+        out = pearl.Statistics(out_list, comorbidity_flag, mm_detail_flag)
+        out.save(output_folder_sa)
