@@ -990,14 +990,20 @@ class Pearl:
         self.stats.sa_ltfu_prob = self.stats.sa_ltfu_prob.append(sa_ltfu_prob, ignore_index=True)
 
         # Draw years spent out of care for those lost
-        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(self.population.loc[lost]), p=self.parameters.years_out_of_care['probability'])
-        years_out_of_care = np.round(self.parameters.classic_sa_dict['reengagement'] * years_out_of_care).astype(int)
+        if self.parameters.classic_sa_dict['reengagement'] == 1.1:
+            p = self.parameters.years_out_of_care['prob_high']
+        elif self.parameters.classic_sa_dict['reengagement'] == 0.9:
+            p = self.parameters.years_out_of_care['prob_low']
+        else:
+            p = self.parameters.years_out_of_care['probability']
+
+        years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(self.population.loc[lost]), p=p)
 
         sa_years_out_input = pd.DataFrame(data={'mean_years': years_out_of_care.mean(),
-                                             'n': len(years_out_of_care),
-                                             'year': self.year,
-                                             'group': self.group_name,
-                                             'replication': self.replication}, index=[0])
+                                                'n': len(years_out_of_care),
+                                                'year': self.year,
+                                                'group': self.group_name,
+                                                'replication': self.replication}, index=[0])
         self.stats.sa_years_out_input = self.stats.sa_years_out_input.append(sa_years_out_input, ignore_index=True)
 
         # Set variables for lost population
