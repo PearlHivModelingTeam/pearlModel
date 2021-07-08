@@ -79,7 +79,7 @@ if os.path.isdir(output_folder):
         raise FileExistsError("Output folder already exists")
 else:
     os.makedirs(output_folder)
-    for param in classic_sa_dict.keys:
+    for param in classic_sa_dict.keys():
         for i in [0, 1]:
             output_folder_sa = f'{output_folder}/{param}_{i}'
             os.makedirs(output_folder_sa)
@@ -91,7 +91,7 @@ with open(f'{output_folder}/config.yaml', 'w') as yaml_file:
 
 # Run the simulations
 ray.init(num_cpus=num_cpus)
-for param in ['cd4_decrease']:
+for param in classic_sa_dict.keys():
     for i in [0, 1]:
         output_folder_sa = f'{output_folder}/{param}_{i}'
         if rerun_folder is not None:
