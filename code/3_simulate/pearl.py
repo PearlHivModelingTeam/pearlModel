@@ -905,7 +905,6 @@ class Pearl:
         pop_matrix = create_mortality_in_care_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
-        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_in_care'] * pop['death_prob']
 
         # Increase mortality to general population threshold
         pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
@@ -915,6 +914,8 @@ class Pearl:
         for mortality_age_group in np.arange(14):
             excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
             pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+
+        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_in_care'] * pop['death_prob']
 
         # Record classic one-way sa input
         sa_mortality_in_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[in_care]['death_prob'].mean(),
@@ -941,7 +942,6 @@ class Pearl:
         pop_matrix = create_mortality_out_care_pop_matrix(pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters)
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
-        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_out_care'] * pop['death_prob']
 
         # Increase mortality to general population threshold
         pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
@@ -951,6 +951,8 @@ class Pearl:
         for mortality_age_group in np.arange(14):
             excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
             pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+
+        pop['death_prob'] = self.parameters.classic_sa_dict['mortality_out_care'] * pop['death_prob']
 
         # Record classic one-way sa input
         sa_mortality_out_care_prob = pd.DataFrame(data={'mean_prob': pop.loc[out_care]['death_prob'].mean(),
