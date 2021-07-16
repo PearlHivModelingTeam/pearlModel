@@ -36,7 +36,7 @@ AGES = np.arange(18, 87)
 AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
-CD4_BINS = np.arange(45)
+CD4_BINS = np.arange(2000)
 
 # Sensitivity analysis default values
 SA_DICT = {i: j for i, j in zip(['lambda1', 'mu1', 'mu2', 'sigma1', 'sigma2', 'mortality_in_care', 'mortality_out_care',
@@ -1124,13 +1124,13 @@ class Pearl:
         self.stats.ltfu_age = self.stats.ltfu_age.append(ltfu_age)
 
         # Discretize cd4 count and count those in care
-        cd4_in_care = pd.DataFrame((self.population.loc[in_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_in_care = pd.DataFrame(np.power(self.population.loc[in_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
         cd4_in_care = cd4_in_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_in_care = cd4_in_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_in_care = self.stats.cd4_in_care.append(cd4_in_care)
 
         # Discretize cd4 count and count those out care
-        cd4_out_care = pd.DataFrame((self.population.loc[out_care, 'time_varying_sqrtcd4n']).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
+        cd4_out_care = pd.DataFrame(np.power(self.population.loc[out_care, 'time_varying_sqrtcd4n'], 2).round(0).astype(int)).rename(columns={'time_varying_sqrtcd4n': 'cd4_count'})
         cd4_out_care = cd4_out_care.groupby('cd4_count').size().reindex(CD4_BINS, fill_value=0)
         cd4_out_care = cd4_out_care.reset_index(name='n').assign(year=self.year, replication=self.replication, group=self.group_name)
         self.stats.cd4_out_care = self.stats.cd4_out_care.append(cd4_out_care)
@@ -1218,7 +1218,7 @@ class Pearl:
 
         # Count of discretized cd4 count at ART initiation
         cd4_inits = self.population[['init_sqrtcd4n', 'h1yy']].copy()
-        cd4_inits['cd4_count'] = cd4_inits['init_sqrtcd4n'].round(0).astype(int)
+        cd4_inits['cd4_count'] = np.power(cd4_inits['init_sqrtcd4n'], 2).round(0).astype(int)
         cd4_inits = cd4_inits.groupby(['h1yy', 'cd4_count']).size()
         cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
