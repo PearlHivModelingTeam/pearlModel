@@ -36,7 +36,7 @@ AGES = np.arange(18, 87)
 AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
-CD4_BINS = np.arange(2000)
+CD4_BINS = np.arange(2001)
 
 # Sensitivity analysis default values
 SA_DICT = {i: j for i, j in zip(['lambda1', 'mu1', 'mu2', 'sigma1', 'sigma2', 'mortality_in_care', 'mortality_out_care',
