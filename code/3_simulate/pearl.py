@@ -36,6 +36,7 @@ AGES = np.arange(18, 87)
 AGE_CATS = np.arange(2, 8)
 SIMULATION_YEARS = np.arange(2010, 2031)
 ALL_YEARS = np.arange(2000, 2031)
+INITIAL_YEARS = np.arange(2000, 2010)
 CD4_BINS = np.arange(2001)
 
 # Sensitivity analysis default values
@@ -1223,6 +1224,13 @@ class Pearl:
         cd4_inits = cd4_inits.reindex(pd.MultiIndex.from_product([SIMULATION_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
 
+        # Count of discretized cd4 count at ART initiation
+        cd4_inits_2009 = self.population[['init_sqrtcd4n', 'h1yy']].copy()
+        cd4_inits_2009['cd4_count'] = np.power(cd4_inits_2009['init_sqrtcd4n'], 2).round(0).astype(int)
+        cd4_inits_2009 = cd4_inits_2009.groupby(['h1yy', 'cd4_count']).size()
+        cd4_inits_2009 = cd4_inits_2009.reindex(pd.MultiIndex.from_product([INITIAL_YEARS, CD4_BINS], names=['year', 'cd4_count']), fill_value=0)
+        self.stats.cd4_inits_2009 = cd4_inits_2009.reset_index(name='n').assign(replication=self.replication, group=self.group_name)
+
 
 ###############################################################################
 # Parameter and Statistics Classes                                            #
@@ -1388,6 +1396,7 @@ class Statistics:
         self.new_init_age = pd.concat([out.new_init_age for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.years_out = pd.concat([out.years_out for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.cd4_inits = pd.concat([out.cd4_inits for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
+        self.cd4_inits_2009 = pd.concat([out.cd4_inits_2009 for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.cd4_in_care = pd.concat([out.cd4_in_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.cd4_out_care = pd.concat([out.cd4_out_care for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
         self.art_coeffs = pd.concat([out.art_coeffs for out in out_list], ignore_index=True) if out_list else pd.DataFrame()
