@@ -57,6 +57,7 @@ classic_sa_dict = pearl.CLASSIC_SA_DICT
 comorbidity_flag = config_yaml['comorbidity_flag']
 mm_detail_flag = config_yaml['mm_detail_flag']
 new_dx = config_yaml['new_dx']
+final_year = config_yaml['final_year']
 verbose = config_yaml['verbose']
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
@@ -112,7 +113,7 @@ for param in classic_sa_dict.keys():
         for group_name in group_names:
             print(group_name)
             parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder_sa, output_folder=output_folder_sa, group_name=group_name, comorbidity_flag=comorbidity_flag,
-                                          mm_detail_flag=mm_detail_flag, new_dx=new_dx, verbose=verbose, classic_sa_dict=classic_sa_dict_run)
+                                          mm_detail_flag=mm_detail_flag, new_dx=new_dx, final_year=final_year, verbose=verbose, classic_sa_dict=classic_sa_dict_run)
             futures = [run.remote(parameters, group_name, replication) for replication in replications]
             out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
 

@@ -782,7 +782,7 @@ class Pearl:
 
     def run(self):
         """ Simulate from 2010 to 2030 """
-        while self.year <= 2030:
+        while self.year <= self.parameters.final_year:
 
             # Increment calendar year, ages, age_cat and years out of care
             self.increment_years()
@@ -1238,7 +1238,7 @@ class Pearl:
 
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
-    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, verbose, sa_dict=None, classic_sa_dict=None):
+    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, final_year, verbose, sa_dict=None, classic_sa_dict=None):
         """Takes the path to the parameters.h5 file, the path to the config file if the run is a rerun, the group name, the number of replications,
         a flag indicating if the simulation is for aim 2, a flag indicating whether to record detailed comorbidity information, the sensitivity
         analysis dictionary, a string indicating which new diagnosis input file to use, the output folder, the verbose flag, a flag indicating
@@ -1254,6 +1254,7 @@ class Parameters:
         self.output_folder = output_folder
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
+        self.final_year = final_year
         self.verbose = verbose
 
         # Unpack Sensitivity Analysis List
