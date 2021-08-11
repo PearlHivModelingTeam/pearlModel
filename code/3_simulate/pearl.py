@@ -1372,10 +1372,8 @@ class Parameters:
 
         # Aim 2 Mortality
         self.mortality_in_care_co = pd.read_hdf(path, 'mortality_in_care_co').loc[group_name]
-        self.mortality_in_care_delta_bmi = pd.read_hdf(path, 'mortality_in_care_delta_bmi').loc[group_name]
         self.mortality_in_care_post_art_bmi = pd.read_hdf(path, 'mortality_in_care_post_art_bmi').loc[group_name]
         self.mortality_out_care_co = pd.read_hdf(path, 'mortality_out_care_co').loc[group_name]
-        self.mortality_out_care_delta_bmi = pd.read_hdf(path, 'mortality_out_care_delta_bmi').loc[group_name]
         self.mortality_out_care_post_art_bmi = pd.read_hdf(path, 'mortality_out_care_post_art_bmi').loc[group_name]
 
         # Classic One-Way Sensitivity Analysis
