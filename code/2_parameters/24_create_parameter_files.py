@@ -260,11 +260,9 @@ mi_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/stage3/mi_post_art_bmi.csv').se
 
 # mortality with comorbidity
 mortality_in_care_co = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care.csv').set_index(['group', 'param']).unstack()
-mortality_in_care_delta_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care_delta_bmi.csv').set_index('group')
 mortality_in_care_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_in_care_post_art_bmi.csv').set_index('group')
 
 mortality_out_care_co = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care.csv').set_index(['group', 'param']).unstack()
-mortality_out_care_delta_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care_delta_bmi.csv').set_index('group')
 mortality_out_care_post_art_bmi = pd.read_csv(f'{param_dir}/aim2/mortality/mortality_out_care_post_art_bmi.csv').set_index('group')
 
 # Save everything
@@ -366,10 +364,8 @@ with pd.HDFStore(out_file) as store:
 
     # Comorbidity modified mortality
     store['mortality_in_care_co'] = mortality_in_care_co
-    store['mortality_in_care_delta_bmi'] = mortality_in_care_delta_bmi
     store['mortality_in_care_post_art_bmi'] = mortality_in_care_post_art_bmi
     store['mortality_out_care_co'] = mortality_out_care_co
-    store['mortality_out_care_delta_bmi'] = mortality_out_care_delta_bmi
     store['mortality_out_care_post_art_bmi'] = mortality_out_care_post_art_bmi
 
 
