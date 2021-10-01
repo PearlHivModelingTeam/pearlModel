@@ -17,7 +17,7 @@ group_names = c('msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_
 
 
 ######################################################################################
-#' Predict the number of new HAART initiators in the US, 2009-2030
+#' Predict the number of new HAART initiators in the US, 2009-2035
 #' ** updated for IDU - use this version for MSM as well
 ######################################################################################
 surv_fx1 <- function(df) {
@@ -75,7 +75,7 @@ predict_new_dx <- function(DF) {
   }
   
   predict_it <- function(x,y) {
-    preds2 <- data.frame(year=seq(2006,2030), pred = predict(y, type="response", newdata=x, se.fit = T))
+    preds2 <- data.frame(year=seq(2006,2035), pred = predict(y, type="response", newdata=x, se.fit = T))
     
     preds2 <- preds2 %>%
       mutate(lower = pred.fit - 1.96*pred.se.fit,
@@ -83,10 +83,10 @@ predict_new_dx <- function(DF) {
   }
   
   ####################################################
-  # Create expanded dataset to 2030 to use for predictions
+  # Create expanded dataset to 2035 to use for predictions
   ####################################################
   groups <- unique(surv$group)
-  years <- seq(2006, 2030)
+  years <- seq(2006, 2035)
   
   simulated <- expand.grid(year = years, group = groups, stringsAsFactors = F)
   

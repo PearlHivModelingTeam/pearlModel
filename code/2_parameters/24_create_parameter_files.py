@@ -107,7 +107,7 @@ age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']]
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = pd.read_csv(f'{param_dir}/cd4n_by_h1yy.csv').set_index('group').sort_index()
-years = np.arange(2010, 2031)
+years = np.arange(2010, 2035)
 params = ['mu', 'sigma']
 
 df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years], names=['group', 'param', 'h1yy']), columns=['low_value', 'high_value']).sort_index()
@@ -134,6 +134,7 @@ df = df.reset_index().sort_values(['group', 'h1yy', 'param']).set_index(['group'
 df['low_value'] = df['low_value'].astype(float)
 df['high_value'] = df['high_value'].astype(float)
 cd4n_by_h1yy = df
+print(cd4n_by_h1yy)
 
 # Coefficients for mortality in care
 mortality_in_care = pd.read_csv(f'{param_dir}/mortality_in_care.csv')

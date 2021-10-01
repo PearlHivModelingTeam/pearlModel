@@ -78,7 +78,7 @@ fit_glm_to_age_by_h1yy <- function(DATA) {
     nest
   
   predict_it <- function(model) {
-    data.frame(period = seq(2009,2030), pred = predict(model, type="response", newdata = data.frame(period = seq(2009,2030))))
+    data.frame(period = seq(2009,2035), pred = predict(model, type="response", newdata = data.frame(period = seq(2009,2035))))
   }
   
   DF2 <- DF %>%
