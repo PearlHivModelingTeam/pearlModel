@@ -11,7 +11,7 @@ input_dir = f'{pearl_dir}/param/raw'
 intermediate_dir = f'{pearl_dir}/param/intermediate'
 param_dir = f'{pearl_dir}/param/param'
 
-years = np.arange(2006, 2031)
+years = np.arange(2006, 2036)
 linkage_obs = pd.read_csv(f'{input_dir}/linkage_to_care.csv')
 linkage_obs = pd.melt(linkage_obs, id_vars='group', var_name='year', value_name='link_prob').sort_values(['group', 'year']).reset_index(drop=True)
 linkage_obs['year'] = linkage_obs['year'].astype(int)
