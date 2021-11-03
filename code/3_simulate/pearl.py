@@ -375,7 +375,7 @@ def simulate_new_dx(new_dx, linkage_to_care, parameters):
     care population size in 2009 for our simulation.
     """
 
-    # Draw new dx from a uniform distribution between upper and lower for 2016-2030
+    # Draw new dx from a uniform distribution between upper and lower for 2016-final_year
     new_dx['n_dx'] = new_dx['lower'] + (new_dx['upper'] - new_dx['lower']) * np.random.uniform()
 
     # Only a proportion of new diagnoses link to care and 40% of the remaining link in the next 3 years
@@ -713,7 +713,7 @@ class Pearl:
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(population.loc[delayed]), p=self.parameters.years_out_of_care['probability'])
         population.loc[delayed, 'h1yy'] = population.loc[delayed, 'h1yy'] + years_out_of_care
         population.loc[delayed, 'status'] = ART_NAIVE
-        population = population[population['h1yy'] <= 2030].copy()
+        population = population[population['h1yy'] <= self.parameters.final_year].copy()
 
         # Create age_cat variable
         population['age'] = np.floor(population['age'])
@@ -774,7 +774,7 @@ class Pearl:
         self.population = self.population.append(population)
 
     def run(self):
-        """ Simulate from 2010 to 2030 """
+        """ Simulate from 2010 to final_year """
         while self.year <= self.parameters.final_year:
 
             # Increment calendar year, ages, age_cat and years out of care
