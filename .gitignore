@@ -5,5 +5,3 @@ out/*
 *.png
 *.xlsx
 venv/*
-param/raw/*
-param/intermediate/*
