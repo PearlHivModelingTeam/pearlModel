@@ -1,0 +1,7 @@
+out/*
+*.swp
+.idea/*
+*.pyc
+*.png
+*.xlsx
+venv/*
