@@ -102,9 +102,9 @@ for param in classic_sa_dict.keys():
 
         classic_sa_dict_run = classic_sa_dict.copy()
         if i == 0:
-            classic_sa_dict_run[param] = 0.9
+            classic_sa_dict_run[param] = 0.8
         elif i == 1:
-            classic_sa_dict_run[param] = 1.1
+            classic_sa_dict_run[param] = 1.2
 
         # Run simulations
         out_list = []
