@@ -986,10 +986,14 @@ class Pearl:
         self.stats.sa_ltfu_prob = self.stats.sa_ltfu_prob.append(sa_ltfu_prob, ignore_index=True)
 
         # Draw years spent out of care for those lost
-        if self.parameters.classic_sa_dict['reengagement'] == 1.1:
-            p = self.parameters.years_out_of_care['prob_high']
+        if self.parameters.classic_sa_dict['reengagement'] == 1.2:
+            p = self.parameters.years_out_of_care['prob_1.2']
+        elif self.parameters.classic_sa_dict['reengagement'] == 1.1:
+            p = self.parameters.years_out_of_care['prob_1.1']
         elif self.parameters.classic_sa_dict['reengagement'] == 0.9:
-            p = self.parameters.years_out_of_care['prob_low']
+            p = self.parameters.years_out_of_care['prob_0.9']
+        elif self.parameters.classic_sa_dict['reengagement'] == 0.8:
+            p = self.parameters.years_out_of_care['prob_0.8']
         else:
             p = self.parameters.years_out_of_care['probability']
 
