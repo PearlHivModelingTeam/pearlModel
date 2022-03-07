@@ -4,5 +4,6 @@ replications: 200
 comorbidity_flag: 0
 mm_detail_flag: 0
 new_dx: 'base'
+mortality_model: 'base'
 final_year: 2031
 verbose: 0

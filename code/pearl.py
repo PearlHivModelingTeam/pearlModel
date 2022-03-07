@@ -1235,7 +1235,7 @@ class Pearl:
 
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
-    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, final_year, verbose, sa_dict=None, classic_sa_dict=None):
+    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, final_year, mortality_model, verbose, sa_dict=None, classic_sa_dict=None):
         """Takes the path to the parameters.h5 file, the path to the config file if the run is a rerun, the group name, the number of replications,
         a flag indicating if the simulation is for aim 2, a flag indicating whether to record detailed comorbidity information, the sensitivity
         analysis dictionary, a string indicating which new diagnosis input file to use, the output folder, the verbose flag, a flag indicating
@@ -1314,20 +1314,27 @@ class Parameters:
         self.age_by_h1yy = pd.read_hdf(path, 'age_by_h1yy').loc[group_name]
         self.cd4n_by_h1yy = pd.read_hdf(path, 'cd4n_by_h1yy').loc[group_name]
 
+        if mortality_model == 'base':
+            mortality_model_str = ''
+        else:
+            mortality_model_str = '_' + mortality_model
+            if sa_dict != SA_DICT:
+                raise NotImplementedError('Using alternative mortality models with sensitivity analysis is not yet implemented')
         # Mortality In Care
-        self.mortality_in_care = pd.read_hdf(path, 'mortality_in_care').loc[group_name]
-        self.mortality_in_care_age = pd.read_hdf(path, 'mortality_in_care_age').loc[group_name]
-        self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, 'mortality_in_care_sqrtcd4').loc[group_name]
+        self.mortality_in_care = pd.read_hdf(path, f'mortality_in_care{mortality_model_str}').loc[group_name]
+        self.mortality_in_care_age = pd.read_hdf(path, f'mortality_in_care_age{mortality_model_str}').loc[group_name]
+        self.mortality_in_care_sqrtcd4 = pd.read_hdf(path, f'mortality_in_care_sqrtcd4{mortality_model_str}').loc[group_name]
         self.mortality_in_care_vcov = pd.read_hdf(path, 'mortality_in_care_vcov').loc[group_name]
         self.mortality_in_care_sa = sa_dict['mortality_in_care']
-        self.mortality_threshold = pd.read_hdf(path, 'mortality_threshold').loc[group_name]
+        self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold{mortality_model_str}').loc[group_name]
 
         # Mortality Out Of Care
-        self.mortality_out_care = pd.read_hdf(path, 'mortality_out_care').loc[group_name]
-        self.mortality_out_care_age = pd.read_hdf(path, 'mortality_out_care_age').loc[group_name]
-        self.mortality_out_care_tv_sqrtcd4 = pd.read_hdf(path, 'mortality_out_care_tv_sqrtcd4').loc[group_name]
+        self.mortality_out_care = pd.read_hdf(path, f'mortality_out_care{mortality_model_str}').loc[group_name]
+        self.mortality_out_care_age = pd.read_hdf(path, f'mortality_out_care_age{mortality_model_str}').loc[group_name]
+        self.mortality_out_care_tv_sqrtcd4 = pd.read_hdf(path, f'mortality_out_care_tv_sqrtcd4{mortality_model_str}').loc[group_name]
         self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
         self.mortality_out_care_sa = sa_dict['mortality_out_care']
+
 
         # Loss To Follow Up
         self.loss_to_follow_up = pd.read_hdf(path, 'loss_to_follow_up').loc[group_name]
