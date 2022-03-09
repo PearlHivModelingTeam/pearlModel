@@ -901,14 +901,16 @@ class Pearl:
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_in_care_sa, vcov_matrix)
 
         # Increase mortality to general population threshold
-        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
-        mean_mortality = pd.DataFrame(pop.loc[in_care].groupby(['mortality_age_group'])['death_prob'].mean())
-        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
-        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
-        for mortality_age_group in np.arange(14):
-            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
-            pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        if self.parameters.mortality_threshold_flag:
+            pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+            mean_mortality = pd.DataFrame(pop.loc[in_care].groupby(['mortality_age_group'])['death_prob'].mean())
+            mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+            mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+            for mortality_age_group in np.arange(14):
+                excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+                pop.loc[in_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
+        # Sensitivity Analysis
         pop['death_prob'] = self.parameters.classic_sa_dict['mortality_in_care'] * pop['death_prob']
 
         # Record classic one-way sa input
@@ -938,13 +940,14 @@ class Pearl:
         pop['death_prob'] = calculate_prob(pop_matrix, coeff_matrix, self.parameters.mortality_out_care_sa, vcov_matrix)
 
         # Increase mortality to general population threshold
-        pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
-        mean_mortality = pd.DataFrame(pop.loc[out_care].groupby(['mortality_age_group'])['death_prob'].mean())
-        mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
-        mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
-        for mortality_age_group in np.arange(14):
-            excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
-            pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
+        if self.parameters.mortality_threshold_flag:
+            pop['mortality_age_group'] = pd.cut(pop['age'], bins=[0, 19, 24, 29, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 85], right=True, labels=np.arange(14))
+            mean_mortality = pd.DataFrame(pop.loc[out_care].groupby(['mortality_age_group'])['death_prob'].mean())
+            mean_mortality['p'] = self.parameters.mortality_threshold['p'] - mean_mortality['death_prob']
+            mean_mortality.loc[mean_mortality['p'] <= 0, 'p'] = 0
+            for mortality_age_group in np.arange(14):
+                excess_mortality = mean_mortality.loc[mortality_age_group, 'p']
+                pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
         pop['death_prob'] = self.parameters.classic_sa_dict['mortality_out_care'] * pop['death_prob']
 
@@ -1235,11 +1238,13 @@ class Pearl:
 
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
-    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, final_year, mortality_model, verbose, sa_dict=None, classic_sa_dict=None):
-        """Takes the path to the parameters.h5 file, the path to the config file if the run is a rerun, the group name, the number of replications,
-        a flag indicating if the simulation is for aim 2, a flag indicating whether to record detailed comorbidity information, the sensitivity
-        analysis dictionary, a string indicating which new diagnosis input file to use, the output folder, the verbose flag, a flag indicating
-        whether to use the smoking intervention, and a flag indicating whether to use a threshold when calculating mortality.
+    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, mm_detail_flag, new_dx, final_year,
+                 mortality_model, mortality_threshold_flag, verbose, sa_dict=None, classic_sa_dict=None):
+        """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
+        the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
+        record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
+        mortality model to use, whether to use a mortality threshold, verbosity, the sensitivity analysis dict and
+        the classic sensitivity analysis dict.
         """
         # Save parameters as class attributes
         if sa_dict is None:
@@ -1252,6 +1257,7 @@ class Parameters:
         self.comorbidity_flag = comorbidity_flag
         self.mm_detail_flag = mm_detail_flag
         self.final_year = final_year
+        self.mortality_threshold_flag = mortality_threshold_flag
         self.verbose = verbose
 
         # Unpack Sensitivity Analysis List

@@ -5,3 +5,4 @@ out/*
 *.png
 *.xlsx
 venv/*
+config/*
