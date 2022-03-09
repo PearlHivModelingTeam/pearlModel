@@ -7,5 +7,6 @@ comorbidity_flag: 0
 mm_detail_flag: 0
 new_dx: 'ehe'
 morality_model: 'base'
+mortality_threshold_flag: 1
 final_year: 2030
 verbose: 0

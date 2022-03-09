@@ -59,6 +59,7 @@ mm_detail_flag = config_yaml['mm_detail_flag']
 new_dx = config_yaml['new_dx']
 final_year = config_yaml['final_year']
 mortality_model = config_yaml['mortality_model']
+mortality_threshold_flag= config_yaml['mortality_threshold_flag']
 verbose = config_yaml['verbose']
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
@@ -93,7 +94,7 @@ for group_name in group_names:
     print(group_name)
     # Create Parameters class
     parameters = pearl.Parameters(path=param_file, rerun_folder=rerun_folder, output_folder=output_folder, group_name=group_name, comorbidity_flag=comorbidity_flag, mm_detail_flag=mm_detail_flag,
-                                  new_dx=new_dx, final_year=final_year, mortality_model=mortality_model, verbose=verbose)
+                                  new_dx=new_dx, final_year=final_year, mortality_model=mortality_model, mortality_threshold_flag=mortality_threshold_flag, verbose=verbose)
     # Tell Ray to call the run function in parallel
     futures = [run.remote(parameters, group_name, replication) for replication in replications]
     # Append all output for each replication together
