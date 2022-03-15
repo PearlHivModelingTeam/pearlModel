@@ -101,4 +101,5 @@ for group_name in group_names:
     out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag, False))
 # Append all output for each subpopulation together and save as csv
 out = pearl.Statistics(out_list, comorbidity_flag, mm_detail_flag, False)
+del out_list
 out.save(output_folder)
