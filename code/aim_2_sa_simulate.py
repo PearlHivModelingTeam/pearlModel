@@ -1,5 +1,6 @@
 # Imports
 import os
+import sys
 import platform
 import ray
 import pearl
@@ -123,4 +124,6 @@ for param in aim_2_sa_dict.keys():
             out_list.append(pearl.Statistics(ray.get(futures), comorbidity_flag, mm_detail_flag))
 
         out = pearl.Statistics(out_list, comorbidity_flag, mm_detail_flag)
+        del out_list
         out.save(output_folder_sa)
+        del out
