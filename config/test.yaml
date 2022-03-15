@@ -1,8 +1,8 @@
 group_names: ['het_black_female']
 num_cpus: 1
 replications: 1
-comorbidity_flag: 0
-mm_detail_flag: 0
+comorbidity_flag: 1
+mm_detail_flag: 1
 new_dx: 'base'
 mortality_model: 'base' # base, by_sex, by_sex_race
 mortality_threshold_flag: 1 # 1, 0
