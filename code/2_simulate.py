@@ -17,8 +17,7 @@ def run(group_name_run, replication_run):
     output_path = output_root_path/group_name_run/f'replication_{replication_run_str}'
     rerun_path = rerun_root_path/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
-                                  group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'],
-                                  mm_detail_flag=config['mm_detail_flag'], new_dx=config['new_dx'],
+                                  group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'],
                                   verbose=config['verbose'])
@@ -31,8 +30,7 @@ def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     output_path = output_root_path/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
     rerun_path = rerun_root_path/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
-                                  group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'],
-                                  mm_detail_flag=config['mm_detail_flag'], new_dx=config['new_dx'],
+                                  group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'],
                                   verbose=config['verbose'], sa_type=config['sa_type'], sa_variable=sa_variable_run,
