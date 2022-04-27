@@ -1,10 +1,14 @@
-group_names: ['het_black_female']
-num_cpus: 1
-replications: 1
-comorbidity_flag: 1
-mm_detail_flag: 1
+group_names: ['het_white_female', 'idu_black_male']
+#group_names: ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
+#              'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
+#              'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
+num_cpus: 150
+replications: 2
+comorbidity_flag: 0
 new_dx: 'base'
 mortality_model: 'base' # base, by_sex, by_sex_race
 mortality_threshold_flag: 1 # 1, 0
-final_year: 2012
+final_year: 2030
 verbose: 0
+sa_type: 'type2'
+
