@@ -153,7 +153,8 @@ def calculate_cd4_increase(pop, knots, coeffs, vcov, sa):
         elif sa == 'high':
             new_cd4 += 1.96 * se
 
-    return pd.Series(new_cd4)
+    new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
+    return new_cd4
 
 
 def calculate_cd4_decrease(pop, coeffs, sa, vcov):
@@ -172,7 +173,8 @@ def calculate_cd4_decrease(pop, coeffs, sa, vcov):
             diff += 1.96 * se
 
     new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy(dtype=float) ** 2) * np.exp(diff) * SMEARING)
-    return pd.Series(new_cd4)
+    new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
+    return new_cd4
 
 
 def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
@@ -854,9 +856,6 @@ class Pearl:
         # Sensitivity Analysis
         new_sqrt_cd4 = np.sqrt(self.parameters.sa_type2_dict['cd4_increase'] * np.power(new_sqrt_cd4, 2))
 
-        # Truncate at 0 and sqrt(2000)
-        new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
-        new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
         old_sqrt_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
@@ -867,7 +866,7 @@ class Pearl:
                                                          'n': len(old_sqrt_cd4)}, index=[0])
             self.stats.sa_cd4_increase_in_care = self.stats.sa_cd4_increase_in_care.append(sa_cd4_increase_in_care, ignore_index=True)
 
-        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4.to_numpy()
+        self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
 
     def decrease_cd4_count(self):
         """Calculate and set new CD4 count for ART non-using population."""
@@ -881,8 +880,6 @@ class Pearl:
         # Sensitivity Analysis
         new_sqrt_cd4 = np.sqrt(self.parameters.sa_type2_dict['cd4_decrease'] * np.power(new_sqrt_cd4, 2))
 
-        new_sqrt_cd4.loc[new_sqrt_cd4 > np.sqrt(2000)] = np.sqrt(2000)
-        new_sqrt_cd4.loc[new_sqrt_cd4 < 0] = 0
         old_sqrt_cd4 = self.population.loc[out_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
@@ -893,7 +890,7 @@ class Pearl:
                                                           'n': len(old_sqrt_cd4)}, index=[0])
             self.stats.sa_cd4_decrease_out_care = self.stats.sa_cd4_decrease_out_care.append(sa_cd4_decrease_out_care, ignore_index=True)
 
-        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4.to_numpy()
+        self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
 
     def add_new_user(self):
         """Add newly initiating ART users."""
