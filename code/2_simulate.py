@@ -44,6 +44,7 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 parser.add_argument('--config')
 parser.add_argument('--rerun')
+parser.add_argument('--overwrite', action='store_true')
 args = parser.parse_args()
 
 pearl_path = Path('..')
@@ -100,10 +101,10 @@ else:
 
 # Create Output folder structure
 if output_root_path.is_dir():
-    if config_file_path.stem != 'test':
-        raise FileExistsError("Output folder already exists")
-    else:
+    if (config_file_path.stem == 'test') | args.overwrite:
         shutil.rmtree(output_root_path)
+    else:
+        raise FileExistsError("Output folder already exists")
 
 if sa_variables is None:
     for group_name in config['group_names']:
