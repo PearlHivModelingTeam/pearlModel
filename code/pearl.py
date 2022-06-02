@@ -577,11 +577,10 @@ class Pearl:
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_initial_cd4_in_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
-                                                        'n': len(population)}, index=[0])
-            self.stats.sa_initial_cd4_in_care = self.stats.sa_initial_cd4_in_care.append(sa_initial_cd4_in_care, ignore_index=True)
+        # Record classic one-way sa input
+        sa_initial_cd4_in_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
+                                                    'n': len(population)}, index=[0])
+        self.stats.sa_initial_cd4_in_care = self.stats.sa_initial_cd4_in_care.append(sa_initial_cd4_in_care, ignore_index=True)
 
         # Save population as pearl population
         self.population = population
@@ -676,10 +675,9 @@ class Pearl:
         population = population.reindex(sorted(population), axis=1)
 
         # Record classic one-way sa input
-        if self.parameters.sa_type == 'type2':
-            sa_initial_cd4_out_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
-                                                         'n': len(population)}, index=[0])
-            self.stats.sa_initial_cd4_out_care = self.stats.sa_initial_cd4_out_care.append(sa_initial_cd4_out_care, ignore_index=True)
+        sa_initial_cd4_out_care = pd.DataFrame(data={'mean_cd4': (population['init_sqrtcd4n'] ** 2).mean(),
+                                                     'n': len(population)}, index=[0])
+        self.stats.sa_initial_cd4_out_care = self.stats.sa_initial_cd4_out_care.append(sa_initial_cd4_out_care, ignore_index=True)
 
         # Append new population to pearl population
         self.population = self.population.append(population)
@@ -782,10 +780,9 @@ class Pearl:
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size')
-            self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
+        # Record classic one-way sa input
+        sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size')
+        self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
 
         # Append new population to pearl population
         self.population = self.population.append(population)
@@ -859,12 +856,11 @@ class Pearl:
         old_sqrt_cd4 = self.population.loc[in_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_cd4_increase_in_care = pd.DataFrame(data={'year': self.year,
-                                                         'mean_diff': diff_cd4,
-                                                         'n': len(old_sqrt_cd4)}, index=[0])
-            self.stats.sa_cd4_increase_in_care = self.stats.sa_cd4_increase_in_care.append(sa_cd4_increase_in_care, ignore_index=True)
+        # Record classic one-way sa input
+        sa_cd4_increase_in_care = pd.DataFrame(data={'year': self.year,
+                                                     'mean_diff': diff_cd4,
+                                                     'n': len(old_sqrt_cd4)}, index=[0])
+        self.stats.sa_cd4_increase_in_care = self.stats.sa_cd4_increase_in_care.append(sa_cd4_increase_in_care, ignore_index=True)
 
         self.population.loc[in_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
 
@@ -883,12 +879,11 @@ class Pearl:
         old_sqrt_cd4 = self.population.loc[out_care, 'time_varying_sqrtcd4n']
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_cd4_decrease_out_care = pd.DataFrame(data={'year': self.year,
-                                                          'mean_diff': diff_cd4,
-                                                          'n': len(old_sqrt_cd4)}, index=[0])
-            self.stats.sa_cd4_decrease_out_care = self.stats.sa_cd4_decrease_out_care.append(sa_cd4_decrease_out_care, ignore_index=True)
+        # Record classic one-way sa input
+        sa_cd4_decrease_out_care = pd.DataFrame(data={'year': self.year,
+                                                      'mean_diff': diff_cd4,
+                                                      'n': len(old_sqrt_cd4)}, index=[0])
+        self.stats.sa_cd4_decrease_out_care = self.stats.sa_cd4_decrease_out_care.append(sa_cd4_decrease_out_care, ignore_index=True)
 
         self.population.loc[out_care, 'time_varying_sqrtcd4n'] = new_sqrt_cd4
 
@@ -923,12 +918,11 @@ class Pearl:
         # Sensitivity Analysis
         pop['death_prob'] = self.parameters.sa_type2_dict['mortality_in_care'] * pop['death_prob']
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_mortality_in_care_prob = pd.DataFrame(data={'year': self.year,
-                                                           'mean_prob': pop.loc[in_care]['death_prob'].mean(),
-                                                           'n': len(pop.loc[in_care])}, index=[0])
-            self.stats.sa_mortality_in_care_prob = self.stats.sa_mortality_in_care_prob.append(sa_mortality_in_care_prob, ignore_index=True)
+        # Record classic one-way sa input
+        sa_mortality_in_care_prob = pd.DataFrame(data={'year': self.year,
+                                                       'mean_prob': pop.loc[in_care]['death_prob'].mean(),
+                                                       'n': len(pop.loc[in_care])}, index=[0])
+        self.stats.sa_mortality_in_care_prob = self.stats.sa_mortality_in_care_prob.append(sa_mortality_in_care_prob, ignore_index=True)
 
         # Draw for mortality
         died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & in_care
@@ -960,12 +954,11 @@ class Pearl:
 
         pop['death_prob'] = self.parameters.sa_type2_dict['mortality_out_care'] * pop['death_prob']
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_mortality_out_care_prob = pd.DataFrame(data={'year': self.year,
-                                                            'mean_prob': pop.loc[out_care]['death_prob'].mean(),
-                                                            'n': len(pop.loc[out_care])}, index=[0])
-            self.stats.sa_mortality_out_care_prob = self.stats.sa_mortality_out_care_prob.append(sa_mortality_out_care_prob, ignore_index=True)
+        # Record classic one-way sa input
+        sa_mortality_out_care_prob = pd.DataFrame(data={'year': self.year,
+                                                        'mean_prob': pop.loc[out_care]['death_prob'].mean(),
+                                                        'n': len(pop.loc[out_care])}, index=[0])
+        self.stats.sa_mortality_out_care_prob = self.stats.sa_mortality_out_care_prob.append(sa_mortality_out_care_prob, ignore_index=True)
 
         # Draw for mortality
         died = ((pop['death_prob'] > np.random.rand(len(self.population.index))) | (self.population['age'] > 85)) & out_care
@@ -988,12 +981,11 @@ class Pearl:
 
         lost = (pop['ltfu_prob'] > np.random.rand(len(self.population.index))) & in_care
 
-        if self.parameters.sa_type == 'type2':
-            # Record classic one-way sa input
-            sa_ltfu_prob = pd.DataFrame(data={'year': self.year,
-                                              'mean_prob': pop.loc[in_care]['ltfu_prob'].mean(),
-                                              'n': len(pop.loc[in_care])}, index=[0])
-            self.stats.sa_ltfu_prob = self.stats.sa_ltfu_prob.append(sa_ltfu_prob, ignore_index=True)
+        # Record classic one-way sa input
+        sa_ltfu_prob = pd.DataFrame(data={'year': self.year,
+                                          'mean_prob': pop.loc[in_care]['ltfu_prob'].mean(),
+                                          'n': len(pop.loc[in_care])}, index=[0])
+        self.stats.sa_ltfu_prob = self.stats.sa_ltfu_prob.append(sa_ltfu_prob, ignore_index=True)
 
         # Draw years spent out of care for those lost
         if self.parameters.sa_type2_dict['reengagement'] == 1.2:
@@ -1009,11 +1001,10 @@ class Pearl:
 
         years_out_of_care = np.random.choice(a=self.parameters.years_out_of_care['years'], size=len(self.population.loc[lost]), p=p)
 
-        if self.parameters.sa_type == 'type2':
-            sa_years_out_input = pd.DataFrame(data={'year': self.year,
-                                                    'mean_years': years_out_of_care.mean(),
-                                                    'n': len(years_out_of_care)}, index=[0])
-            self.stats.sa_years_out_input = self.stats.sa_years_out_input.append(sa_years_out_input, ignore_index=True)
+        sa_years_out_input = pd.DataFrame(data={'year': self.year,
+                                                'mean_years': years_out_of_care.mean(),
+                                                'n': len(years_out_of_care)}, index=[0])
+        self.stats.sa_years_out_input = self.stats.sa_years_out_input.append(sa_years_out_input, ignore_index=True)
 
         # Set variables for lost population
         self.population.loc[lost, 'return_year'] = self.year + years_out_of_care
@@ -1406,17 +1397,16 @@ class Statistics:
             self.mm_detail_inits = pd.DataFrame()
             self.mm_detail_dead = pd.DataFrame()
 
-        if sa_type == 'type2':
-            # Type2 sensitivity analysis output
-            self.sa_initial_cd4_in_care = pd.DataFrame()
-            self.sa_initial_cd4_out_care = pd.DataFrame()
-            self.sa_initial_cd4_inits = pd.DataFrame()
-            self.sa_mortality_in_care_prob = pd.DataFrame()
-            self.sa_mortality_out_care_prob = pd.DataFrame()
-            self.sa_ltfu_prob = pd.DataFrame()
-            self.sa_years_out_input = pd.DataFrame()
-            self.sa_cd4_increase_in_care = pd.DataFrame()
-            self.sa_cd4_decrease_out_care = pd.DataFrame()
+        # Type2 sensitivity analysis output
+        self.sa_initial_cd4_in_care = pd.DataFrame()
+        self.sa_initial_cd4_out_care = pd.DataFrame()
+        self.sa_initial_cd4_inits = pd.DataFrame()
+        self.sa_mortality_in_care_prob = pd.DataFrame()
+        self.sa_mortality_out_care_prob = pd.DataFrame()
+        self.sa_ltfu_prob = pd.DataFrame()
+        self.sa_years_out_input = pd.DataFrame()
+        self.sa_cd4_increase_in_care = pd.DataFrame()
+        self.sa_cd4_decrease_out_care = pd.DataFrame()
 
     def save(self):
         """Save all internal dataframes as csv files."""
