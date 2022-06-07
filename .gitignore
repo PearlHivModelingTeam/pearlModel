@@ -6,3 +6,4 @@ out/*
 *.xlsx
 venv/*
 config/*
+param_files/parameters.h5
