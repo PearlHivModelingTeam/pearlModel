@@ -233,24 +233,24 @@ def create_comorbidity_pop_matrix(pop, condition, parameters):
         pop['post_art_bmi__'] = restricted_cubic_spline_var(pop['post_art_bmi'], parameters.post_art_bmi_dict[condition], 2)
 
     if condition == 'anx':
-        return pop[['age', 'init_sqrtcd4n', 'dpr', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+        return pop[['age', 'init_sqrtcd4n', 'dpr', 'time_since_art', 'hcv', 'intercept', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition == 'dpr':
-        return pop[['age', 'anx', 'init_sqrtcd4n', 'time_since_art', 'hcv', 'intercept', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+        return pop[['age', 'anx', 'init_sqrtcd4n', 'time_since_art', 'hcv', 'intercept', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition == 'ckd':
         return pop[['age', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'init_sqrtcd4n',
-                    'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+                    'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition == 'lipid':
         return pop[['age', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'init_sqrtcd4n',
-                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition == 'dm':
         return pop[['age', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'init_sqrtcd4n',
-                    'ckd', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+                    'ckd', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition == 'ht':
         return pop[['age', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'init_sqrtcd4n',
-                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'intercept', 'lipid', 'smoking', 'year']].to_numpy(dtype=float)
     elif condition in ['malig', 'esld', 'mi']:
         return pop[['age', 'anx', 'delta_bmi_', 'delta_bmi__', 'delta_bmi', 'post_art_bmi', 'post_art_bmi_', 'post_art_bmi__', 'init_sqrtcd4n',
-                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'out_care', 'smoking', 'year']].to_numpy(dtype=float)
+                    'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'smoking', 'year']].to_numpy(dtype=float)
 
 
 def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy):
