@@ -7,3 +7,4 @@ out/*
 venv/*
 config/*
 param_files/parameters.h5
+param_files/.idea
