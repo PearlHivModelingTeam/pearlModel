@@ -14,8 +14,8 @@ from datetime import datetime
 @ray.remote
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path = output_root_path/group_name_run/f'replication_{replication_run_str}'
-    rerun_path = rerun_root_path/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
+    output_path = output_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}'
+    rerun_path = rerun_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
@@ -27,8 +27,8 @@ def run(group_name_run, replication_run):
 @ray.remote
 def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path = output_root_path/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
-    rerun_path = rerun_root_path/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
+    output_path = output_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
+    rerun_path = rerun_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
@@ -110,7 +110,7 @@ if sa_variables is None:
     for group_name in config['group_names']:
         for replication in range(config['replications']):
             replication_str = str(replication).zfill(len(str(config['replications'])))
-            output_path = output_root_path/group_name/f'replication_{replication_str}'
+            output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
             output_path.mkdir(parents=True)
 else:
     for sa_variable in sa_variables:
@@ -118,7 +118,7 @@ else:
             for group_name in config['group_names']:
                 for replication in range(config['replications']):
                     replication_str = str(replication).zfill(len(str(config['replications'])))
-                    output_path = output_root_path/f'{sa_variable}_{sa_value}'/group_name/f'replication_{replication_str}'
+                    output_path = output_root_path/'csv_output'/f'{sa_variable}_{sa_value}'/group_name/f'replication_{replication_str}'
                     output_path.mkdir(parents=True)
 
 # Copy config file to output dir
