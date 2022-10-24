@@ -18,8 +18,8 @@ num_cpus: 150
 replications: 200
 comorbidity_flag: 0 # 0, 1
 new_dx: 'base' # base, ehe, sa
-mortality_model: 'base' # base, by_sex_race, by_sex, overall
-mortality_threshold_flag: 1 # 0, 1
+mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall (_2015)
+mortality_threshold_flag: 1 # 0, 1:
 final_year: 2030 # [2010 - 2035]
 verbose: 0 #0, 1
 sa_type: 'none' # none, type1, type2, aim2

@@ -1268,7 +1268,7 @@ class Parameters:
             raise ValueError('Invalid new diagnosis file specified')
 
         # Choose mortality model
-        if mortality_model == 'base':
+        if mortality_model == 'by_sex_race_risk':
             mortality_model_str = ''
         else:
             mortality_model_str = '_' + mortality_model
