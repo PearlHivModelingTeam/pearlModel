@@ -19,7 +19,7 @@ def run(group_name_run, replication_run):
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
-                                  mortality_threshold_flag=config['mortality_threshold_flag'],
+                                  mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'])
     pearl.Pearl(parameters, group_name_run, replication_run)
 
@@ -32,7 +32,7 @@ def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
-                                  mortality_threshold_flag=config['mortality_threshold_flag'],
+                                  mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], sa_type=config['sa_type'], sa_variable=sa_variable_run,
                                   sa_value=sa_value_run)
     pearl.Pearl(parameters, group_name_run, replication_run)

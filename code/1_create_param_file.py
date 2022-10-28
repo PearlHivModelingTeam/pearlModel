@@ -320,6 +320,8 @@ mortality_out_care_age_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_
 mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015.csv').set_index('group')
 mortality_threshold_by_sex_race_risk_2015 = pd.read_csv(param_dir/'cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
 
+mortality_threshold_idu_5x = pd.read_csv(param_dir/'cdc_mortality_idu_5x.csv').set_index(['group', 'mortality_age_group'])
+mortality_threshold_idu_10x = pd.read_csv(param_dir/'cdc_mortality_idu_10x.csv').set_index(['group', 'mortality_age_group'])
 
 # Save everything
 out_file = param_dir/'parameters.h5'
@@ -482,3 +484,6 @@ with pd.HDFStore(out_file) as store:
     store['mortality_out_care_age_by_sex_race_risk_2015'] = mortality_out_care_age_by_sex_race_risk_2015
     store['mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015'] = mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015
     store['mortality_threshold_by_sex_race_risk_2015'] = mortality_threshold_by_sex_race_risk_2015
+
+    store['mortality_threshold_idu_5x'] = mortality_threshold_idu_5x
+    store['mortality_threshold_idu_10x'] = mortality_threshold_idu_10x
