@@ -1227,7 +1227,8 @@ class Pearl:
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
     def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
-                 mortality_model, mortality_threshold_flag, verbose, sa_type=None, sa_variable=None, sa_value=None):
+                 mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
+                 sa_value=None):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
         record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
@@ -1275,6 +1276,10 @@ class Parameters:
             if sa_type is not None:
                 raise NotImplementedError('Using alternative mortality models with sensitivity analysis is not implemented')
 
+        if (mortality_model != 'by_sex_race_risk') & (mortality_model != 'by_sex_race_risk_2015'):
+                if idu_threshold != '2x':
+                    raise NotImplementedError('Using alternative mortality models with idu threshold changes is not implemented')
+
         # Mortality In Care
         self.mortality_in_care = pd.read_hdf(path, f'mortality_in_care{mortality_model_str}').loc[group_name]
         self.mortality_in_care_age = pd.read_hdf(path, f'mortality_in_care_age{mortality_model_str}').loc[group_name]
@@ -1288,7 +1293,11 @@ class Parameters:
         self.mortality_out_care_vcov = pd.read_hdf(path, 'mortality_out_care_vcov').loc[group_name]
 
         # Mortality Threshold
-        self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold{mortality_model_str}').loc[group_name]
+        if idu_threshold != '2x':
+            self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold_idu_{idu_threshold}').loc[group_name]
+            print(self.mortality_threshold)
+        else:
+            self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold{mortality_model_str}').loc[group_name]
 
         # Loss To Follow Up
         self.loss_to_follow_up = pd.read_hdf(path, 'loss_to_follow_up').loc[group_name]
