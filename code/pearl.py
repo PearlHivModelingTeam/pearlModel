@@ -1295,7 +1295,6 @@ class Parameters:
         # Mortality Threshold
         if idu_threshold != '2x':
             self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold_idu_{idu_threshold}').loc[group_name]
-            print(self.mortality_threshold)
         else:
             self.mortality_threshold = pd.read_hdf(path, f'mortality_threshold{mortality_model_str}').loc[group_name]
 
