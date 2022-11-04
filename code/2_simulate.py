@@ -86,18 +86,23 @@ else:
     config['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
 # Load sensitivity analysis variables
-if config['sa_type'] == 'type1':
+if config['sa_type'] == 'none':
+    sa_variables = None
+    sa_values = None
+elif config['sa_type'] == 'type1':
     sa_variables = pearl.sa_type1_var
     sa_values = ['low', 'high']
 elif config['sa_type'] == 'type2':
     sa_variables = pearl.sa_type2_var
     sa_values = [0.8, 1.2]
-elif config['sa_type'] == 'aim2':
+elif (config['sa_type'] == 'aim2_inc') | (config['sa_type'] == 'aim2_prev'):
     sa_variables = pearl.sa_aim2_var
     sa_values = [0.75, 1.25]
+elif config['sa_type'] == 'aim2_mort':
+    sa_variables = pearl.sa_aim2_mort_var
+    sa_values = [0.75, 1.25]
 else:
-    sa_variables = None
-    sa_values = None
+    raise ValueError("Unrecognized sensitivity analysis type")
 
 # Create Output folder structure
 if output_root_path.is_dir():

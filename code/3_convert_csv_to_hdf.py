@@ -8,6 +8,8 @@ from pathlib import Path
 from datetime import datetime
 import argparse
 
+sa_types = ['type1', 'type2', 'aim2_inc', 'aim2_prev', 'aim2_mort']
+
 start_time = datetime.now()
 
 # Define the argument parser
@@ -35,8 +37,7 @@ combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age',
 with open(in_dir/'../config.yaml', 'r') as config_file:
     config = yaml.safe_load(config_file)
 
-if config['sa_type'] in ['type1', 'type2', 'aim2']:
-    model_names = next(os.walk(in_dir))[1]
+if config['sa_type'] in sa_types:
     model_names = next(os.walk(in_dir))[1]
     group_names = next(os.walk(in_dir/model_names[0]))[1]
     replications = next(os.walk(in_dir / model_names[0] / group_names[0]))[1]
@@ -57,7 +58,7 @@ for output_table in output_tables:
             print('   ', '   ', group_name)
             for replication in replications:
                 replication_int = int(replication.split(sep='_')[1])
-                if config['sa_type'] in ['type1', 'type2', 'aim2']:
+                if config['sa_type'] in sa_types:
                     chunk_list.append(
                         pd.read_csv(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,

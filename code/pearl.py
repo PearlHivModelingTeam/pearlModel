@@ -45,6 +45,9 @@ sa_type2_default_dict = {i: j for i, j in zip(sa_type2_var, len(sa_type2_var) * 
 sa_aim2_var = STAGE1 + STAGE2 + STAGE3
 sa_aim2_default_dict = {i: j for i, j in zip(sa_aim2_var, len(sa_aim2_var) * [1.0])}
 
+sa_aim2_mort_var = ['mortality_in_care', 'mortality_out_care']
+sa_aim2_mort_default_dict = {i: j for i, j in zip(sa_aim2_mort_var, len(sa_aim2_mort_var) * [1.0])}
+
 
 ###############################################################################
 # Functions                                                                   #
@@ -667,8 +670,11 @@ class Pearl:
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
             # Apply comorbidities
-            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            for condition in STAGE0:
                 population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_users_dict[condition].values).astype(int)
+            for condition in STAGE1 + STAGE2 + STAGE3:
+                population[condition] = (np.random.rand(len(population.index)) < (self.parameters.prev_users_dict[condition].values) *
+                                         self.parameters.sa_aim2_prev_dict[condition]).astype(int)
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
@@ -773,8 +779,11 @@ class Pearl:
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
             # Apply comorbidities
-            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            for condition in STAGE0:
                 population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_inits_dict[condition].values).astype(int)
+            for condition in STAGE1 + STAGE2 + STAGE3:
+                population[condition] = (np.random.rand(len(population.index)) < (self.parameters.prev_inits_dict[condition].values) *
+                                         self.parameters.sa_aim2_prev_dict[condition]).astype(int)
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
@@ -917,6 +926,7 @@ class Pearl:
 
         # Sensitivity Analysis
         pop['death_prob'] = self.parameters.sa_type2_dict['mortality_in_care'] * pop['death_prob']
+        pop['death_prob'] = self.parameters.sa_aim2_mort_dict['mortality_in_care'] * pop['death_prob']
 
         # Record classic one-way sa input
         sa_mortality_in_care_prob = pd.DataFrame(data={'year': self.year,
@@ -953,6 +963,7 @@ class Pearl:
                 pop.loc[out_care & (pop['mortality_age_group'] == mortality_age_group), 'death_prob'] += excess_mortality
 
         pop['death_prob'] = self.parameters.sa_type2_dict['mortality_out_care'] * pop['death_prob']
+        pop['death_prob'] = self.parameters.sa_aim2_mort_dict['mortality_out_care'] * pop['death_prob']
 
         # Record classic one-way sa input
         sa_mortality_out_care_prob = pd.DataFrame(data={'year': self.year,
@@ -1058,7 +1069,7 @@ class Pearl:
             coeff_matrix = self.parameters.comorbidity_coeff_dict[condition].to_numpy(dtype=float)
             pop_matrix = create_comorbidity_pop_matrix(self.population.copy(), condition=condition, parameters=self.parameters)
             prob = calculate_prob(pop_matrix, coeff_matrix, None, None)
-            prob = self.parameters.sa_aim2_dict[condition] * prob
+            prob = self.parameters.sa_aim2_inc_dict[condition] * prob
 
             # Draw for incidence
             rand = prob > np.random.rand(len(self.population.index))
@@ -1318,7 +1329,9 @@ class Parameters:
         # Set up sensitivity analysis
         self.sa_type1_dict = sa_type1_default_dict.copy()
         self.sa_type2_dict = sa_type2_default_dict.copy()
-        self.sa_aim2_dict = sa_aim2_default_dict.copy()
+        self.sa_aim2_inc_dict = sa_aim2_default_dict.copy()
+        self.sa_aim2_prev_dict = sa_aim2_default_dict.copy()
+        self.sa_aim2_mort_dict = sa_aim2_mort_default_dict.copy()
 
         if sa_type == 'type1':
             self.sa_type1_dict[sa_variable] = sa_value
@@ -1331,9 +1344,12 @@ class Parameters:
                     self.new_dx['lower'] = self.new_dx['upper']
         elif sa_type == 'type2':
             self.sa_type2_dict[sa_variable] = sa_value
-        elif sa_type == 'aim2':
-            self.sa_aim2_dict[sa_variable] = sa_value
-
+        elif sa_type == 'aim2_inc':
+            self.sa_aim2_inc_dict[sa_variable] = sa_value
+        elif sa_type == 'aim2_prev':
+            self.sa_aim2_prev_dict[sa_variable] = sa_value
+        elif sa_type == 'aim2_mort':
+            self.sa_aim2_mort_dict[sa_variable] = sa_value
 
         # BMI
         self.pre_art_bmi = pd.read_hdf(path, 'pre_art_bmi').loc[group_name]
