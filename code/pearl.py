@@ -256,7 +256,7 @@ def create_comorbidity_pop_matrix(pop, condition, parameters):
                     'ckd', 'dm', 'dpr', 'time_since_art', 'hcv', 'ht', 'intercept', 'lipid', 'smoking', 'year']].to_numpy(dtype=float)
 
 
-def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy):
+def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy, res_var):
     """Calculate and return pre art bmi for a given population dataframe. Each subpopulation can use a different model of pre art bmi."""
     # Calculate pre art bmi using one of 5 different models depending on subpopulation
     pre_art_bmi = np.nan
@@ -268,19 +268,16 @@ def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy):
         pop['h1yy__'] = restricted_cubic_spline_var(h1yy, t_h1yy, 2)
         pop_matrix = pop[['init_age', 'age_', 'age__', 'h1yy', 'h1yy_', 'h1yy__', 'intercept']].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-        pre_art_bmi = 10.0 ** log_pre_art_bmi
 
     elif model == 5:
         pop['age_'] = restricted_cubic_spline_var(pop['init_age'], t_age, 1)
         pop['age__'] = restricted_cubic_spline_var(pop['init_age'], t_age, 2)
         pop_matrix = pop[['init_age', 'age_', 'age__', 'h1yy', 'intercept']].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-        pre_art_bmi = 10.0 ** log_pre_art_bmi
 
     elif model == 3:
         pop_matrix = pop[['init_age', 'h1yy', 'intercept']].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-        pre_art_bmi = 10.0 ** log_pre_art_bmi
 
     elif model == 2:
         pop['age_'] = (pop['init_age'] >= 30) & (pop['init_age'] < 40)
@@ -293,7 +290,6 @@ def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy):
         pop_matrix = pop[['age_', 'age__', 'age___', 'age____',
                           'h1yy', 'h1yy_', 'h1yy__', 'intercept']].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-        pre_art_bmi = 10.0 ** log_pre_art_bmi
 
     elif model == 1:
         pop['age_'] = (pop['init_age'] >= 30) & (pop['init_age'] < 40)
@@ -302,8 +298,11 @@ def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy):
         pop['age____'] = pop['init_age'] >= 60
         pop_matrix = pop[['age_', 'age__', 'age___', 'age____', 'h1yy', 'intercept']].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-        pre_art_bmi = 10.0 ** log_pre_art_bmi
 
+    log_pre_art_bmi = log_pre_art_bmi.T[0]
+    log_pre_art_bmi = np.vectorize(draw_from_trunc_norm)(np.log10(10), np.log10(65),
+                                                         log_pre_art_bmi, np.sqrt(res_var), 1)
+    pre_art_bmi = 10.0 ** log_pre_art_bmi
     return pre_art_bmi
 
 
@@ -343,6 +342,10 @@ def calculate_post_art_bmi(pop, parameters):
     pop_matrix = pop[['init_age', 'age_', 'age__', 'h1yy', 'intercept', 'pre_sqrt', 'pre_sqrt_', 'pre_sqrt_', 'sqrtcd4',
                       'sqrtcd4_', 'sqrtcd4__', 'sqrtcd4_post', 'sqrtcd4_post_', 'sqrtcd4_post__']].to_numpy(dtype=float)
     sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+
+    sqrt_post_art_bmi = sqrt_post_art_bmi.T[0]
+    sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(np.sqrt(10), np.sqrt(65), sqrt_post_art_bmi,
+                                                           np.sqrt(parameters.post_art_bmi_res_var), 1)
     post_art_bmi = sqrt_post_art_bmi ** 2.0
     return post_art_bmi
 
@@ -568,7 +571,8 @@ class Pearl:
         if self.parameters.comorbidity_flag:
             # Bmi
             population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots)
+                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
+                                                              self.parameters.pre_art_bmi_res_var)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -665,7 +669,8 @@ class Pearl:
         if self.parameters.comorbidity_flag:
             # Bmi
             population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots)
+                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
+                                                              self.parameters.pre_art_bmi_res_var)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -774,7 +779,8 @@ class Pearl:
         # If doing an Aim 2 simulation calculate bmi variables for the population
         if self.parameters.comorbidity_flag:
             population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots)
+                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
+                                                              self.parameters.pre_art_bmi_res_var)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -1356,11 +1362,13 @@ class Parameters:
         self.pre_art_bmi_model = pd.read_hdf(path, 'pre_art_bmi_model').loc[group_name].values[0]
         self.pre_art_bmi_age_knots = pd.read_hdf(path, 'pre_art_bmi_age_knots').loc[group_name]
         self.pre_art_bmi_h1yy_knots = pd.read_hdf(path, 'pre_art_bmi_h1yy_knots').loc[group_name]
+        self.pre_art_bmi_res_var = pd.read_hdf(path, 'pre_art_bmi_res_var').loc[group_name].values[0]
         self.post_art_bmi = pd.read_hdf(path, 'post_art_bmi').loc[group_name]
         self.post_art_bmi_age_knots = pd.read_hdf(path, 'post_art_bmi_age_knots').loc[group_name]
         self.post_art_bmi_pre_art_bmi_knots = pd.read_hdf(path, 'post_art_bmi_pre_art_bmi_knots').loc[group_name]
         self.post_art_bmi_cd4_knots = pd.read_hdf(path, 'post_art_bmi_cd4_knots').loc[group_name]
         self.post_art_bmi_cd4_post_knots = pd.read_hdf(path, 'post_art_bmi_cd4_post_knots').loc[group_name]
+        self.post_art_bmi_res_var = pd.read_hdf(path, 'post_art_bmi_res_var').loc[group_name].values[0]
 
         # Comorbidities
         self.prev_users_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_users').loc[group_name] for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}

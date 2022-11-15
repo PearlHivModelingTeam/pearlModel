@@ -188,11 +188,13 @@ pre_art_bmi = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi.csv').set_index(['grou
 pre_art_bmi_model = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi_model.csv').set_index(['group'])
 pre_art_bmi_age_knots = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi_age_knots.csv').set_index('group')
 pre_art_bmi_h1yy_knots = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi_h1yy_knots.csv').set_index('group')
+pre_art_bmi_res_var = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi_res_var.csv').set_index(['group'])
 post_art_bmi = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi.csv').set_index(['group', 'parameter'])
 post_art_bmi_age_knots = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi_age_knots.csv').set_index(['group'])
 post_art_bmi_pre_art_bmi_knots = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi_pre_art_bmi_knots.csv').set_index(['group'])
 post_art_bmi_cd4_knots = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi_cd4_knots.csv').set_index(['group'])
 post_art_bmi_cd4_post_knots = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi_cd4_post_knots.csv').set_index(['group'])
+post_art_bmi_res_var = pd.read_csv(param_dir/'aim2/bmi/post_art_bmi_res_var.csv').set_index(['group'])
 
 # Stage 0 comorbidities
 hcv_prev_users = pd.read_csv(param_dir/'aim2/stage0/hcv_prev_users.csv').set_index('group')
@@ -363,11 +365,13 @@ with pd.HDFStore(out_file) as store:
     store['pre_art_bmi_model'] = pre_art_bmi_model
     store['pre_art_bmi_age_knots'] = pre_art_bmi_age_knots
     store['pre_art_bmi_h1yy_knots'] = pre_art_bmi_h1yy_knots
+    store['pre_art_bmi_res_var'] = pre_art_bmi_res_var
     store['post_art_bmi'] = post_art_bmi
     store['post_art_bmi_age_knots'] = post_art_bmi_age_knots
     store['post_art_bmi_pre_art_bmi_knots'] = post_art_bmi_pre_art_bmi_knots
     store['post_art_bmi_cd4_knots'] = post_art_bmi_cd4_knots
     store['post_art_bmi_cd4_post_knots'] = post_art_bmi_cd4_post_knots
+    store['post_art_bmi_res_var'] = post_art_bmi_res_var
 
     # Stage 0 comorbidities
     store['hcv_prev_users'] = hcv_prev_users
