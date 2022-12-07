@@ -1236,6 +1236,9 @@ class Pearl:
         cd4_inits = cd4_inits.groupby(['h1yy', 'cd4_count']).size()
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').rename(columns={'h1yy': 'year'})
 
+        if self.parameters.comorbidity_flag:
+            self.stats.bmi = self.population[['h1yy', 'pre_art_bmi', 'post_art_bmi']].copy().rename(columns={'h1yy': 'year'})
+
 
 ###############################################################################
 # Parameter and Statistics Classes                                            #
@@ -1428,6 +1431,7 @@ class Statistics:
             self.mm_detail_out_care = pd.DataFrame()
             self.mm_detail_inits = pd.DataFrame()
             self.mm_detail_dead = pd.DataFrame()
+            self.bmi = pd.DataFrame()
 
         # Type2 sensitivity analysis output
         self.sa_initial_cd4_in_care = pd.DataFrame()
