@@ -71,7 +71,7 @@ for output_table in output_tables:
     df = pd.concat(chunk_list, ignore_index=True)
     measured_var = df.columns[-4]
     table_cols = df.columns[:-4]
-    if output_table in combinable_tables:
+    if output_table[:-4] in combinable_tables:
         groupby_cols = list(df.columns.drop(['group', measured_var]))
         ov = df.groupby(groupby_cols)[measured_var].sum().reset_index().assign(group='overall')
         df = pd.concat([df, ov], ignore_index=True)
