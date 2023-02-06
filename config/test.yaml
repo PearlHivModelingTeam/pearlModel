@@ -7,5 +7,5 @@ mortality_model: 'by_sex_race_risk'
 mortality_threshold_flag: 1
 final_year: 2030
 verbose: 0
-sa_type: 'none'
+sa_type: 'aim2_inc'
 idu_threshold: '2x'
