@@ -36,10 +36,10 @@ def clean_coeff(df):
 
 
 # Number of people on art in 2009: on_art_2009
-on_art_2009 = pd.read_csv(param_dir/'on_art_2009.csv').set_index(['group']).sort_index()
+on_art_2009 = pd.read_csv(param_dir/'initial_population_2009/population_size/on_art_2009.csv').set_index(['group']).sort_index()
 
 # Proportion of people with certain h1yy given age, risk, sex: h1yy_by_age_2009
-h1yy_by_age_2009 = pd.read_csv(param_dir/'h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()[['pct']]
+h1yy_by_age_2009 = pd.read_csv(param_dir/'initial_population_2009/art_init_year/h1yy_by_age_2009.csv').set_index(['group', 'age2009cat', 'h1yy']).sort_index()[['pct']]
 # If there is no data for a specific age group, then use the values for msm_white_male
 h1yy_by_age_2009 = h1yy_by_age_2009.reindex(pd.MultiIndex.from_product([h1yy_by_age_2009.index.levels[0].unique(),
                                                                         h1yy_by_age_2009.index.levels[1].unique(),
@@ -51,7 +51,7 @@ for group in h1yy_by_age_2009.index.levels[0].unique():
             h1yy_by_age_2009.loc[group, age_cat] = h1yy_by_age_2009.loc['msm_white_male', age_cat].values
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group in 2009
-cd4n_by_h1yy_2009 = pd.read_csv(param_dir/'cd4n_by_h1yy_2009.csv').set_index(['group']).sort_index()
+cd4n_by_h1yy_2009 = pd.read_csv(param_dir/'initial_population_2009/cd4_at_art_init/cd4n_by_h1yy_2009.csv').set_index(['group']).sort_index()
 years = np.arange(2000, 2010)
 
 # Unpack values for each year
@@ -68,7 +68,7 @@ df['estimate'] = df['estimate'].astype(float)
 cd4n_by_h1yy_2009 = df
 
 # Mixed gaussian coefficients for age of patients alive in 2009
-age_in_2009 = pd.read_csv(param_dir/'age_in_2009.csv')
+age_in_2009 = pd.read_csv(param_dir/'initial_population_2009/age_distribution/age_in_2009.csv')
 # Truncate all numeric values at 0 and all lambda1 values at 1
 for col in age_in_2009.select_dtypes(include=np.number).columns.tolist():
     age_in_2009.loc[age_in_2009[col] < 0, col] = 0
@@ -76,15 +76,15 @@ for col in age_in_2009.select_dtypes(include=np.number).columns.tolist():
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 
 # New dx prediction intervals
-new_dx = pd.read_csv(param_dir/'new_dx_interval.csv').set_index(['group', 'year'])
-new_dx_ehe = pd.read_csv(param_dir/'new_dx_combined_ehe.csv').set_index(['group', 'year'])
-new_dx_sa = pd.read_csv(param_dir/'new_dx_interval_sa.csv').set_index(['group', 'year'])
+new_dx = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval.csv').set_index(['group', 'year'])
+new_dx_ehe = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_combined_ehe.csv').set_index(['group', 'year'])
+new_dx_sa = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval_sa.csv').set_index(['group', 'year'])
 
 # Linkage to care
-linkage_to_care = pd.read_csv(param_dir/'linkage_to_care.csv').set_index(['group', 'year'])
+linkage_to_care = pd.read_csv(param_dir/'new_diagnosis_population/population_size/linkage_to_care.csv').set_index(['group', 'year'])
 
 # Age at art init mixed gaussian coefficients
-age_by_h1yy = pd.read_csv(param_dir/'age_by_h1yy.csv')
+age_by_h1yy = pd.read_csv(param_dir/'new_diagnosis_population/age_distribution/age_by_h1yy.csv')
 age_by_h1yy = age_by_h1yy.loc[(age_by_h1yy['param'] != 'lambda2') & (age_by_h1yy['h1yy'] != 2009)]
 # No values less than 0 and no lambda1 greater than 1
 age_by_h1yy.loc[age_by_h1yy['pred'] < 0, 'pred'] = 0
@@ -101,7 +101,7 @@ age_by_h1yy['high_value'] = age_by_h1yy[['pred', 'pred2']].max(axis=1)
 age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']].sort_values(['group', 'h1yy', 'param']).set_index(['group', 'h1yy', 'param'])
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
-cd4n_by_h1yy = pd.read_csv(param_dir/'cd4n_by_h1yy.csv').set_index('group').sort_index()
+cd4n_by_h1yy = pd.read_csv(param_dir/'new_diagnosis_population/cd4_at_art_init/cd4n_by_h1yy.csv').set_index('group').sort_index()
 years = np.arange(2010, 2035)
 params = ['mu', 'sigma']
 
@@ -131,57 +131,55 @@ df['high_value'] = df['high_value'].astype(float)
 cd4n_by_h1yy = df
 
 # Coefficients for mortality in care
-mortality_in_care = pd.read_csv(param_dir/'mortality_in_care.csv')
+mortality_in_care = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_by_sex_race_risk.csv')
 cols = mortality_in_care.columns.tolist()
 mortality_in_care = mortality_in_care.set_index('group')
-mortality_in_care_age = pd.read_csv(param_dir/'mortality_in_care_age.csv').set_index('group')
-mortality_in_care_sqrtcd4 = pd.read_csv(param_dir/'mortality_in_care_sqrtcd4.csv').set_index('group')
-mortality_in_care_vcov = pd.read_csv(param_dir/'mortality_in_care_vcov.csv').set_index(['group', 'covariate'])
+mortality_in_care_age = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_age_by_sex_race_risk.csv').set_index('group')
+mortality_in_care_sqrtcd4 = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_sqrtcd4_by_sex_race_risk.csv').set_index('group')
+mortality_in_care_vcov = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_vcov.csv').set_index(['group', 'covariate'])
 
-mortality_threshold = pd.read_csv(param_dir/'cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
+mortality_threshold = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
 
 
 # Coefficients for mortality out of care
-mortality_out_care = pd.read_csv(param_dir/'mortality_out_care.csv')
+mortality_out_care = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_by_sex_race_risk.csv')
 cols = mortality_out_care.columns.tolist()
 mortality_out_care = mortality_out_care.set_index('group')
-mortality_out_care_age = pd.read_csv(param_dir/'mortality_out_care_age.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4 = pd.read_csv(param_dir/'mortality_out_care_tv_sqrtcd4.csv').set_index('group')
-mortality_out_care_vcov = pd.read_csv(param_dir/'mortality_out_care_vcov.csv').set_index(['group', 'covariate'])
+mortality_out_care_age = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_age_by_sex_race_risk.csv').set_index('group')
+mortality_out_care_tv_sqrtcd4 = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_tv_sqrtcd4_by_sex_race_risk.csv').set_index('group')
+mortality_out_care_vcov = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_vcov.csv').set_index(['group', 'covariate'])
 
 # Coefficients for loss to follow up
-loss_to_follow_up = pd.read_csv(param_dir/'loss_to_follow_up.csv')
+loss_to_follow_up = pd.read_csv(param_dir/'population_dynamics/disengagement/loss_to_follow_up.csv')
 cols = loss_to_follow_up.columns.tolist()
 loss_to_follow_up = loss_to_follow_up.set_index('group')
-loss_to_follow_up_vcov = pd.read_csv(param_dir/'loss_to_follow_up_vcov.csv')
+loss_to_follow_up_vcov = pd.read_csv(param_dir/'population_dynamics/disengagement/loss_to_follow_up_vcov.csv')
 loss_to_follow_up_vcov.columns = cols
 loss_to_follow_up_vcov['covariate'] = 15*(cols[1:])
 loss_to_follow_up_vcov = loss_to_follow_up_vcov.set_index(['group', 'covariate'])
 
-ltfu_knots = pd.read_csv(param_dir/'ltfu_knots.csv').set_index('group')
-
-
+ltfu_knots = pd.read_csv(param_dir/'population_dynamics/disengagement/ltfu_knots.csv').set_index('group')
 
 # Coefficients for cd4 decline out of care
-cd4_decrease = pd.read_csv(param_dir/'cd4_decrease.csv')
+cd4_decrease = pd.read_csv(param_dir/'population_dynamics/cd4_dynamics_out_care/cd4_decrease.csv')
 cols = cd4_decrease.columns.tolist()
 cd4_decrease['group'] = 'all'
 cd4_decrease = cd4_decrease.set_index('group')
-cd4_decrease_vcov = pd.read_csv(param_dir/'cd4_decrease_vcov.csv')
+cd4_decrease_vcov = pd.read_csv(param_dir/'population_dynamics/cd4_dynamics_out_care/cd4_decrease_vcov.csv')
 cd4_decrease_vcov.columns = cols
 
 # Coefficients and knots of cd4 increase over time
-cd4_increase = pd.read_csv(param_dir/'cd4_increase.csv')
+cd4_increase = pd.read_csv(param_dir/'population_dynamics/cd4_dynamics_in_care/cd4_increase.csv')
 cols = cd4_increase.columns.tolist()
 cd4_increase = cd4_increase.set_index('group')
-cd4_increase_vcov = pd.read_csv(param_dir/'cd4_increase_vcov.csv')
+cd4_increase_vcov = pd.read_csv(param_dir/'population_dynamics/cd4_dynamics_in_care/cd4_increase_vcov.csv')
 cd4_increase_vcov.columns = cols
 cd4_increase_vcov['covariate'] = 15*(cols[1:])
 cd4_increase_vcov = cd4_increase_vcov.set_index(['group', 'covariate'])
 cd4_increase_knots = pd.DataFrame({'group': group_names, 'p5': 15*[1.0], 'p35': 15*[4.0], 'p65': 15*[7.0], 'p95': 15*[13.0]}).set_index('group')
 
 # Number of years spent out of care
-years_out_of_care = pd.read_csv(param_dir/'years_out_of_care.csv')
+years_out_of_care = pd.read_csv(param_dir/'population_dynamics/reengagement/years_out_of_care.csv')
 
 # BMI
 pre_art_bmi = pd.read_csv(param_dir/'aim2/bmi/pre_art_bmi.csv').set_index(['group', 'parameter'])
@@ -265,66 +263,33 @@ mortality_out_care_co = pd.read_csv(param_dir/'aim2/mortality/mortality_out_care
 mortality_out_care_post_art_bmi = pd.read_csv(param_dir/'aim2/mortality/mortality_out_care_post_art_bmi.csv').set_index('group')
 
 # Mortality paper options
-mortality_in_care_overall = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_overall.csv').set_index('group')
-mortality_in_care_age_overall = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_age_overall.csv').set_index('group')
-mortality_in_care_sqrtcd4_overall = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_sqrtcd4_overall.csv').set_index('group')
-mortality_out_care_overall = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_overall.csv').set_index('group')
-mortality_out_care_age_overall = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_age_overall.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_overall = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_tv_sqrtcd4_overall.csv').set_index('group')
-mortality_threshold_overall = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_overall.csv').set_index(['group', 'mortality_age_group'])
+mortality_in_care_overall = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_overall.csv').set_index('group')
+mortality_in_care_age_overall = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_age_overall.csv').set_index('group')
+mortality_in_care_sqrtcd4_overall = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_sqrtcd4_overall.csv').set_index('group')
+mortality_out_care_overall = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_overall.csv').set_index('group')
+mortality_out_care_age_overall = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_age_overall.csv').set_index('group')
+mortality_out_care_tv_sqrtcd4_overall = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_tv_sqrtcd4_overall.csv').set_index('group')
+mortality_threshold_overall = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_overall.csv').set_index(['group', 'mortality_age_group'])
 
-mortality_in_care_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_by_sex.csv').set_index('group')
-mortality_in_care_age_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_age_by_sex.csv').set_index('group')
-mortality_in_care_sqrtcd4_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_sqrtcd4_by_sex.csv').set_index('group')
-mortality_out_care_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_by_sex.csv').set_index('group')
-mortality_out_care_age_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_age_by_sex.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_by_sex = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_tv_sqrtcd4_by_sex.csv').set_index('group')
-mortality_threshold_by_sex = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_by_sex.csv').set_index(['group', 'mortality_age_group'])
+mortality_in_care_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_by_sex.csv').set_index('group')
+mortality_in_care_age_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_age_by_sex.csv').set_index('group')
+mortality_in_care_sqrtcd4_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_sqrtcd4_by_sex.csv').set_index('group')
+mortality_out_care_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_by_sex.csv').set_index('group')
+mortality_out_care_age_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_age_by_sex.csv').set_index('group')
+mortality_out_care_tv_sqrtcd4_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_tv_sqrtcd4_by_sex.csv').set_index('group')
+mortality_threshold_by_sex = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_by_sex.csv').set_index(['group', 'mortality_age_group'])
 
-mortality_in_care_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_by_sex_race.csv').set_index('group')
-mortality_in_care_age_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_age_by_sex_race.csv').set_index('group')
-mortality_in_care_sqrtcd4_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_in_care/mortality_in_care_sqrtcd4_by_sex_race.csv').set_index('group')
-mortality_out_care_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_by_sex_race.csv').set_index('group')
-mortality_out_care_age_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_age_by_sex_race.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_by_sex_race = pd.read_csv(param_dir/'mortality_paper/mortality_out_care/mortality_out_care_tv_sqrtcd4_by_sex_race.csv').set_index('group')
-mortality_threshold_by_sex_race = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_by_sex_race.csv').set_index(['group', 'mortality_age_group'])
+mortality_in_care_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_by_sex_race.csv').set_index('group')
+mortality_in_care_age_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_age_by_sex_race.csv').set_index('group')
+mortality_in_care_sqrtcd4_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_in_care/mortality_in_care_sqrtcd4_by_sex_race.csv').set_index('group')
+mortality_out_care_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_by_sex_race.csv').set_index('group')
+mortality_out_care_age_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_age_by_sex_race.csv').set_index('group')
+mortality_out_care_tv_sqrtcd4_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_out_care/mortality_out_care_tv_sqrtcd4_by_sex_race.csv').set_index('group')
+mortality_threshold_by_sex_race = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_by_sex_race.csv').set_index(['group', 'mortality_age_group'])
 
-# Mortality paper 2015
-mortality_in_care_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_overall_2015.csv').set_index('group')
-mortality_in_care_age_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_age_overall_2015.csv').set_index('group')
-mortality_in_care_sqrtcd4_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_sqrtcd4_overall_2015.csv').set_index('group')
-mortality_out_care_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_overall_2015.csv').set_index('group')
-mortality_out_care_age_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_age_overall_2015.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_overall_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_tv_sqrtcd4_overall_2015.csv').set_index('group')
-mortality_threshold_overall_2015 = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_overall.csv').set_index(['group', 'mortality_age_group'])
-
-mortality_in_care_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_by_sex_2015.csv').set_index('group')
-mortality_in_care_age_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_age_by_sex_2015.csv').set_index('group')
-mortality_in_care_sqrtcd4_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_sqrtcd4_by_sex_2015.csv').set_index('group')
-mortality_out_care_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_by_sex_2015.csv').set_index('group')
-mortality_out_care_age_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_age_by_sex_2015.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_tv_sqrtcd4_by_sex_2015.csv').set_index('group')
-mortality_threshold_by_sex_2015 = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_by_sex.csv').set_index(['group', 'mortality_age_group'])
-
-mortality_in_care_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_by_sex_race_2015.csv').set_index('group')
-mortality_in_care_age_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_age_by_sex_race_2015.csv').set_index('group')
-mortality_in_care_sqrtcd4_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_sqrtcd4_by_sex_race_2015.csv').set_index('group')
-mortality_out_care_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_by_sex_race_2015.csv').set_index('group')
-mortality_out_care_age_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_age_by_sex_race_2015.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_tv_sqrtcd4_by_sex_race_2015.csv').set_index('group')
-mortality_threshold_by_sex_race_2015 = pd.read_csv(param_dir/'mortality_paper/cdc_mortality_by_sex_race.csv').set_index(['group', 'mortality_age_group'])
-
-mortality_in_care_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_by_sex_race_risk_2015.csv').set_index('group')
-mortality_in_care_age_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_age_by_sex_race_risk_2015.csv').set_index('group')
-mortality_in_care_sqrtcd4_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_in_care_sqrtcd4_by_sex_race_risk_2015.csv').set_index('group')
-mortality_out_care_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_by_sex_race_risk_2015.csv').set_index('group')
-mortality_out_care_age_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_age_by_sex_race_risk_2015.csv').set_index('group')
-mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015 = pd.read_csv(param_dir/'mortality_paper_sa/mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015.csv').set_index('group')
-mortality_threshold_by_sex_race_risk_2015 = pd.read_csv(param_dir/'cdc_mortality.csv').set_index(['group', 'mortality_age_group'])
-
-mortality_threshold_idu_1x = pd.read_csv(param_dir/'cdc_mortality_idu_1x.csv').set_index(['group', 'mortality_age_group'])
-mortality_threshold_idu_5x = pd.read_csv(param_dir/'cdc_mortality_idu_5x.csv').set_index(['group', 'mortality_age_group'])
-mortality_threshold_idu_10x = pd.read_csv(param_dir/'cdc_mortality_idu_10x.csv').set_index(['group', 'mortality_age_group'])
+mortality_threshold_idu_1x = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_idu_1x.csv').set_index(['group', 'mortality_age_group'])
+mortality_threshold_idu_5x = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_idu_5x.csv').set_index(['group', 'mortality_age_group'])
+mortality_threshold_idu_10x = pd.read_csv(param_dir/'population_dynamics/mortality_threshold/cdc_mortality_idu_10x.csv').set_index(['group', 'mortality_age_group'])
 
 # Save everything
 out_file = param_dir/'parameters.h5'
@@ -457,38 +422,6 @@ with pd.HDFStore(out_file) as store:
     store['mortality_out_care_age_by_sex_race'] = mortality_out_care_age_by_sex_race
     store['mortality_out_care_tv_sqrtcd4_by_sex_race'] = mortality_out_care_tv_sqrtcd4_by_sex_race
     store['mortality_threshold_by_sex_race'] = mortality_threshold_by_sex_race
-
-    store['mortality_in_care_overall_2015'] = mortality_in_care_overall_2015
-    store['mortality_in_care_age_overall_2015'] = mortality_in_care_age_overall_2015
-    store['mortality_in_care_sqrtcd4_overall_2015'] = mortality_in_care_sqrtcd4_overall_2015
-    store['mortality_out_care_overall_2015'] = mortality_out_care_overall_2015
-    store['mortality_out_care_age_overall_2015'] = mortality_out_care_age_overall_2015
-    store['mortality_out_care_tv_sqrtcd4_overall_2015'] = mortality_out_care_tv_sqrtcd4_overall_2015
-    store['mortality_threshold_overall_2015'] = mortality_threshold_overall_2015
-
-    store['mortality_in_care_by_sex_2015'] = mortality_in_care_by_sex_2015
-    store['mortality_in_care_age_by_sex_2015'] = mortality_in_care_age_by_sex_2015
-    store['mortality_in_care_sqrtcd4_by_sex_2015'] = mortality_in_care_sqrtcd4_by_sex_2015
-    store['mortality_out_care_by_sex_2015'] = mortality_out_care_by_sex_2015
-    store['mortality_out_care_age_by_sex_2015'] = mortality_out_care_age_by_sex_2015
-    store['mortality_out_care_tv_sqrtcd4_by_sex_2015'] = mortality_out_care_tv_sqrtcd4_by_sex_2015
-    store['mortality_threshold_by_sex_2015'] = mortality_threshold_by_sex_2015
-
-    store['mortality_in_care_by_sex_race_2015'] = mortality_in_care_by_sex_race_2015
-    store['mortality_in_care_age_by_sex_race_2015'] = mortality_in_care_age_by_sex_race_2015
-    store['mortality_in_care_sqrtcd4_by_sex_race_2015'] = mortality_in_care_sqrtcd4_by_sex_race_2015
-    store['mortality_out_care_by_sex_race_2015'] = mortality_out_care_by_sex_race_2015
-    store['mortality_out_care_age_by_sex_race_2015'] = mortality_out_care_age_by_sex_race_2015
-    store['mortality_out_care_tv_sqrtcd4_by_sex_race_2015'] = mortality_out_care_tv_sqrtcd4_by_sex_race_2015
-    store['mortality_threshold_by_sex_race_2015'] = mortality_threshold_by_sex_race_2015
-
-    store['mortality_in_care_by_sex_race_risk_2015'] = mortality_in_care_by_sex_race_risk_2015
-    store['mortality_in_care_age_by_sex_race_risk_2015'] = mortality_in_care_age_by_sex_race_risk_2015
-    store['mortality_in_care_sqrtcd4_by_sex_race_risk_2015'] = mortality_in_care_sqrtcd4_by_sex_race_risk_2015
-    store['mortality_out_care_by_sex_race_risk_2015'] = mortality_out_care_by_sex_race_risk_2015
-    store['mortality_out_care_age_by_sex_race_risk_2015'] = mortality_out_care_age_by_sex_race_risk_2015
-    store['mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015'] = mortality_out_care_tv_sqrtcd4_by_sex_race_risk_2015
-    store['mortality_threshold_by_sex_race_risk_2015'] = mortality_threshold_by_sex_race_risk_2015
 
     store['mortality_threshold_idu_1x'] = mortality_threshold_idu_1x
     store['mortality_threshold_idu_5x'] = mortality_threshold_idu_5x
