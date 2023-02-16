@@ -20,7 +20,7 @@ def run(group_name_run, replication_run):
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
-                                  verbose=config['verbose'])
+                                  verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
     pearl.Pearl(parameters, group_name_run, replication_run)
 
 
@@ -34,7 +34,7 @@ def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], sa_type=config['sa_type'], sa_variable=sa_variable_run,
-                                  sa_value=sa_value_run)
+                                  sa_value=sa_value_run, bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
     pearl.Pearl(parameters, group_name_run, replication_run)
 
 
