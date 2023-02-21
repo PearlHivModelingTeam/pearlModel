@@ -4,7 +4,9 @@ import pickle
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-#pd.set_option('display.max_rows', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
 
 ###############################################################################
 # Constants                                                                   #
@@ -306,7 +308,7 @@ def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy, rse):
     return pre_art_bmi
 
 
-def calculate_post_art_bmi(pop, parameters):
+def calculate_post_art_bmi(pop, parameters, intervention=False):
     """Calculate and return post art bmi for a population. Sqrt of post art bmi is modeled as a linear function of ART initiation year and
     age, sqrt of pre art bmi, sqrt initial cd4 count, and sqrt of cd4 count 2 years after art initiation all modeled as restricted cubic splines.
     """
@@ -344,12 +346,15 @@ def calculate_post_art_bmi(pop, parameters):
     pop_matrix = pop[['init_age', 'age_', 'age__', 'h1yy', 'intercept', 'pre_sqrt', 'pre_sqrt_', 'pre_sqrt__', 'sqrtcd4',
                       'sqrtcd4_', 'sqrtcd4__', 'sqrtcd4_post', 'sqrtcd4_post_', 'sqrtcd4_post__']].to_numpy(dtype=float)
     sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
-
     sqrt_post_art_bmi = sqrt_post_art_bmi.T[0]
-    sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(np.sqrt(10), np.sqrt(65),
-                                                           sqrt_post_art_bmi, np.sqrt(rse), 1)
-
+    if intervention:
+        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(np.sqrt(10), np.sqrt(30),
+                                                               sqrt_post_art_bmi, np.sqrt(rse), 1)
+    else:
+        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(np.sqrt(10), np.sqrt(65),
+                                                               sqrt_post_art_bmi, np.sqrt(rse), 1)
     post_art_bmi = sqrt_post_art_bmi ** 2.0
+
     return post_art_bmi
 
 
@@ -420,6 +425,18 @@ def simulate_new_dx(new_dx, linkage_to_care):
     new_agents = new_dx.loc[np.arange(2010, 2036), ['art_initiators', 'art_delayed']]
 
     return n_initial_nonusers, new_agents
+
+
+def apply_bmi_intervention(pop, parameters):
+    pop['post_art_bmi_inter'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True)
+    pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30)
+    pop['become_obese'] = pop['post_art_bmi'] > 30
+    pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
+                                              p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
+    pop['intervention_year'] = pop['h1yy'].isin(range(2021, 2027))
+    pop['intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
+    pop.loc[pop['intervention'], 'post_art_bmi'] = pop.loc[pop['intervention'], 'post_art_bmi_inter']
+    return pop['post_art_bmi']
 
 
 ###############################################################################
@@ -785,6 +802,11 @@ class Pearl:
                                                               self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
                                                               self.parameters.pre_art_bmi_rse)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
+
+            # Apply post_art_bmi intervention
+            if self.parameters.bmi_intervention:
+                population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
+
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
             # Apply comorbidities
@@ -1250,7 +1272,7 @@ class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
     def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
                  mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
-                 sa_value=None):
+                 sa_value=None, bmi_intervention=False, bmi_intervention_probability=1.0):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
         record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
@@ -1374,6 +1396,10 @@ class Parameters:
         self.post_art_bmi_cd4_knots = pd.read_hdf(path, 'post_art_bmi_cd4_knots').loc[group_name]
         self.post_art_bmi_cd4_post_knots = pd.read_hdf(path, 'post_art_bmi_cd4_post_knots').loc[group_name]
         self.post_art_bmi_rse = pd.read_hdf(path, 'post_art_bmi_rse').loc[group_name].values[0]
+
+        # BMI Intervention Probability
+        self.bmi_intervention = bmi_intervention
+        self.bmi_intervention_probability = bmi_intervention_probability
 
         # Comorbidities
         self.prev_users_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_users').loc[group_name] for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}
