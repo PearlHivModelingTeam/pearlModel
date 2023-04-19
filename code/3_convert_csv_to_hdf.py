@@ -80,7 +80,6 @@ for output_table in output_tables:
     if config['sa_type'] not in ['type1', 'type2', 'aim2']:
         df.index = df.index.droplevel()
     df.to_hdf(out_dir/f'{Path(output_table).stem}.h5', 'df', mode='w', format='table')
-    df.to_csv(out_dir/f'{Path(output_table).stem}.csv')
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
