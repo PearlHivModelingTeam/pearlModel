@@ -1261,7 +1261,13 @@ class Pearl:
         self.stats.cd4_inits = cd4_inits.reset_index(name='n').rename(columns={'h1yy': 'year'})
 
         if self.parameters.comorbidity_flag:
-            self.stats.bmi = self.population[['h1yy', 'pre_art_bmi', 'post_art_bmi']].copy().rename(columns={'h1yy': 'year'})
+            pre_art_bmi = self.population[['pre_art_bmi', 'h1yy']].round(0).astype(int)
+            pre_art_bmi = pre_art_bmi.groupby(['h1yy', 'pre_art_bmi']).size()
+            self.stats.pre_art_bmi = pre_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'})
+
+            post_art_bmi = self.population[['post_art_bmi', 'h1yy']].round(0).astype(int)
+            post_art_bmi = post_art_bmi.groupby(['h1yy', 'post_art_bmi']).size()
+            self.stats.post_art_bmi = post_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'})
 
 
 ###############################################################################
@@ -1459,7 +1465,8 @@ class Statistics:
             self.mm_detail_out_care = pd.DataFrame()
             self.mm_detail_inits = pd.DataFrame()
             self.mm_detail_dead = pd.DataFrame()
-            self.bmi = pd.DataFrame()
+            self.pre_art_bmi = pd.DataFrame()
+            self.post_art_bmi = pd.DataFrame()
 
         # Type2 sensitivity analysis output
         self.sa_initial_cd4_in_care = pd.DataFrame()
