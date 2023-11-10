@@ -15,9 +15,9 @@ import sys
 print("Running Python version=" , sys.version)
 #Running Python version= 3.6.0 (v3.6.0:41df79263a11, Dec 22 2016, 17:23:13) #output from PK Mac
 
-def run(group_name_run, replication_run):
+def run(group_name_run, replication_run, output_path):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path = output_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}'
+    output_path = output_path
     rerun_path = rerun_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
@@ -44,7 +44,7 @@ start_time = datetime.now()
 # Define the argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('--config')
-parser.add_argument('--rerun')
+parser.add_argument('--rerun') #what is a rerun?
 parser.add_argument('--overwrite', action='store_true')
 args = parser.parse_args()
 
@@ -68,12 +68,12 @@ elif args.rerun:
 else:
     config_file_path = pearl_path/'config/test.yaml'
     output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
-    print(f'using default config: {config_file_path}')
-print(f'output directory set to {output_root_path}')
-
 # Load config_file
 with open(config_file_path, 'r') as config_file:
     config = yaml.safe_load(config_file)
+
+# set the output path:
+print(f'output directory set to {output_root_path}')
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
 if args.rerun:
@@ -118,7 +118,7 @@ if sa_variables is None:
     for group_name in config['group_names']:
         for replication in range(config['replications']):
             replication_str = str(replication).zfill(len(str(config['replications'])))
-            output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
+            output_path = output_root_path/'csv_output'/group_name/f"bmi_{config['bmi_intervention']}/replication_{replication_str}"
             if not output_path.is_dir():  # Check if the directory already exists
                 output_path.mkdir(parents=True)
 else:
@@ -134,26 +134,24 @@ else:
 # Copy config file to output dir
 with open(output_root_path/'config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config, yaml_file)
-
-
 ########################################################################
 # Initialize locally (set up only for the main analysis so far)
-#if sa_variables is None:
-for group_name in config['group_names']:
-    for replication in range(config['replications']):
-        replication_str = str(replication).zfill(len(str(config['replications'])))
-        output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
-        print(f'output path is set to:    {output_path}')
-        if not output_path.is_dir():  # Check if the directory already exists
-            output_path.mkdir(parents=True)
-        print(f'Running the model for {group_name}, replication {replication}')
-        run(group_name, replication)  # Execute the task
-#else:
-#    ray.get([run_sa.remote(sa_variable, sa_value, group_name, replication)
-#             for sa_variable in sa_variables
-#             for sa_value in sa_values
-#             for group_name in config['group_names']
-#             for replication in range(config['replications'])])
+if sa_variables is None:
+    for group_name in config['group_names']:
+        for replication in range(config['replications']):
+            replication_str = str(replication).zfill(len(str(config['replications'])))
+            output_path = output_root_path/'csv_output'/group_name/f"bmi_{config['bmi_intervention']}/replication_{replication_str}"
+            print(f'output path is set to:    {output_path}')
+            if not output_path.is_dir():  # Check if the directory already exists
+                output_path.mkdir(parents=True)
+            print(f'Running the model for {group_name}, replication {replication}')
+            run(group_name, replication, output_path)  # Execute the task
+else:
+    for sa_variable in sa_variables:
+        for sa_value in sa_values:
+            for group_name in config['group_names']:
+                for replication in range(config['replications']):
+                    run_sa(sa_variable, sa_value, group_name, replication)
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
