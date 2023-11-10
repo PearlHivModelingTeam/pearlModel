@@ -108,6 +108,7 @@ else:
 # Create Output folder structure
 if output_root_path.is_dir():
     if (config_file_path.stem == 'test') | args.overwrite:
+        print("rewriting existing folders")
         shutil.rmtree(output_root_path)
     else:
         raise FileExistsError("Output folder already exists")

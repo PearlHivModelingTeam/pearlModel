@@ -784,8 +784,8 @@ class Pearl:
             #     #population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
             # else:
             #     print("unequal arrays")
-            population['init_sqrtcd4n'][h1yy] = sqrt_cd4n
-            #population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+            #population['init_sqrtcd4n'][h1yy] = sqrt_cd4n #the problem is that this will return a copy of population and wont modify the original copy
+            population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
         population = population.reset_index().set_index('id').sort_index()
 
         # Sensitivity Analysis
