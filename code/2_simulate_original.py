@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 import argparse
 from datetime import datetime
+import os
 
 
 @ray.remote
@@ -131,8 +132,15 @@ with open(output_root_path/'config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config, yaml_file)
 
 # Initialize ray with the desired number of threads
-ray.init(num_cpus=config['num_cpus'])
+try:
+    num_cpus = os.cpu_count()
+    print(f"number of available cpus is {num_cpus}")
+    print(f"initializing ray with {config['num_cpus']} cpus")
+    ray.init(num_cpus=config['num_cpus'])
+except Exception as e:
+    print(f"Error initializing Ray: {e}")
 if sa_variables is None:
+    print("running main analysis...")
     ray.get([run.remote(group_name, replication)
              for group_name in config['group_names']
              for replication in range(config['replications'])])
