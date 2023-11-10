@@ -771,12 +771,21 @@ class Pearl:
 
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
         population = population.set_index('h1yy')
+        # print(population.columns)
+        population['init_sqrtcd4n'] = 0
+        # print(population.columns)
         for h1yy, group in population.groupby(level=0):
             mu = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'mu'), 'estimate']
             sigma = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'sigma'), 'estimate']
             size = group.shape[0]
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
-            population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+            # if len(sqrt_cd4n) == len(population.loc[h1yy]):
+            #     print("the length is the same")
+            #     #population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+            # else:
+            #     print("unequal arrays")
+            population['init_sqrtcd4n'][h1yy] = sqrt_cd4n
+            #population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
         population = population.reset_index().set_index('id').sort_index()
 
         # Sensitivity Analysis

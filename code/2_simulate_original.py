@@ -1,14 +1,17 @@
 # Imports
 import shutil
 import platform
+import ray
+import pearl
 import yaml
 import pkg_resources
 import subprocess
 from pathlib import Path
 import argparse
 from datetime import datetime
-import pearl
 
+
+@ray.remote
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     output_path = output_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}'
@@ -21,6 +24,7 @@ def run(group_name_run, replication_run):
     pearl.Pearl(parameters, group_name_run, replication_run)
 
 
+@ray.remote
 def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     output_path = output_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
@@ -48,8 +52,8 @@ date_string = datetime.today().strftime('%Y-%m-%d')
 param_file_path = pearl_path/'param_files/parameters.h5'
 
 # Check that requirements.txt is met
-with open(pearl_path/'requirements.txt', 'r') as requirements:
-    pkg_resources.require(requirements)
+"""with open(pearl_path/'requirements.txt', 'r') as requirements:
+    pkg_resources.require(requirements)"""
 
 # Original run, rerun, or test run?
 rerun_root_path = None
@@ -63,16 +67,13 @@ elif args.rerun:
 else:
     config_file_path = pearl_path/'config/test.yaml'
     output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
-    print(f'using default config: {config_file_path}')
-
-print(f'output directory set to {output_root_path}')
 
 # Load config_file
 with open(config_file_path, 'r') as config_file:
     config = yaml.safe_load(config_file)
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
-if args.rerun:
+"""if args.rerun:
     print('This is a rerun')
     python_version = config['python_version']
     if python_version != platform.python_version():
@@ -82,7 +83,7 @@ if args.rerun:
         raise EnvironmentError("Incorrect commit hash for rerun")
 else:
     config['python_version'] = platform.python_version()
-    config['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    config['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()"""
 
 # Load sensitivity analysis variables
 if config['sa_type'] == 'none':
@@ -115,8 +116,7 @@ if sa_variables is None:
         for replication in range(config['replications']):
             replication_str = str(replication).zfill(len(str(config['replications'])))
             output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
-            if not output_path.is_dir():  # Check if the directory already exists
-                output_path.mkdir(parents=True)
+            output_path.mkdir(parents=True)
 else:
     for sa_variable in sa_variables:
         for sa_value in sa_values:
@@ -124,32 +124,24 @@ else:
                 for replication in range(config['replications']):
                     replication_str = str(replication).zfill(len(str(config['replications'])))
                     output_path = output_root_path/'csv_output'/f'{sa_variable}_{sa_value}'/group_name/f'replication_{replication_str}'
-                    if not output_path.is_dir():  # Check if the directory already exists
-                        output_path.mkdir(parents=True)
+                    output_path.mkdir(parents=True)
 
 # Copy config file to output dir
 with open(output_root_path/'config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config, yaml_file)
 
-
-########################################################################
-# Initialize locally (set up only for the main analysis so far)
-#if sa_variables is None:
-for group_name in config['group_names']:
-    for replication in range(config['replications']):
-        replication_str = str(replication).zfill(len(str(config['replications'])))
-        output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
-        print(f'output path is set to:    {output_path}')
-        if not output_path.is_dir():  # Check if the directory already exists
-            output_path.mkdir(parents=True)
-        print(f'Running the model for {group_name}, replication {replication}')
-        run(group_name, replication)  # Execute the task
-#else:
-#    ray.get([run_sa.remote(sa_variable, sa_value, group_name, replication)
-#             for sa_variable in sa_variables
-#             for sa_value in sa_values
-#             for group_name in config['group_names']
-#             for replication in range(config['replications'])])
+# Initialize ray with the desired number of threads
+ray.init(num_cpus=config['num_cpus'])
+if sa_variables is None:
+    ray.get([run.remote(group_name, replication)
+             for group_name in config['group_names']
+             for replication in range(config['replications'])])
+else:
+    ray.get([run_sa.remote(sa_variable, sa_value, group_name, replication)
+             for sa_variable in sa_variables
+             for sa_value in sa_values
+             for group_name in config['group_names']
+             for replication in range(config['replications'])])
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')

@@ -1,5 +1,5 @@
 group_names: ['idu_black_female']
-num_cpus: 5
+num_cpus: 1
 replications: 1
 comorbidity_flag: 1
 new_dx: 'base'
