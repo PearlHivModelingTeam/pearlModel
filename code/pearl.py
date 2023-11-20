@@ -466,9 +466,9 @@ class Pearl:
             try:
                 with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
                     pickle.dump(state, state_file)
-                print("Pickling successful!")
+                print("RNG saved successful!")
             except Exception as e:
-                print(f"Error during pickling: {e}")
+                print(f"Error during saving RNG: {e}")
 
         # Initiate output class
         self.stats = Statistics(output_folder=self.parameters.output_folder,
