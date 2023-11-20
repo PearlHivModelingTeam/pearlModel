@@ -22,7 +22,7 @@ def run(group_name_run, replication_run):
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
-    print(f'Initializing group {group_name_run}: output set to {parameters.output_folder}')
+    print(f'Initializing group {group_name_run}, rep {replication_run}') #: output set to {parameters.output_folder}')
     pearl.Pearl(parameters, group_name_run, replication_run)
     #print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
 
