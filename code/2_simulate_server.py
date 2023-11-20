@@ -11,7 +11,9 @@ import argparse
 from datetime import datetime
 import os
 import time
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 @ray.remote
 def run(group_name_run, replication_run):
