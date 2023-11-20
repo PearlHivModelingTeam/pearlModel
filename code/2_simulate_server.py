@@ -142,7 +142,7 @@ try:
     print(f"initializing ray with {config['num_cpus']} cpus")
     ray.init(num_cpus=config['num_cpus'])
 except Exception as e:
-    logging.error(f"Error initializing Ray: {e}")
+    print(f"Error initializing Ray: {e}")
 
 if sa_variables is None:
     print("running main analysis...")
