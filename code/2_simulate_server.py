@@ -16,7 +16,7 @@ import logging
 # Set up logging configuration
 log_file_path = 'logfile.log'
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[
         logging.StreamHandler(),  # Output to console
         logging.FileHandler(log_file_path),  # Output to file
@@ -153,7 +153,7 @@ try:
     print(f"initializing ray with {config['num_cpus']} cpus")
     ray.init(num_cpus=config['num_cpus'])
 except Exception as e:
-    print(f"Error initializing Ray: {e}")
+    logging.error(f"Error initializing Ray: {e}")
 
 if sa_variables is None:
     print("running main analysis...")
@@ -176,7 +176,7 @@ try:
         logging.info(f"Remaining resources: {ray.cluster_resources()}")
         time.sleep(check_interval)
 except Exception as e:
-    print(f"Error in the loop: {e}")
+    logging.error(f"Error in the loop: {e}")
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
