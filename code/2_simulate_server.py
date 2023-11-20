@@ -22,17 +22,17 @@ def run(group_name_run, replication_run):
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
-    print(f'Initializing group {group_name_run}, rep {replication_run}') #: output set to {parameters.output_folder}')
+    print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}')
     pearl.Pearl(parameters, group_name_run, replication_run)
-    #print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
+    print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
 
 
 @ray.remote
 def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path1 = output_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
+    output_path = output_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
     rerun_path = rerun_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
-    parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path1,
+    parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
@@ -143,7 +143,6 @@ try:
     ray.init(num_cpus=config['num_cpus'])
 except Exception as e:
     print(f"Error initializing Ray: {e}")
-
 if sa_variables is None:
     print("running main analysis...")
     ray.get([run.remote(group_name, replication)
@@ -158,4 +157,4 @@ else:
 
 
 end_time = datetime.now()
-print(f'*** Simulates ended. Elapsed Time: {end_time - start_time} *** ')
+print(f'**** Elapsed Time: {end_time - start_time} ****')
