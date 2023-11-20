@@ -49,7 +49,7 @@ parser.add_argument('--rerun')
 parser.add_argument('--overwrite', action='store_true')
 args = parser.parse_args()
 
-pearl_path = Path('~/pearl/pearlModel/')
+pearl_path = Path('..')
 date_string = datetime.today().strftime('%Y-%m-%d')
 param_file_path = pearl_path/'param_files/parameters.h5'
 
@@ -62,6 +62,7 @@ rerun_root_path = None
 if args.config:
     config_file_path = pearl_path/'config'/args.config
     output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
+    print(output_root_path.resolve())
 elif args.rerun:
     rerun_root_path = pearl_path/'out'/args.rerun
     config_file_path = rerun_root_path/'config.yaml'
