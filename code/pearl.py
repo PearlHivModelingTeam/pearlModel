@@ -463,8 +463,12 @@ class Pearl:
             np.random.set_state(state)
         else:
             state = np.random.get_state()
-            with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
-                pickle.dump(state, state_file)
+            try:
+                with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
+                    pickle.dump(state, state_file)
+                print("Pickling successful!")
+            except Exception as e:
+                print(f"Error during pickling: {e}")
 
         # Initiate output class
         self.stats = Statistics(output_folder=self.parameters.output_folder,
