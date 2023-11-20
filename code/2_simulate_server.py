@@ -158,12 +158,15 @@ else:
              for replication in range(config['replications'])])
 
 # Check Ray status and resources every 30 seconds
-check_interval = 30  # in seconds
-while ray.is_initialized():
-    print("Ray is initialized.")
-    print(f"Remaining resources: {ray.cluster_resources()}")
-    # Wait for 30 seconds before checking again
-    time.sleep(check_interval)
+print(ray.cluster_info())
+check_interval = 5  # in seconds
+try:
+    while ray.is_initialized():
+        print("Ray is initialized.")
+        print(f"Remaining resources: {ray.cluster_resources()}")
+        time.sleep(check_interval)
+except Exception as e:
+    print(f"Error in the loop: {e}")
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
