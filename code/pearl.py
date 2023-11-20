@@ -446,6 +446,8 @@ def apply_bmi_intervention(pop, parameters):
 class Pearl:
     """The PEARL class runs a simulation when initialized."""
     def __init__(self, parameters, group_name, replication):
+        print(f'Initializing PEARL class for group_name: {group_name}, replication: {replication}') #@DEBUG
+
         """Takes an instance of the Parameters class, the group name and replication number and runs a simulation."""
         self.group_name = group_name
         self.replication = replication
@@ -1441,7 +1443,6 @@ class Parameters:
 class Statistics:
     """A class housing the output from a PEARL run."""
     def __init__(self, output_folder, comorbidity_flag=None, sa_type=None):
-        print(f'statistics class initiatized with output_folder= {output_folder}') #@DEBUG
         """The init function operates on two levels. If called with no out_list a new Statistics class is initialized, with empty dataframes to fill with data.
         Otherwise it concatenates the out_list dataframes so that the results of all replications and groups are stored in a single dataframe.
         """
