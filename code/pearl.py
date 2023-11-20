@@ -455,11 +455,6 @@ class Pearl:
         self.parameters = parameters
 
         # If this is a rerun, reload the random state
-        print(self.parameters.output_folder)
-        # Check if output folder exists
-        if not self.parameters.output_folder.exists():
-            print(f"Output folder does not exist: {self.parameters.output_folder}")
-
         if self.parameters.rerun_folder is not None:
             with open(self.parameters.rerun_folder/'random.state', 'rb') as state_file_load, \
                     open(self.parameters.output_folder/'random.state', 'wb') as state_file_save:
@@ -468,12 +463,8 @@ class Pearl:
             np.random.set_state(state)
         else:
             state = np.random.get_state()
-            try:
-                with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
-                    pickle.dump(state, state_file)
-                print("RNG saved successful!")
-            except Exception as e:
-                print(f"Error during saving RNG: {e}")
+            with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
+                pickle.dump(state, state_file)
 
         # Initiate output class
         self.stats = Statistics(output_folder=self.parameters.output_folder,
