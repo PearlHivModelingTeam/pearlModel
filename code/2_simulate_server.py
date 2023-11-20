@@ -15,7 +15,7 @@ import os
 @ray.remote
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path1 = output_root_path/'csv_output'/group_name_run/f"bmi_{config['bmi_intervention']}/replication_{replication_run}"
+    output_path1 = output_root_path/'csv_output'/f"{group_name_run}/bmi_{config['bmi_intervention']}/replication_{replication_run}"
     rerun_path = rerun_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path1,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
