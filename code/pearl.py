@@ -456,6 +456,8 @@ class Pearl:
 
         # If this is a rerun, reload the random state
         print(self.parameters.output_folder)
+        os.makedirs(self.parameters.output_folder, exist_ok=True)
+
         if self.parameters.rerun_folder is not None:
             with open(self.parameters.rerun_folder/'random.state', 'rb') as state_file_load, \
                     open(self.parameters.output_folder/'random.state', 'wb') as state_file_save:
