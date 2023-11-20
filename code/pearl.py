@@ -1492,7 +1492,7 @@ class Statistics:
 
     def save(self):
         print(f'Saving the stats for {len([item for item in self.__dict__.values() if isinstance(item, pd.DataFrame)])} data frames.')
-
+        print(f'output_folder= {self.output_folder}')
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
