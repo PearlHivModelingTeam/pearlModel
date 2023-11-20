@@ -10,6 +10,7 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 import os
+import time
 
 
 @ray.remote
@@ -24,7 +25,7 @@ def run(group_name_run, replication_run):
                                   verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
     print(f'Initializing group {group_name_run}: output set to {parameters.output_folder}')
     pearl.Pearl(parameters, group_name_run, replication_run)
-    print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
+    #print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
 
 
 @ray.remote
@@ -143,6 +144,7 @@ try:
     ray.init(num_cpus=config['num_cpus'])
 except Exception as e:
     print(f"Error initializing Ray: {e}")
+
 if sa_variables is None:
     print("running main analysis...")
     ray.get([run.remote(group_name, replication)
@@ -155,6 +157,13 @@ else:
              for group_name in config['group_names']
              for replication in range(config['replications'])])
 
+# Check Ray status and resources every 30 seconds
+check_interval = 30  # in seconds
+while ray.is_initialized():
+    print("Ray is initialized.")
+    print(f"Remaining resources: {ray.cluster_resources()}")
+    # Wait for 30 seconds before checking again
+    time.sleep(check_interval)
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
