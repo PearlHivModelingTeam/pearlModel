@@ -49,7 +49,7 @@ parser.add_argument('--rerun')
 parser.add_argument('--overwrite', action='store_true')
 args = parser.parse_args()
 
-pearl_path = Path('~/home/pkasaie/pearl/pearlModel/')
+pearl_path = Path('~/pearl/pearlModel/')
 date_string = datetime.today().strftime('%Y-%m-%d')
 param_file_path = pearl_path/'param_files/parameters.h5'
 
