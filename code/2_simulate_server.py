@@ -14,7 +14,14 @@ import time
 import logging
 
 # Set up logging configuration
-logging.basicConfig(level=logging.INFO)
+log_file_path = 'logfile.log'
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[
+        logging.StreamHandler(),  # Output to console
+        logging.FileHandler(log_file_path),  # Output to file
+    ]
+)
 
 @ray.remote
 def run(group_name_run, replication_run):
