@@ -152,5 +152,6 @@ else:
              for group_name in config['group_names']
              for replication in range(config['replications'])])
 
+
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
