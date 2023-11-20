@@ -1441,6 +1441,7 @@ class Parameters:
 class Statistics:
     """A class housing the output from a PEARL run."""
     def __init__(self, output_folder, comorbidity_flag=None, sa_type=None):
+        print(f'statistics class initiatized with output_folder= {output_folder}') #@DEBUG
         """The init function operates on two levels. If called with no out_list a new Statistics class is initialized, with empty dataframes to fill with data.
         Otherwise it concatenates the out_list dataframes so that the results of all replications and groups are stored in a single dataframe.
         """

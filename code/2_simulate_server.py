@@ -23,7 +23,7 @@ def run(group_name_run, replication_run):
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
     pearl.Pearl(parameters, group_name_run, replication_run)
-    print(f'simulation finished for {group_name_run},rep= {replication_run}')
+    print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path}')
 
 
 @ray.remote
