@@ -1491,13 +1491,13 @@ class Statistics:
         self.sa_cd4_decrease_out_care = pd.DataFrame()
 
     def save(self):
-        print(f'Saving the stats for {len([item for item in self.__dict__.values() if isinstance(item, pd.DataFrame)])} data frames.')
-        print(f'output_folder= {self.output_folder}')
+        #print(f'Saving the stats for {len([item for item in self.__dict__.values() if isinstance(item, pd.DataFrame)])} data frames.')
+        #print(f'output_folder= {self.output_folder}')
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
                 try:
                     item.to_csv(self.output_folder/f'{name}.csv', index=False)
-                    print(f'Successfully saved DataFrame: {name}')
+                    #print(f'Successfully saved DataFrame: {name}')
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')
