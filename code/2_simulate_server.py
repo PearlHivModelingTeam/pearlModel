@@ -11,6 +11,10 @@ import argparse
 from datetime import datetime
 import os
 import time
+import logging
+
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO)
 
 @ray.remote
 def run(group_name_run, replication_run):
@@ -22,7 +26,7 @@ def run(group_name_run, replication_run):
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
                                   verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
-    ray.logging.info(f'Initializing group {group_name_run}: output set to {parameters.output_folder}')
+    logging.info(f'Initializing group {group_name_run}: output set to {parameters.output_folder}')
     pearl.Pearl(parameters, group_name_run, replication_run)
     #print(f'simulation finished for {group_name_run},rep= {replication_run}, output saved in {output_path1.resolve()}')
 
@@ -157,12 +161,12 @@ else:
              for replication in range(config['replications'])])
 
 # Check Ray status and resources every 30 seconds
-ray.logging.info("XXXXXXX")
+logging.info("XXXXXXX")
 check_interval = 5  # in seconds
 try:
     while ray.is_initialized():
-        ray.logging.info("Ray is initialized.")
-        ray.logging.info(f"Remaining resources: {ray.cluster_resources()}")
+        logging.info("Ray is initialized.")
+        logging.info(f"Remaining resources: {ray.cluster_resources()}")
         time.sleep(check_interval)
 except Exception as e:
     print(f"Error in the loop: {e}")
