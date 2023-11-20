@@ -446,7 +446,7 @@ def apply_bmi_intervention(pop, parameters):
 class Pearl:
     """The PEARL class runs a simulation when initialized."""
     def __init__(self, parameters, group_name, replication):
-        print(f'Initializing PEARL class for group_name: {group_name}, replication: {replication}') #@DEBUG
+        #print(f'Initializing PEARL class for group_name: {group_name}, replication: {replication}') #@DEBUG
 
         """Takes an instance of the Parameters class, the group name and replication number and runs a simulation."""
         self.group_name = group_name
@@ -1491,6 +1491,8 @@ class Statistics:
         self.sa_cd4_decrease_out_care = pd.DataFrame()
 
     def save(self):
+        print(f'Saving the stats for {len([item for item in self.__dict__.values() if isinstance(item, pd.DataFrame)])} data frames.')
+
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
