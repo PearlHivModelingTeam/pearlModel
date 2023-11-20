@@ -11,9 +11,6 @@ import argparse
 from datetime import datetime
 import os
 import time
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 
 @ray.remote
 def run(group_name_run, replication_run):
@@ -160,7 +157,7 @@ else:
              for replication in range(config['replications'])])
 
 # Check Ray status and resources every 30 seconds
-print(ray.cluster_info())
+print("XXXXXXX")
 check_interval = 5  # in seconds
 try:
     while ray.is_initialized():
