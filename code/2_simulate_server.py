@@ -116,9 +116,9 @@ if output_root_path.is_dir():
         raise FileExistsError("Output folder already exists")
 
 if sa_variables is None:
-    for group_name in config['group_names']:
-        for replication in range(config['replications']):
-            replication_str = str(replication).zfill(len(str(config['replications'])))
+    for group_name_run in config['group_names']:
+        for replication_run in range(config['replications']):
+            replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
             out_path = f"csv_output/bmi_{config['bmi_intervention']}/{group_name_run}/replication_{replication_run_str}" #setting up the path name
             output_folder = output_root_path/out_path
             output_folder.mkdir(parents=True)
