@@ -16,7 +16,7 @@ group_names: [
               'msm_hisp_male',
 ]
 num_cpus: 150 #each subgroup and replication runs on a separate cpu
-replications:  10
+replications:  2
 comorbidity_flag: 1 # 0, 1
 new_dx: 'base' # base, ehe, sa
 mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall
