@@ -15,7 +15,7 @@ import os
 @ray.remote
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    out_path = f"csv_output/bmi_{config['bmi_intervention']}/{group_name_run}/replication_{replication_run_str}" #setting up the path name
+    out_path = f"csv_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
     output_folder = output_root_path/out_path
     rerun_folder = rerun_root_path/out_path if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_folder, output_folder=output_folder,
@@ -119,7 +119,7 @@ if sa_variables is None:
     for group_name_run in config['group_names']:
         for replication_run in range(config['replications']):
             replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-            out_path = f"csv_output/bmi_{config['bmi_intervention']}/{group_name_run}/replication_{replication_run_str}" #setting up the path name
+            out_path = f"csv_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
             output_folder = output_root_path/out_path
             output_folder.mkdir(parents=True)
 # else:
