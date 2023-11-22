@@ -431,12 +431,14 @@ def apply_bmi_intervention(pop, parameters):
     pop['post_art_bmi_inter'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True)
     pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30)
     pop['become_obese'] = pop['post_art_bmi'] > 30
+    pop['post_art_bmi_pre_int'] = pop['post_art_bmi']
     pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
     pop['intervention_year'] = pop['h1yy'].isin(range(2021, 2027))
     pop['intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
     pop.loc[pop['intervention'], 'post_art_bmi'] = pop.loc[pop['intervention'], 'post_art_bmi_inter']
-    return pop['post_art_bmi']
+    # return pop['post_art_bmi']
+    return pop[['eligible', 'become_obese', 'inter_effective' , 'intervention_year' , 'intervention' , 'pre_art_bmi' , 'post_art_bmi_pre_int' , 'post_art_bmi']]
 
 
 ###############################################################################
@@ -816,7 +818,9 @@ class Pearl:
 
             # Apply post_art_bmi intervention
             if self.parameters.bmi_intervention:
-                population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
+                # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
+                population[['eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
+                     'post_art_bmi_pre_int', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -1249,7 +1253,7 @@ class Pearl:
 
         #collecting relavant BMI statistics
         if self.parameters.bmi_intervention:
-            bmi_int_coverage = self.population[['year','h1yy', 'pre_art_bmi','post_art_bmi_pre_int','eligible','become_obese','inter_effective','intervention_year','post_art_bmi_inter','intervention']].copy()
+            bmi_int_coverage = self.population[['year', 'h1yy', 'intervention']].copy()
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
