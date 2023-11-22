@@ -429,12 +429,12 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 def apply_bmi_intervention(pop, parameters):
     pop['post_art_bmi_inter'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True)
-    pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30)
+    pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30) #need to add diabetes
     pop['become_obese'] = pop['post_art_bmi'] > 30
     pop['post_art_bmi_pre_int'] = pop['post_art_bmi']
     pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
-    pop['intervention_year'] = pop['h1yy'].isin(range(2021, 2027))
+    pop['intervention_year'] = pop['h1yy'].isin(range(2023, 2030))
     pop['intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
     pop.loc[pop['intervention'], 'post_art_bmi'] = pop.loc[pop['intervention'], 'post_art_bmi_inter']
     # return pop['post_art_bmi']
