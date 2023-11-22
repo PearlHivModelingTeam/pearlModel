@@ -1,7 +1,5 @@
 group_names: [
-              'idu_white_male',
-              'idu_black_male',
-              'idu_hisp_male'
+              'idu_white_male'
 ]
 num_cpus: 30 #each subgroup and replication runs on a separate cpu
 replications:  1

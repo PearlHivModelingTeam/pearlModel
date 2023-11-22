@@ -821,6 +821,7 @@ class Pearl:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[['eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
                      'post_art_bmi_pre_int', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+            print(population[['year','eligible']])
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
