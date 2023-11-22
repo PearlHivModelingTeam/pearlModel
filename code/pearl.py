@@ -840,15 +840,15 @@ class Pearl:
         sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size')
         self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
 
-        print("*** checking the population object before appending")
-        print(population.tail(1))
-        print(f"year from {population['year'].min()} to {population['year'].max()}")
+        # print("*** checking the population object before appending")
+        # print(population.tail(1))
+        # print(f"year from {population['h1yy'].min()} to {population['h1yy'].max()}")
 
         # Append new population to pearl population
         self.population = self.population.append(population)
 
-        print("*** checking the population object after appending")
-        print(self.population.tail(1))
+        # print("*** checking the population object after appending")
+        # print(self.population.tail(1))
 
     def run(self):
         """ Simulate from 2010 to final_year """
