@@ -1249,7 +1249,7 @@ class Pearl:
 
         #collecting relavant BMI statistics
         if self.parameters.bmi_intervention:
-            bmi_int_coverage = self.population[ 'year','h1yy', 'pre_art_bmi','post_art_bmi_pre_int','eligible','become_obese','inter_effective','intervention_year','post_art_bmi_inter','intervention'].copy()
+            bmi_int_coverage = self.population[['year','h1yy', 'pre_art_bmi','post_art_bmi_pre_int','eligible','become_obese','inter_effective','intervention_year','post_art_bmi_inter','intervention']].copy()
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER

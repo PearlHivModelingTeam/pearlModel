@@ -4,7 +4,7 @@ group_names: [
               'idu_hisp_male'
 ]
 num_cpus: 30 #each subgroup and replication runs on a separate cpu
-replications:  2
+replications:  1
 comorbidity_flag: 1 # 0, 1
 new_dx: 'base' # base, ehe, sa
 mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall
