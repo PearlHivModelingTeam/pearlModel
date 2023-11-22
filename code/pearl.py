@@ -842,6 +842,7 @@ class Pearl:
 
         print("*** checking the population object before appending")
         print(population.iloc[1, :])
+        print(f"year from {population['year'].min()} to {population['year'].max()}")
 
         # Append new population to pearl population
         self.population = self.population.append(population)
