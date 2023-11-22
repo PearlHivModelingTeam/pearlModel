@@ -20,10 +20,9 @@ args = parser.parse_args()
 pearl_path = Path('..')
 in_dir = pearl_path/'out'/args.dir/'csv_output'
 out_dir = pearl_path/'out'/args.dir/'hdf_output'
-if out_dir.is_dir():
+if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
-
 
 combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age', 'dead_in_care_age',
                      'dead_out_care_age', 'new_init_age', 'years_out', 'cd4_inits', 'cd4_in_care', 'cd4_out_care',
@@ -46,8 +45,6 @@ else:
     group_names = next(os.walk(in_dir))[1]
     replications = next(os.walk(in_dir/group_names[0]))[1]
     output_tables = [x for x in next(os.walk(in_dir/group_names[0]/replications[0]))[2] if x != 'random.state']
-
-
 
 print(output_tables)
 for output_table in output_tables:

@@ -1246,6 +1246,11 @@ class Pearl:
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
+
+        #collecting relavant BMI statistics
+        if self.parameters.bmi_intervention:
+            bmi_int_coverage = self.population[ 'year','h1yy', 'pre_art_bmi','post_art_bmi_pre_int','eligible','become_obese','inter_effective','intervention_year','post_art_bmi_inter','intervention'].copy()
+
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
         new_inits = self.population['h1yy'] >= 2010
@@ -1449,6 +1454,7 @@ class Statistics:
 
         self.output_folder = output_folder
 
+        self.bmi_int_coverage= pd.DataFrame() ##of people covered by the bmi intervention
         self.in_care_age = pd.DataFrame()
         self.out_care_age = pd.DataFrame()
         self.reengaged_age = pd.DataFrame()
