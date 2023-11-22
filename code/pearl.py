@@ -841,14 +841,14 @@ class Pearl:
         self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
 
         print("*** checking the population object before appending")
-        print(population.iloc[1, :])
+        print(population.tail(1))
         print(f"year from {population['year'].min()} to {population['year'].max()}")
 
         # Append new population to pearl population
         self.population = self.population.append(population)
 
         print("*** checking the population object after appending")
-        print(self.population.iloc[1, :])
+        print(self.population.tail(1))
 
     def run(self):
         """ Simulate from 2010 to final_year """
