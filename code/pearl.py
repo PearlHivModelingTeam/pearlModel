@@ -821,7 +821,7 @@ class Pearl:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[['eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
                      'post_art_bmi_pre_int', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
-            print(population[['year','eligible']])
+
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -839,6 +839,9 @@ class Pearl:
         # Record classic one-way sa input
         sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size')
         self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
+
+        print("*** checking the population object before appending")
+        print(population.head)
 
         # Append new population to pearl population
         self.population = self.population.append(population)
