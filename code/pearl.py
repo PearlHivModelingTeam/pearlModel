@@ -846,6 +846,9 @@ class Pearl:
         # Append new population to pearl population
         self.population = self.population.append(population)
 
+        print("*** checking the population object after appending")
+        print(self.population.iloc[1, :])
+
     def run(self):
         """ Simulate from 2010 to final_year """
         while self.year <= self.parameters.final_year:
