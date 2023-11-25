@@ -95,6 +95,10 @@ def create_mm_detail_stats(pop):
     all_comorbidities = STAGE0 + STAGE1 + STAGE2 + STAGE3
     df = pop[['age_cat'] + all_comorbidities].copy()
     df['multimorbidity'] = df[all_comorbidities].apply(lambda row: ''.join(row.values.astype(str)), axis='columns').apply(int, base=2)
+    """This line of code adds a new column 'multimorbidity' to the DataFrame. The column is created by applying a function to each row of the DataFrame. This function:
+    Converts the values in the comorbidity columns to strings.
+    Joins these strings to create a concatenated binary representation for each row.
+    Converts the binary representation to an integer using base 2."""
 
     # Count how many people have each unique set of comorbidities
     df = df.groupby(['multimorbidity']).size().reset_index(name='n')
@@ -1143,7 +1147,7 @@ class Pearl:
 
     def update_mm(self):
         """Calculate and update the multimorbidity, defined as the number of stage 2 and 3 comorbidities in each agent."""
-        self.population['mm'] = self.population[STAGE2 + STAGE3].sum(axis=1)
+        self.population['mm'] = self.population[STAGE2 + STAGE3].sum(axis=1.)
 
     def record_stats(self):
         """"Record in care age breakdown, out of care age breakdown, reengaging pop age breakdown, leaving care age breakdown, and CD4
