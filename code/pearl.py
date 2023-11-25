@@ -1260,14 +1260,10 @@ class Pearl:
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
         if self.parameters.bmi_intervention:
-            # self.stats.bmi_int_coverage = self.population.locate[intervention].groupby['h1yy']
-            # [['year', 'h1yy', 'eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
-            #          'post_art_bmi_pre_int', 'post_art_bmi']].copy()
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['intervention', 'h1yy']].fillna(0).astype(int)
             # Group by 'h1yy' and 'pre_art_bmi' and calculate the count
             self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'intervention']).size()
-
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
@@ -1519,6 +1515,7 @@ class Statistics:
         #print(f'output_folder= {self.output_folder}')
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
+            print(f'saving {name}')
             if isinstance(item, pd.DataFrame):
                 try:
                     item.to_csv(self.output_folder/f'{name}.csv', index=False)
