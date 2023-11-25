@@ -1263,7 +1263,7 @@ class Pearl:
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['intervention', 'h1yy']].fillna(0).astype(int)
             # Group by 'h1yy' and 'pre_art_bmi' and calculate the count
-            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'intervention']).size()
+            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'intervention']).size().reset_index(name='n')
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
