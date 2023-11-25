@@ -1263,10 +1263,8 @@ class Pearl:
             # self.stats.bmi_int_coverage = self.population.locate[intervention].groupby['h1yy']
             # [['year', 'h1yy', 'eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
             #          'post_art_bmi_pre_int', 'post_art_bmi']].copy()
-            bmi_int_coverage = self.population[['intervention', 'h1yy']]  # receiving the intervention in each year of ART initiation
-            bmi_int_coverage.fillna(0, inplace=True)            # Replace NaN values with 0
-            # Convert columns to integers
-            bmi_int_coverage[['intervention','h1yy']] = bmi_int_coverage[['intervention','h1yy']].astype(int)
+
+            bmi_int_coverage = self.population[['intervention', 'h1yy']].fillna(0).astype(int)
             # Group by 'h1yy' and 'pre_art_bmi' and calculate the count
             self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'pre_art_bmi']).size()
 
