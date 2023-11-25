@@ -1263,10 +1263,10 @@ class Pearl:
             # self.stats.bmi_int_coverage = self.population.locate[intervention].groupby['h1yy']
             # [['year', 'h1yy', 'eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
             #          'post_art_bmi_pre_int', 'post_art_bmi']].copy()
-
+            # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['intervention', 'h1yy']].fillna(0).astype(int)
             # Group by 'h1yy' and 'pre_art_bmi' and calculate the count
-            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'pre_art_bmi']).size()
+            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'intervention']).size()
 
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
