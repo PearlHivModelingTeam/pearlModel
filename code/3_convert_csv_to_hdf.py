@@ -29,7 +29,7 @@ combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age',
                      'incidence_in_care', 'incidence_out_care', 'prevalence_in_care', 'prevalence_out_care',
                      'prevalence_inits', 'prevalence_dead', 'mm_in_care', 'mm_out_care', 'mm_inits', 'mm_dead',
                      'mm_detail_in_care', 'mm_detail_out_care', 'mm_detail_inits', 'mm_detail_dead', 'pre_art_bmi',
-                     'post_art_bmi']
+                     'post_art_bmi', 'bmi_int_coverage']
 
 # Load config_file
 with open(in_dir/'../config.yaml', 'r') as config_file:
@@ -77,6 +77,9 @@ for output_table in output_tables:
     if config['sa_type'] not in ['type1', 'type2', 'aim2']:
         df.index = df.index.droplevel()
     df.to_hdf(out_dir/f'{Path(output_table).stem}.h5', 'df', mode='w', format='table')
+
+# Copy the config file to the output directory
+shutil.copy(in_dir/'../config.yaml', out_dir/'config.yaml')
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
