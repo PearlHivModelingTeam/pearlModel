@@ -16,13 +16,24 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir')
 args = parser.parse_args()
-
 pearl_path = Path('..')
 in_dir = pearl_path/'out'/args.dir/'csv_output'
 out_dir = pearl_path/'out'/args.dir/'hdf_output'
 if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
+
+# dir = "bmi_2023-11-22"
+# pearl_path = Path("")
+# in_dir = pearl_path / 'out' / dir / 'csv_output'
+# print(in_dir.resolve())
+# out_dir = pearl_path / 'out' / dir / 'hdf_output'
+# if not out_dir.parent.is_dir():  # Check if parent directory exists
+#     print("out directory exists")
+#     out_dir.parent.mkdir(parents=True)  # Create parent directories if they don't exist
+# if out_dir.is_dir():  # Creating output folders
+#     shutil.rmtree(out_dir)
+# out_dir.mkdir()
 
 combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age', 'dead_in_care_age',
                      'dead_out_care_age', 'new_init_age', 'years_out', 'cd4_inits', 'cd4_in_care', 'cd4_out_care',
@@ -61,7 +72,8 @@ for output_table in output_tables:
                         pd.read_csv(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
-                else:
+                    else:
+                    # print(f'{in_dir / group_name / replication / output_table}')
                     chunk_list.append(
                         pd.read_csv(in_dir/group_name/replication/output_table).assign(model=model_name,
                                                                                        group=group_name,

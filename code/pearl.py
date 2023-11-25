@@ -437,7 +437,7 @@ def apply_bmi_intervention(pop, parameters):
     pop['intervention_year'] = pop['h1yy'].isin(range(2023, 2030))
     pop['intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
     pop.loc[pop['intervention'], 'post_art_bmi'] = pop.loc[pop['intervention'], 'post_art_bmi_inter']
-    # return pop['post_art_bmi']
+    #return pop['post_art_bmi']
     return pop[['eligible', 'become_obese', 'inter_effective' , 'intervention_year' , 'intervention' , 'pre_art_bmi' , 'post_art_bmi_pre_int' , 'post_art_bmi']]
 
 
@@ -1255,14 +1255,17 @@ class Pearl:
             self.stats.mm_detail_dead = self.stats.mm_detail_dead.append(mm_detail_dead)
 
     def record_final_stats(self):
+        """all of these are summarized as frequency of events at different tiers, where the last column in the dataset is n """
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
-
-        #collecting relavant BMI statistics
         if self.parameters.bmi_intervention:
-            self.stats.bmi_int_coverage = self.population[['year', 'h1yy', 'eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
-                     'post_art_bmi_pre_int', 'post_art_bmi']].copy()
+            # self.stats.bmi_int_coverage = self.population.locate[intervention].groupby['h1yy']
+            # [['year', 'h1yy', 'eligible', 'become_obese', 'inter_effective', 'intervention_year', 'intervention', 'pre_art_bmi',
+            #          'post_art_bmi_pre_int', 'post_art_bmi']].copy()
+            bmi_int_coverage = self.population[['intervention', 'h1yy']].astype(int) #receiving the intervention in each year of ART initiation
+            self.stats.bmi_int_coverage= bmi_int_coverage.groupby(['h1yy', 'pre_art_bmi']).size()
+
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
