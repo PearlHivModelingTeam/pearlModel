@@ -57,7 +57,7 @@ else:
     replications = next(os.walk(in_dir/group_names[0]))[1]
     output_tables = [x for x in next(os.walk(in_dir/group_names[0]/replications[0]))[2] if x != 'random.state']
 
-print(output_tables)
+
 for output_table in output_tables:
     print(output_table)
     chunk_list = []
@@ -72,7 +72,7 @@ for output_table in output_tables:
                         pd.read_csv(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
-                    else:
+                else:
                     # print(f'{in_dir / group_name / replication / output_table}')
                     chunk_list.append(
                         pd.read_csv(in_dir/group_name/replication/output_table).assign(model=model_name,
