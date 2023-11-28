@@ -40,7 +40,7 @@ combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age',
                      'incidence_in_care', 'incidence_out_care', 'prevalence_in_care', 'prevalence_out_care',
                      'prevalence_inits', 'prevalence_dead', 'mm_in_care', 'mm_out_care', 'mm_inits', 'mm_dead',
                      'mm_detail_in_care', 'mm_detail_out_care', 'mm_detail_inits', 'mm_detail_dead', 'pre_art_bmi',
-                     'post_art_bmi', 'bmi_int_coverage']
+                     'post_art_bmi', 'bmi_int_coverage','bmi_int_dm_prev']
 
 # Load config_file
 with open(in_dir/'../config.yaml', 'r') as config_file:
