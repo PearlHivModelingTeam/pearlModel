@@ -432,23 +432,24 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 
 def apply_bmi_intervention(pop, parameters):
+    pop['post_art_bmi_without_intervention'] = pop['post_art_bmi']
+
     # eligibility:
     pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30) & (pop['dm'] == 0)
-    pop['become_obese'] = pop['post_art_bmi'] > 30
-    pop['post_art_bmi_without_intervention'] = pop['post_art_bmi']
-    pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
-                                              p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
     pop['intervention_year'] = pop['h1yy'].isin(range(2020, 2031))
-    pop['received_bmi_intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese']
-    pop['maintained_weight'] = pop['received_bmi_intervention'] & pop['inter_effective']
+    pop['inter_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
+                                              p=[parameters.bmi_intervention_probability,
+                                                 1 - parameters.bmi_intervention_probability])
+    # these people are enrolled in the intervention
+    pop['received_bmi_intervention'] = pop['eligible'] & pop['intervention_year'] & pop['inter_coverage']
+
+    # now we model the impact for those who will become obese
+    pop['become_obese'] = pop['post_art_bmi'] > 30
+    pop['maintained_weight'] = pop['received_bmi_intervention'] & pop['become_obese']
     # new BMI:
-    # pop['post_art_bmi_intervention'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True) #cam's version
-    pop['post_art_bmi_intervention'] = 29.9  # option 1: set new BMI below obesity threshold
-    # pop['post_art_bmi_intervention'] = pop['pre_art_bmi'] * 1.05  # option 2: allowing max 5% increase
-    # pop['post_art_bmi_intervention'] = pop['pre_art_bmi']    # option 3: allow no weight gain
-    #
-    pop.loc[pop['maintained_weight'], 'post_art_bmi'] = pop.loc[pop['maintained_weight'], 'post_art_bmi_intervention']
-    return pop[['eligible', 'become_obese', 'received_bmi_intervention','maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']]
+    pop.loc[pop['maintained_weight'], 'post_art_bmi'] = 29.9
+
+    return pop[['eligible',  'received_bmi_intervention','become_obese','maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']]
 
 
 ###############################################################################
