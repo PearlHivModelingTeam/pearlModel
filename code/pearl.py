@@ -438,7 +438,7 @@ def apply_bmi_intervention(pop, parameters):
     pop['post_art_bmi_without_intervention'] = pop['post_art_bmi']
     pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
-    pop['intervention_year'] = pop['h1yy'].isin(range(2020, 2024))
+    pop['intervention_year'] = pop['h1yy'].isin(range(2020, 2031))
     pop['received_bmi_intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
     # new BMI:
     # pop['post_art_bmi_intervention'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True) #cam's version
