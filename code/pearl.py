@@ -852,7 +852,7 @@ class Pearl:
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
             if self.parameters.bmi_intervention:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
-                population[['eligible', 'become_obese', 'received_bmi_intervention', 'maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+                population[['eligible',  'received_bmi_intervention','become_obese','maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
