@@ -64,7 +64,8 @@ parameters = pearl.Parameters(path=param_file_path,
                               idu_threshold=config['idu_threshold'],
                               verbose=config['verbose'],
                               bmi_intervention=config['bmi_intervention'],
-                              bmi_intervention_probability=config['bmi_intervention_probability'])
+                              bmi_intervention_coverage=config['bmi_intervention_coverage'],
+                              bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
 print(f"Ready to run {group_name}, replication {replication}, to year {config['final_year']}")
 
 pearl.Pearl(parameters, group_name, replication)
