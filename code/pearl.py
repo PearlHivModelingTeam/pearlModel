@@ -432,28 +432,39 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 
 def apply_bmi_intervention(pop, parameters):
-    pop['post_art_bmi_without_intervention'] = pop['post_art_bmi']
-
-    # determine coverage:
-    pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30) & (pop['dm'] == 0)
-    pop['intervention_year'] = pop['h1yy'].isin(range(2020, 2031))
-    pop['inter_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
+    pop['bmiInt_year'] = pop['h1yy'].isin(range(2020, 2031))
+    pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
                                                  1 - parameters.bmi_intervention_coverage])
-    # these people are enrolled in the intervention:
-    pop['received_bmi_intervention'] = pop['eligible'] & pop['intervention_year'] & pop['inter_coverage']
+    pop['bmiInt_effectiveness'] = np.random.choice([1, 0], size=len(pop), replace=True,
+                                                   p=[parameters.bmi_intervention_effectiveness,
+                                                      1 - parameters.bmi_intervention_effectiveness])
+    # determine eligibility:
+    pop['bmiInt_ineligible_dm'] = (pop['dm'] == 0)
+    pop['bmiInt_ineligible_underweight'] = (pop['pre_art_bmi'] < 18.5)
+    pop['bmiInt_ineligible_obese'] = (pop['pre_art_bmi'] > 30)
+    pop['bmiInt_eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30) & (pop['dm'] == 0)
 
-    # now we model the impact for those who will become obese
-    pop['become_obese'] = pop['post_art_bmi'] > 30
-    pop['inter_effectiveness'] = np.random.choice([1, 0], size=len(pop), replace=True,
-                                             p=[parameters.bmi_intervention_effectiveness,
-                                                1 - parameters.bmi_intervention_effectiveness])
-    pop['maintained_weight'] = pop['received_bmi_intervention'] & pop['become_obese'] & pop['inter_effectiveness']
+    # eligible people are enrolled in the intervention:
+    pop['bmiInt_received'] = pop['bmiInt_eligible'] & pop['bmiInt_year'] & pop['bmiInt_coverage']
 
-    # new BMI:
-    pop.loc[pop['maintained_weight'], 'post_art_bmi'] = 29.9
+    # who will benefit from the intervention? # now we model the impact for those who will become obese
+    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
+    pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
+    pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop['bmiInt_effectiveness']
+    # new BMI set at 29.9:
+    pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
 
-    return pop[['eligible',  'received_bmi_intervention','become_obese','maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']]
+    return pop[['bmiInt_ineligible_dm',
+                'bmiInt_ineligible_underweight',
+                'bmiInt_ineligible_obese',
+                'bmiInt_eligible',
+                'bmiInt_received',
+                'become_obese_postART',
+                'maintained_weight_under_bmiInt',
+                'pre_art_bmi',
+                'post_art_bmi_without_bmiInt',
+                'post_art_bmi']]
 
 
 ###############################################################################
@@ -856,7 +867,16 @@ class Pearl:
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
             if self.parameters.bmi_intervention:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
-                population[['eligible',  'received_bmi_intervention','become_obese','maintained_weight', 'post_art_bmi_without_intervention', 'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+                population[['bmiInt_ineligible_dm',
+                     'bmiInt_ineligible_underweight',
+                     'bmiInt_ineligible_obese',
+                     'bmiInt_eligible',
+                     'bmiInt_received',
+                     'become_obese_postART',
+                     'maintained_weight_under_bmiInt',
+                     'pre_art_bmi',
+                     'post_art_bmi_without_bmiInt',
+                     'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -1299,12 +1319,27 @@ class Pearl:
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
         if self.parameters.bmi_intervention:
+            """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
             # choose columns, fill Na values with 0 and transform to integer
-            bmi_int_coverage = self.population[['received_bmi_intervention','maintained_weight', 'h1yy']].fillna(0).astype(int)
-            # Group by 'h1yy' and 'pre_art_bmi' and calculate the count
-            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy', 'received_bmi_intervention','maintained_weight']).size().reset_index(
-                name='n')
-            """report the number of people with diabetes based on intervention status"""
+            bmi_int_coverage = self.population[['h1yy',
+                                                'bmiInt_ineligible_dm',
+                                                'bmiInt_ineligible_underweight',
+                                                'bmiInt_ineligible_obese',
+                                                'bmiInt_eligible',
+                                                'bmiInt_received',
+                                                'become_obese_postART',
+                                                'maintained_weight_under_bmiInt']].fillna(0).astype(int)
+            # Group by all categories and calculate the count in each one
+            self.stats.bmi_int_coverage = bmi_int_coverage.groupby(['h1yy',
+                                                'bmiInt_ineligible_dm',
+                                                'bmiInt_ineligible_underweight',
+                                                'bmiInt_ineligible_obese',
+                                                'bmiInt_eligible',
+                                                'bmiInt_received',
+                                                'become_obese_postART',
+                                                'maintained_weight_under_bmiInt']).size().reset_index(name='n')
+
+            """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
             dm_int = self.population.groupby(['h1yy','received_bmi_intervention','maintained_weight','dm','t_dm',]).size().reset_index(name='n')
             self.stats.bmi_int_dm_prev = dm_int
 
