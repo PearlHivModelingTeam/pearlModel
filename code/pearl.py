@@ -454,7 +454,7 @@ def apply_bmi_intervention(pop, parameters):
     pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop['bmiInt_effectiveness']
     # new BMI set at 29.9:
     pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
-
+    ###
     return pop[['bmiInt_ineligible_dm',
                 'bmiInt_ineligible_underweight',
                 'bmiInt_ineligible_obese',
@@ -1340,7 +1340,7 @@ class Pearl:
                                                 'maintained_weight_under_bmiInt']).size().reset_index(name='n')
 
             """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
-            dm_int = self.population.groupby(['h1yy','received_bmi_intervention','maintained_weight','dm','t_dm',]).size().reset_index(name='n')
+            dm_int = self.population.groupby(['h1yy','bmiInt_received','maintained_weight_under_bmiInt','dm','t_dm',]).size().reset_index(name='n')
             self.stats.bmi_int_dm_prev = dm_int
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
