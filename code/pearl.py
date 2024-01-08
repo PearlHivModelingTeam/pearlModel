@@ -456,8 +456,7 @@ def apply_bmi_intervention(pop, parameters):
     pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
 
     # no BMI intervention: just collecting outcomes
-    if parameters.bmi_intervention_scenario == 0:
-        pop['maintained_weight_under_bmiInt'] = 0
+    pop['maintained_weight_under_bmiInt'] = 0
 
     # Scenario1: set fix new bmi
     if parameters.bmi_intervention_scenario == 1:
@@ -875,7 +874,7 @@ class Pearl:
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
 
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
-            if (self.parameters.bmi_intervention_scenario > 0):
+            if self.parameters.bmi_intervention_scenario > 0:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[['bmiInt_ineligible_dm',
                      'bmiInt_ineligible_underweight',
