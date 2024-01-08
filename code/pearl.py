@@ -432,6 +432,9 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 
 def apply_bmi_intervention(pop, parameters):
+    if parameters.bmi_intervention == 0:
+        raise ValueError('Running apply_bmi_intervention despite bmi_intervention=0')
+
     pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year))
     pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
@@ -453,7 +456,8 @@ def apply_bmi_intervention(pop, parameters):
     pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
     pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop['bmiInt_effectiveness']
     # new BMI set at 29.9:
-    pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
+    if parameters.bmi_intervention_scenario == 1:
+        pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
     ###
     return pop[['bmiInt_ineligible_dm',
                 'bmiInt_ineligible_underweight',
@@ -1318,7 +1322,7 @@ class Pearl:
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
-        if (self.parameters.bmi_intervention_scenario>0):
+        if (self.parameters.bmi_intervention):
             """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['h1yy',
@@ -1387,7 +1391,8 @@ class Parameters:
     def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
                  mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
                  sa_value=None,
-                 bmi_intervention_scenario=0,
+                 bmi_intervention=0,
+                 bmi_intervention_scenario=1,
                  bmi_intervention_start_year=2020,
                  bmi_intervention_end_year=2030,
                  bmi_intervention_coverage=1.0,
@@ -1517,6 +1522,7 @@ class Parameters:
         self.post_art_bmi_rse = pd.read_hdf(path, 'post_art_bmi_rse').loc[group_name].values[0]
 
         # BMI Intervention Probability
+        self.bmi_intervention = bmi_intervention
         self.bmi_intervention_scenario = bmi_intervention_scenario
         self.bmi_intervention_start_year = bmi_intervention_start_year
         self.bmi_intervention_end_year = bmi_intervention_end_year
