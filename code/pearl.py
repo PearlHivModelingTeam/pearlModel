@@ -874,7 +874,7 @@ class Pearl:
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
 
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
-            if self.parameters.bmi_intervention_scenario > 0:
+            if self.parameters.bmi_intervention:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[['bmiInt_ineligible_dm',
                      'bmiInt_ineligible_underweight',
@@ -1327,7 +1327,7 @@ class Pearl:
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
-        if (self.parameters.bmi_intervention):
+        if self.parameters.bmi_intervention:
             """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['h1yy',
