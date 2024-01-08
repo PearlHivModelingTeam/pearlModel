@@ -18,12 +18,22 @@ def run(group_name_run, replication_run):
     out_path = f"csv_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
     output_folder = output_root_path/out_path
     rerun_folder = rerun_root_path/out_path if rerun_root_path is not None else None
-    parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_folder, output_folder=output_folder,
-                                  group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
-                                  final_year=config['final_year'], mortality_model=config['mortality_model'],
-                                  mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
-                                  verbose=config['verbose'], bmi_intervention=config['bmi_intervention'],
-                                  bmi_intervention_coverage=config['bmi_intervention_coverage'],bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
+    parameters = pearl.Parameters(path=param_file_path,
+                                  rerun_folder=rerun_folder,
+                                  output_folder=output_folder,
+                                  group_name=group_name_run,
+                                  comorbidity_flag=config['comorbidity_flag'],
+                                  new_dx=config['new_dx'],
+                                  final_year=config['final_year'],
+                                  mortality_model=config['mortality_model'],
+                                  mortality_threshold_flag=config['mortality_threshold_flag'],
+                                  idu_threshold=config['idu_threshold'],
+                                  verbose=config['verbose'],
+                                  bmi_intervention_scenario=config['bmi_intervention_scenario'],
+                                  bmi_intervention_start_year=config['bmi_intervention_start_year'],
+                                  bmi_intervention_end_year=config['bmi_intervention_end_year'],
+                                  bmi_intervention_coverage=config['bmi_intervention_coverage'],
+                                  bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
     print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}')
     pearl.Pearl(parameters, group_name_run, replication_run)
     print(f'simulation finished for {group_name_run},rep= {replication_run}')

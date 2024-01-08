@@ -432,7 +432,7 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 
 def apply_bmi_intervention(pop, parameters):
-    pop['bmiInt_year'] = pop['h1yy'].isin(range(2010, 2030))
+    pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year))
     pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
                                                  1 - parameters.bmi_intervention_coverage])
@@ -865,7 +865,7 @@ class Pearl:
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
 
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
-            if self.parameters.bmi_intervention:
+            if (self.parameters.bmi_intervention_scenario > 0):
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[['bmiInt_ineligible_dm',
                      'bmiInt_ineligible_underweight',
@@ -1318,7 +1318,7 @@ class Pearl:
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
-        if self.parameters.bmi_intervention:
+        if (self.parameters.bmi_intervention_scenario>0):
             """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_coverage = self.population[['h1yy',
@@ -1386,7 +1386,12 @@ class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
     def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
                  mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
-                 sa_value=None, bmi_intervention=False, bmi_intervention_coverage=1.0,bmi_intervention_effectiveness=1.0):
+                 sa_value=None,
+                 bmi_intervention_scenario=0,
+                 bmi_intervention_start_year=2020,
+                 bmi_intervention_end_year=2030,
+                 bmi_intervention_coverage=1.0,
+                 bmi_intervention_effectiveness=1.0):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
         record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
@@ -1512,7 +1517,9 @@ class Parameters:
         self.post_art_bmi_rse = pd.read_hdf(path, 'post_art_bmi_rse').loc[group_name].values[0]
 
         # BMI Intervention Probability
-        self.bmi_intervention = bmi_intervention
+        self.bmi_intervention_scenario = bmi_intervention_scenario
+        self.bmi_intervention_start_year = bmi_intervention_start_year
+        self.bmi_intervention_end_year = bmi_intervention_end_year
         self.bmi_intervention_coverage = bmi_intervention_coverage
         self.bmi_intervention_effectiveness = bmi_intervention_effectiveness
 
