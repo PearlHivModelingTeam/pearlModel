@@ -432,7 +432,7 @@ def simulate_new_dx(new_dx, linkage_to_care):
 
 
 def apply_bmi_intervention(pop, parameters):
-    pop['bmiInt_year'] = pop['h1yy'].isin(range(2020, 2031))
+    pop['bmiInt_year'] = pop['h1yy'].isin(range(2010, 2030))
     pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
                                                  1 - parameters.bmi_intervention_coverage])
