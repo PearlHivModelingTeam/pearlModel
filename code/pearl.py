@@ -454,9 +454,15 @@ def apply_bmi_intervention(pop, parameters):
     # who will benefit from the intervention? # now we model the impact for those who will become obese
     pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
     pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
-    pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop['bmiInt_effectiveness']
-    # new BMI set at 29.9:
+
+    # no BMI intervention: just collecting outcomes
+    if parameters.bmi_intervention_scenario == 0:
+        pop['maintained_weight_under_bmiInt'] = 0
+
+    # Scenario1: set fix new bmi
     if parameters.bmi_intervention_scenario == 1:
+        pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop[
+            'bmiInt_effectiveness']
         pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
     ###
     return pop[['bmiInt_ineligible_dm',
