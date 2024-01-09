@@ -13,7 +13,7 @@ date_string = datetime.today().strftime('%Y-%m-%d')
 
 # CREATING PARAMETER FILE:
 parser = argparse.ArgumentParser()
-parser.add_argument('--createParam')
+parser.add_argument('--createParam', action='store_true')
 args = parser.parse_args()
 if args.createParam:
     print(f"Creating the parameter file ...")
