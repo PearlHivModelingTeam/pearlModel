@@ -5,12 +5,30 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 import os
+import argparse
 
 start_time = datetime.now()
 pearl_path = Path('..')
 date_string = datetime.today().strftime('%Y-%m-%d')
 
-config_files = ['bmi_S1.yaml']
+# CREATING PARAMETER FILE:
+parser = argparse.ArgumentParser()
+parser.add_argument('--createParam')
+args = parser.parse_args()
+if args.createParam:
+    print(f"Creating the parameter file ...")
+    command = ["python3", f"{pearl_path}/code/1_create_param_file.py"]
+    output_and_error_log = "1_out.log"
+    with open(output_and_error_log, "w") as log_file:
+        process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
+    # Wait for the process to finish
+    process.communicate()
+    # Check the exit code
+    exit_code = process.returncode
+    print("param file created with exit Code:", exit_code)
+
+# RUNNING LIST OF SCENARIOS:
+config_files = ['S0.yaml','S1.yaml']
 for f in config_files:
     print(f"reading config file: {f} ...")
     # paths
@@ -21,7 +39,7 @@ for f in config_files:
     # Specify the command to call another Python script
     command = ["python3", f"{pearl_path}/code/2_simulate_server.py", "--config", f"{config_file_path}","--overwrite"]
     # Use subprocess to run the command and redirect both output and error to the same file
-    output_and_error_log = f"2_out_{f}.log"
+    output_and_error_log = f"2_out_{config_file_path.stem}.log"
     with open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
     # Wait for the process to finish
@@ -33,7 +51,7 @@ for f in config_files:
     print(f"Creating HDF outputs ...")
     # Specify the command to call another Python script
     command = ["python3", f"{pearl_path}/code/3_convert_csv_to_hdf.py","--dir", f"{output_root_path}"]
-    output_and_error_log = f"3_out_{f}.log"
+    output_and_error_log = f"3_out_{config_file_path.stem}.log"
     with open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
     # Wait for the process to finish
@@ -41,7 +59,6 @@ for f in config_files:
     # Check the exit code
     exit_code = process.returncode
     print("outputs converted to hdf with exit Code:", exit_code)
-
 
 end_time = datetime.now()
 print(f'**** Elapsed Time: {end_time - start_time} ****')
