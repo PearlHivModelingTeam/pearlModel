@@ -7,6 +7,11 @@ from datetime import datetime
 import os
 import argparse
 
+#SETUP: list of config files to run:
+config_files = ['S0.yaml' ]
+
+
+###############################################################################################
 start_time = datetime.now()
 pearl_path = Path('..')
 date_string = datetime.today().strftime('%Y-%m-%d')
@@ -28,7 +33,6 @@ if args.createParam:
     print("param file created with exit Code:", exit_code)
 
 # RUNNING LIST OF SCENARIOS:
-config_files = ['S0.yaml','S1.yaml']
 for f in config_files:
     print(f"reading config file: {f} ...")
     # paths
