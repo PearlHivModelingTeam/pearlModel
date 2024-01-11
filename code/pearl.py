@@ -1383,7 +1383,12 @@ class Pearl:
             self.stats.bmi_int_coverage = bmi_int_coverage_count
 
             """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
-            dm_int = self.population.groupby(['h1yy','bmiInt_received','maintained_weight_under_bmiInt','dm','t_dm',]).size().reset_index(name='n')
+            dm_int = self.population.groupby(['h1yy',
+                                              'bmiInt_eligible',
+                                              'bmiInt_received',
+                                              'bmiInt_impacted',
+                                              'dm',
+                                              't_dm',]).size().reset_index(name='n')
             dm_int['scenario'] = self.parameters.bmi_intervention_scenario
             self.stats.bmi_int_dm_prev = dm_int
 
