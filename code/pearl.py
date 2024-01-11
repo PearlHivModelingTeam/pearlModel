@@ -450,18 +450,40 @@ def apply_bmi_intervention(pop, parameters):
     # eligible people are enrolled in the intervention:
     pop['bmiInt_received'] = pop['bmiInt_eligible'] & pop['bmiInt_year'] & pop['bmiInt_coverage']
 
-    # who will benefit from the intervention? # now we model the impact for those who will become obese
-    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
+    # creating new outputs:
+    pop['bmi_increase_postART'] = (pop['post_art_bmi'] / pop['pre_art_bmi'] > 1)
+    pop['bmi_increase_postART_over5p']= (pop['post_art_bmi']/pop['pre_art_bmi'] > 1.05)
     pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
+    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
 
-    # no BMI intervention: just collecting outcomes
-    pop['maintained_weight_under_bmiInt'] = 0
+    # Scenario0: no BMI intervention
+    pop['bmiInt_impacted'] = 0
 
-    # Scenario1: set fix new bmi
+    # Scenario1: Based on BMI threshold:
+    # Anyone gaining weight who pass the threshold of BMI=30 (obesity) will experience benefits from this intervention
+    # by retaining their weight at a threshold of 29.9 (below obesity)
     if parameters.bmi_intervention_scenario == 1:
-        pop['maintained_weight_under_bmiInt'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop[
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop[
             'bmiInt_effectiveness']
-        pop.loc[pop['maintained_weight_under_bmiInt'], 'post_art_bmi'] = 29.9
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = 29.9
+
+    # Scenario2: Based on % gain in BMI :
+    # Anyone experiencing >5% increase in pre-ART BMI will experience benefits from this intervention by retaining their
+    # BMI at 1.05 times the starting value. Those surpassing the BMI of 30 (obesity threshold) will retain their weights
+    # at a threshold of 29.9 (below obesity)
+    if parameters.bmi_intervention_scenario == 2:
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART_over5p'] & pop[
+            'bmiInt_effectiveness']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = min(29.9, 1.05 * pop['pre_art_bmi'])
+
+    # Scenario3: No BMI gain:
+    # Anyone gaining BMI will experience benefits from this intervention by retaining their weight at the level of
+    # pre-ART BMI. Those experiencing reductions in their weight are allowed to follow the natural weight loss trajectory.
+    if parameters.bmi_intervention_scenario == 3:
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART'] & pop[
+            'bmiInt_effectiveness']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] =  pop['pre_art_bmi']
+
     ###
     return pop[[
                 'bmiInt_ineligible_dm',
@@ -469,8 +491,10 @@ def apply_bmi_intervention(pop, parameters):
                 'bmiInt_ineligible_obese',
                 'bmiInt_eligible',
                 'bmiInt_received',
+                'bmi_increase_postART',
+                'bmi_increase_postART_over5p',
                 'become_obese_postART',
-                'maintained_weight_under_bmiInt',
+                'bmiInt_impacted',
                 'pre_art_bmi',
                 'post_art_bmi_without_bmiInt',
                 'post_art_bmi']]
@@ -877,16 +901,18 @@ class Pearl:
             if self.parameters.bmi_intervention:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
                 population[[
-                            'bmiInt_ineligible_dm',
-                            'bmiInt_ineligible_underweight',
-                            'bmiInt_ineligible_obese',
-                            'bmiInt_eligible',
-                            'bmiInt_received',
-                            'become_obese_postART',
-                            'maintained_weight_under_bmiInt',
-                            'pre_art_bmi',
-                            'post_art_bmi_without_bmiInt',
-                            'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+                    'bmiInt_ineligible_dm',
+                    'bmiInt_ineligible_underweight',
+                    'bmiInt_ineligible_obese',
+                    'bmiInt_eligible',
+                    'bmiInt_received',
+                    'bmi_increase_postART',
+                    'bmi_increase_postART_over5p',
+                    'become_obese_postART',
+                    'bmiInt_impacted',
+                    'pre_art_bmi',
+                    'post_art_bmi_without_bmiInt',
+                    'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -1337,17 +1363,21 @@ class Pearl:
                                                 'bmiInt_ineligible_obese',
                                                 'bmiInt_eligible',
                                                 'bmiInt_received',
+                                                'bmi_increase_postART',
+                                                'bmi_increase_postART_over5p',
                                                 'become_obese_postART',
-                                                'maintained_weight_under_bmiInt']].fillna(0).astype(int)
+                                                'bmiInt_impacted']].fillna(0).astype(int)
             # Group by all categories and calculate the count in each one
             bmi_int_coverage_count = bmi_int_coverage.groupby(['h1yy',
-                                                                    'bmiInt_ineligible_dm',
-                                                                    'bmiInt_ineligible_underweight',
-                                                                    'bmiInt_ineligible_obese',
-                                                                    'bmiInt_eligible',
-                                                                    'bmiInt_received',
-                                                                    'become_obese_postART',
-                                                                    'maintained_weight_under_bmiInt']).size().reset_index(name='n')
+                                                               'bmiInt_ineligible_dm',
+                                                               'bmiInt_ineligible_underweight',
+                                                               'bmiInt_ineligible_obese',
+                                                               'bmiInt_eligible',
+                                                               'bmiInt_received',
+                                                               'bmi_increase_postART',
+                                                               'bmi_increase_postART_over5p',
+                                                               'become_obese_postART',
+                                                               'bmiInt_impacted']).size().reset_index(name='n')
             bmi_int_coverage_count['scenario'] = self.parameters.bmi_intervention_scenario
             self.stats.bmi_int_coverage = bmi_int_coverage_count
 
