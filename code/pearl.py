@@ -451,10 +451,11 @@ def apply_bmi_intervention(pop, parameters):
     pop['bmiInt_received'] = pop['bmiInt_eligible'] & pop['bmiInt_year'] & pop['bmiInt_coverage']
 
     # creating new outputs:
+    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
     pop['bmi_increase_postART'] = (pop['post_art_bmi'] / pop['pre_art_bmi'] > 1)
     pop['bmi_increase_postART_over5p']= (pop['post_art_bmi']/pop['pre_art_bmi'] > 1.05)
     pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
-    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
+
 
     # Scenario0: no BMI intervention
     pop['bmiInt_impacted'] = 0
