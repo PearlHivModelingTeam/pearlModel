@@ -18,7 +18,7 @@ start_time = datetime.now()
 pearl_path = Path('..')
 date_string = datetime.today().strftime('%Y-%m-%d')
 param_file_path = pearl_path/'param_files/parameters.h5'
-config_file_path = pearl_path/'config/S2.yaml'
+config_file_path = pearl_path/'config/test.yaml'
 output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
 print(config_file_path.resolve())
 # Load config_file
