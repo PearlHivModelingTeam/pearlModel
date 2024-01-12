@@ -434,6 +434,7 @@ def simulate_new_dx(new_dx, linkage_to_care):
 def apply_bmi_intervention(pop, parameters):
     if parameters.bmi_intervention == 0:
         raise ValueError('Running apply_bmi_intervention despite bmi_intervention=0')
+    pop['bmiInt_scenario'] = parameters.bmi_intervention_scenario
     pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year))
     pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
@@ -486,7 +487,7 @@ def apply_bmi_intervention(pop, parameters):
         pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = pop.loc[pop['bmiInt_impacted'], 'pre_art_bmi']
 
     ###
-    return pop[[
+    return pop[['bmiInt_scenario',
                 'bmiInt_ineligible_dm',
                 'bmiInt_ineligible_underweight',
                 'bmiInt_ineligible_obese',
@@ -901,19 +902,19 @@ class Pearl:
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
             if self.parameters.bmi_intervention:
                 # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
-                population[[
-                    'bmiInt_ineligible_dm',
-                    'bmiInt_ineligible_underweight',
-                    'bmiInt_ineligible_obese',
-                    'bmiInt_eligible',
-                    'bmiInt_received',
-                    'bmi_increase_postART',
-                    'bmi_increase_postART_over5p',
-                    'become_obese_postART',
-                    'bmiInt_impacted',
-                    'pre_art_bmi',
-                    'post_art_bmi_without_bmiInt',
-                    'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+                population[['bmiInt_scenario'
+                            'bmiInt_ineligible_dm',
+                            'bmiInt_ineligible_underweight',
+                            'bmiInt_ineligible_obese',
+                            'bmiInt_eligible',
+                            'bmiInt_received',
+                            'bmi_increase_postART',
+                            'bmi_increase_postART_over5p',
+                            'become_obese_postART',
+                            'bmiInt_impacted',
+                            'pre_art_bmi',
+                            'post_art_bmi_without_bmiInt',
+                            'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
 
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -1358,7 +1359,8 @@ class Pearl:
         if self.parameters.bmi_intervention:
             """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
             # choose columns, fill Na values with 0 and transform to integer
-            bmi_int_coverage = self.population[['h1yy',
+            bmi_int_coverage = self.population[['bmiInt_scenario',
+                                                'h1yy',
                                                 'bmiInt_ineligible_dm',
                                                 'bmiInt_ineligible_underweight',
                                                 'bmiInt_ineligible_obese',
@@ -1368,8 +1370,10 @@ class Pearl:
                                                 'bmi_increase_postART_over5p',
                                                 'become_obese_postART',
                                                 'bmiInt_impacted']].fillna(0).astype(int)
+
             # Group by all categories and calculate the count in each one
-            bmi_int_coverage_count = bmi_int_coverage.groupby(['h1yy',
+            bmi_int_coverage_count = bmi_int_coverage.groupby(['bmiInt_scenario',
+                                                               'h1yy',
                                                                'bmiInt_ineligible_dm',
                                                                'bmiInt_ineligible_underweight',
                                                                'bmiInt_ineligible_obese',
@@ -1379,17 +1383,16 @@ class Pearl:
                                                                'bmi_increase_postART_over5p',
                                                                'become_obese_postART',
                                                                'bmiInt_impacted']).size().reset_index(name='n')
-            bmi_int_coverage_count['scenario'] = self.parameters.bmi_intervention_scenario
             self.stats.bmi_int_coverage = bmi_int_coverage_count
 
             """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
-            dm_int = self.population.groupby(['h1yy',
+            dm_int = self.population.groupby(['bmiInt_scenario',
+                                              'h1yy',
                                               'bmiInt_eligible',
                                               'bmiInt_received',
                                               'bmiInt_impacted',
                                               'dm',
                                               't_dm',]).size().reset_index(name='n')
-            dm_int['scenario'] = self.parameters.bmi_intervention_scenario
             self.stats.bmi_int_dm_prev = dm_int
 
 
