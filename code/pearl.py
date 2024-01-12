@@ -475,7 +475,7 @@ def apply_bmi_intervention(pop, parameters):
     if parameters.bmi_intervention_scenario == 2:
         pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART_over5p'] & pop[
             'bmiInt_effectiveness']
-        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = min(29.9, 1.05 * pop['pre_art_bmi'])
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = np.minimum(29.9, 1.05 * pop.loc[pop['bmiInt_impacted'], 'pre_art_bmi'])
 
     # Scenario3: No BMI gain:
     # Anyone gaining BMI will experience benefits from this intervention by retaining their weight at the level of
@@ -483,7 +483,7 @@ def apply_bmi_intervention(pop, parameters):
     if parameters.bmi_intervention_scenario == 3:
         pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART'] & pop[
             'bmiInt_effectiveness']
-        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] =  pop['pre_art_bmi']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = pop.loc[pop['bmiInt_impacted'], 'pre_art_bmi']
 
     ###
     return pop[[

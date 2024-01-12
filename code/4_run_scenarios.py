@@ -8,7 +8,7 @@ import os
 import argparse
 
 #SETUP: list of config files to run:
-config_files = ['S0.yaml','S1.yaml','S2.yaml','S3.yaml' ]
+config_files = ['S2.yaml','S3.yaml' ]
 
 
 ###############################################################################################

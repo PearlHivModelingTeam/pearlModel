@@ -18,7 +18,7 @@ start_time = datetime.now()
 pearl_path = Path('..')
 date_string = datetime.today().strftime('%Y-%m-%d')
 param_file_path = pearl_path/'param_files/parameters.h5'
-config_file_path = pearl_path/'config/test.yaml'
+config_file_path = pearl_path/'config/S2.yaml'
 output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
 print(config_file_path.resolve())
 # Load config_file
@@ -29,10 +29,10 @@ print(f'output directory set to {output_root_path}')
 
 # Create Output folder structure
 if output_root_path.is_dir():
-    if (config_file_path.stem == 'test'):
+    if config_file_path.stem == 'test':
         shutil.rmtree(output_root_path)
-    else:
-        raise FileExistsError("Output folder already exists")
+    # else:
+    #     raise FileExistsError("Output folder already exists")
 
 for group_name in config['group_names']:
     for replication in range(config['replications']):
