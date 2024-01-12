@@ -14,7 +14,7 @@ group_names: ['msm_white_male',
               'het_black_female', 
               'het_hisp_female'
 ]
-num_cpus: 15
+num_cpus: 150
 replications: 1
 comorbidity_flag: 1 # 0, 1
 new_dx: 'base' # base, ehe, sa
