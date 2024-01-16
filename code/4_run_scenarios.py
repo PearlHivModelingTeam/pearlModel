@@ -8,8 +8,7 @@ import os
 import argparse
 
 #SETUP: list of config files to run:
-config_files = ['S0.yaml','S1.yaml','S2.yaml','S3.yaml' ]
-
+config_files = ['S3.yaml','S2.yaml','S1.yaml','S0.yaml' ]
 ###############################################################################################
 start_time = datetime.now()
 pearl_path = Path('..')
