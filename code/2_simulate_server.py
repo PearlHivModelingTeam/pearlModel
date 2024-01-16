@@ -150,10 +150,17 @@ with open(output_root_path/'config.yaml', 'w') as yaml_file:
 
 # Initialize ray with the desired number of threads
 try:
-    num_cpus = os.cpu_count()
-    print(f"number of available cpus is {num_cpus}")
-    print(f"initializing ray with {config['num_cpus']} cpus")
-    ray.init(num_cpus=config['num_cpus'])
+    num_cpus_available = os.cpu_count()
+    num_cpus_requested = config['num_cpus']
+
+    # Adjust the number of CPUs if requested is greater than available
+    if num_cpus_requested > num_cpus_available:
+        print(f"WARNING: Requested {num_cpus_requested} CPUs, but only {num_cpus_available} available. Adjusting to {num_cpus_available}.")
+        num_cpus_requested = num_cpus_available
+
+    print(f"Number of available CPUs: {num_cpus_available}")
+    print(f"Initializing ray with {num_cpus_requested} CPUs")
+    ray.init(num_cpus=num_cpus_requested)
 except Exception as e:
     print(f"Error initializing Ray: {e}")
 
