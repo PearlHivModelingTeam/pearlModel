@@ -12,7 +12,7 @@ from datetime import datetime
 import os
 
 
-print("1")
+print("1", flush=True)
 @ray.remote
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
@@ -40,7 +40,7 @@ def run(group_name_run, replication_run):
     pearl.Pearl(parameters, group_name_run, replication_run)
     print(f'simulation finished for {group_name_run},rep= {replication_run}')
 ###############################
-print("2")
+print("2", flush=True)
 
 start_time = datetime.now()
 # Define the argument parser
@@ -75,7 +75,7 @@ else:
 with open(config_file_path, 'r') as config_file:
     config = yaml.safe_load(config_file)
 
-print("3")
+print("3", flush=True)
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
 """if args.rerun:
     print('This is a rerun')
@@ -102,7 +102,7 @@ if output_root_path.is_dir():
     else:
         raise FileExistsError("Output folder already exists")
 
-print("4")
+print("4", flush=True)
 if sa_variables is None:
     for group_name_run in config['group_names']:
         for replication_run in range(config['replications']):
@@ -116,7 +116,7 @@ with open(output_root_path/'config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config, yaml_file)
 
 # Initialize ray with the desired number of threads
-print("5")
+print("5", flush=True)
 try:
     num_cpus_available = os.cpu_count()
     num_cpus_requested = config['num_cpus']
@@ -131,7 +131,7 @@ except Exception as e:
     print(f"Error initializing Ray: {e}")
 
 # Launching simulations
-print("6")
+print("6", flush=True)
 
 if sa_variables is None:
     print("running main analysis...")
