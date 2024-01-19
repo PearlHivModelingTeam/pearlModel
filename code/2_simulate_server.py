@@ -36,9 +36,9 @@ def run(group_name_run, replication_run):
                                   bmi_intervention_end_year=config['bmi_intervention_end_year'],
                                   bmi_intervention_coverage=config['bmi_intervention_coverage'],
                                   bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
-    print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}')
+    print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}', flush=True)
     pearl.Pearl(parameters, group_name_run, replication_run)
-    print(f'simulation finished for {group_name_run},rep= {replication_run}')
+    print(f'simulation finished for {group_name_run},rep= {replication_run}', flush=True)
 ###############################
 print("2", flush=True)
 
@@ -63,7 +63,7 @@ rerun_root_path = None
 if args.config:
     config_file_path = pearl_path/'config'/args.config
     output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
-    print(output_root_path.resolve())
+    print(output_root_path.resolve(), flush=True)
 elif args.rerun:
     rerun_root_path = pearl_path/'out'/args.rerun
     config_file_path = rerun_root_path/'config.yaml'
@@ -122,19 +122,19 @@ try:
     num_cpus_requested = config['num_cpus']
     # Adjust the number of CPUs if requested is greater than available
     if num_cpus_requested > num_cpus_available:
-        print(f"WARNING: Requested {num_cpus_requested} CPUs, but only {num_cpus_available} available. Adjusting to {num_cpus_available}.")
+        print(f"WARNING: Requested {num_cpus_requested} CPUs, but only {num_cpus_available} available. Adjusting to {num_cpus_available}.", flush=True)
         num_cpus_requested = num_cpus_available
-    print(f"Number of available CPUs: {num_cpus_available}")
-    print(f"Initializing ray with {num_cpus_requested} CPUs")
+    print(f"Number of available CPUs: {num_cpus_available}", flush=True)
+    print(f"Initializing ray with {num_cpus_requested} CPUs", flush=True)
     ray.init(num_cpus=num_cpus_requested)
 except Exception as e:
-    print(f"Error initializing Ray: {e}")
+    print(f"Error initializing Ray: {e}", flush=True)
 
 # Launching simulations
 print("6", flush=True)
 
 if sa_variables is None:
-    print("running main analysis...")
+    print("running main analysis...", flush=True)
     ray.get([run.remote(group_name, replication)
              for group_name in config['group_names']
              for replication in range(config['replications'])])
