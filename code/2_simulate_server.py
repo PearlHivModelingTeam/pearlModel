@@ -118,18 +118,23 @@ with open(output_root_path/'config.yaml', 'w') as yaml_file:
 # Initialize ray with the desired number of threads
 print("5", flush=True)
 try:
-    num_cpus_available = os.cpu_count()
     num_cpus_requested = config['num_cpus']
+    print(f"Requested CPUs: {num_cpus_requested}", flush=True)
+
+    # Get information about the available resources using Ray's cluster API
+    cluster_info = ray.cluster_resources()
+    num_cpus_available = int(cluster_info.get("CPU", 0))
+
     # Adjust the number of CPUs if requested is greater than available
     if num_cpus_requested > num_cpus_available:
         print(f"WARNING: Requested {num_cpus_requested} CPUs, but only {num_cpus_available} available. Adjusting to {num_cpus_available}.", flush=True)
         num_cpus_requested = num_cpus_available
+
     print(f"Number of available CPUs: {num_cpus_available}", flush=True)
-    print(f"Initializing ray with {num_cpus_requested} CPUs", flush=True)
+    print(f"Initializing Ray with {num_cpus_requested} CPUs", flush=True)
     ray.init(num_cpus=num_cpus_requested)
 except Exception as e:
     print(f"Error initializing Ray: {e}", flush=True)
-
 # Launching simulations
 print("6", flush=True)
 
