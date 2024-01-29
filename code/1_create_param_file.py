@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # Define directories
 param_dir = Path('../param_files')
@@ -10,7 +11,7 @@ param_dir = Path('../param_files')
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-
+start_time = datetime.now()
 
 def clean_coeff(df):
     """Format tables holding coefficient values"""
@@ -426,3 +427,7 @@ with pd.HDFStore(out_file) as store:
     store['mortality_threshold_idu_1x'] = mortality_threshold_idu_1x
     store['mortality_threshold_idu_5x'] = mortality_threshold_idu_5x
     store['mortality_threshold_idu_10x'] = mortality_threshold_idu_10x
+
+print("code ran successfully.")
+end_time = datetime.now()
+print(f'Elapsed Time: {end_time - start_time}')
