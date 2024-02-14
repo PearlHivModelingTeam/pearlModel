@@ -1357,10 +1357,15 @@ class Pearl:
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
         if self.parameters.bmi_intervention:
-            """bmi_int_coverage: summary statistics on population receiving the intervention and their characteristics"""
+            """bmi_int_cascade: summary statistics on population receiving the intervention and their characteristics"""
+            # record agegroup at art_initiation
+            bins = [0, 25, 35, 45, 55, 65, 75, float('inf')]
+            #labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
+            self.population['init_age_group'] = pd.cut(self.population['init_age'], labels=False, bins=bins, right=False)
             # choose columns, fill Na values with 0 and transform to integer
-            bmi_int_coverage = self.population[['bmiInt_scenario',
+            bmi_int_cascade = self.population[['bmiInt_scenario',
                                                 'h1yy',
+                                                'init_age_group',
                                                 'bmiInt_ineligible_dm',
                                                 'bmiInt_ineligible_underweight',
                                                 'bmiInt_ineligible_obese',
@@ -1369,11 +1374,14 @@ class Pearl:
                                                 'bmi_increase_postART',
                                                 'bmi_increase_postART_over5p',
                                                 'become_obese_postART',
-                                                'bmiInt_impacted']].fillna(0).astype(int)
+                                                'bmiInt_impacted',
+                                               'dm',
+                                               't_dm']].fillna(0).astype(int)
 
             # Group by all categories and calculate the count in each one
-            bmi_int_coverage_count = bmi_int_coverage.groupby(['bmiInt_scenario',
+            bmi_int_cascade_count = bmi_int_cascade.groupby(['bmiInt_scenario',
                                                                'h1yy',
+                                                               'init_age_group',
                                                                'bmiInt_ineligible_dm',
                                                                'bmiInt_ineligible_underweight',
                                                                'bmiInt_ineligible_obese',
@@ -1382,17 +1390,20 @@ class Pearl:
                                                                'bmi_increase_postART',
                                                                'bmi_increase_postART_over5p',
                                                                'become_obese_postART',
-                                                               'bmiInt_impacted']).size().reset_index(name='n')
-            self.stats.bmi_int_coverage = bmi_int_coverage_count
+                                                               'bmiInt_impacted',
+                                                             'dm',
+                                                             't_dm']).size().reset_index(name='n')
+            self.stats.bmi_int_cascade = bmi_int_cascade_count
 
             """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
             dm_int = self.population.groupby(['bmiInt_scenario',
                                               'h1yy',
+                                              'init_age_group',
                                               'bmiInt_eligible',
                                               'bmiInt_received',
                                               'bmiInt_impacted',
                                               'dm',
-                                              't_dm',]).size().reset_index(name='n')
+                                              't_dm']).size().reset_index(name='n')
             self.stats.bmi_int_dm_prev = dm_int
 
 
@@ -1609,7 +1620,7 @@ class Statistics:
 
         self.output_folder = output_folder
 
-        self.bmi_int_coverage = pd.DataFrame() ##of people covered by the bmi intervention
+        self.bmi_int_cascade = pd.DataFrame() ##of people covered by the bmi intervention
         self.bmi_int_dm_prev = pd.DataFrame()  ##of people with/without dm who receive/didnt receive intervention
 
         self.in_care_age = pd.DataFrame()
@@ -1654,10 +1665,7 @@ class Statistics:
         self.sa_cd4_decrease_out_care = pd.DataFrame()
 
     def save(self):
-        #print(f'Saving the stats for {len([item for item in self.__dict__.values() if isinstance(item, pd.DataFrame)])} data frames.')
-        #print(f'output_folder= {self.output_folder}')
-        # print(self.bmi_int_coverage.head())
-        # print(self.bmi_int_coverage.dtypes)
+
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
