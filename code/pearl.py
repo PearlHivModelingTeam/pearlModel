@@ -1365,7 +1365,6 @@ class Pearl:
             # choose columns, fill Na values with 0 and transform to integer
             bmi_int_cascade = self.population[['bmiInt_scenario',
                                                 'h1yy',
-                                                'init_age_group',
                                                 'bmiInt_ineligible_dm',
                                                 'bmiInt_ineligible_underweight',
                                                 'bmiInt_ineligible_obese',
@@ -1374,14 +1373,11 @@ class Pearl:
                                                 'bmi_increase_postART',
                                                 'bmi_increase_postART_over5p',
                                                 'become_obese_postART',
-                                                'bmiInt_impacted',
-                                               'dm',
-                                               't_dm']].fillna(0).astype(int)
+                                                'bmiInt_impacted']].fillna(0).astype(int)
 
             # Group by all categories and calculate the count in each one
             bmi_int_cascade_count = bmi_int_cascade.groupby(['bmiInt_scenario',
                                                                'h1yy',
-                                                               'init_age_group',
                                                                'bmiInt_ineligible_dm',
                                                                'bmiInt_ineligible_underweight',
                                                                'bmiInt_ineligible_obese',
@@ -1390,9 +1386,7 @@ class Pearl:
                                                                'bmi_increase_postART',
                                                                'bmi_increase_postART_over5p',
                                                                'become_obese_postART',
-                                                               'bmiInt_impacted',
-                                                             'dm',
-                                                             't_dm']).size().reset_index(name='n')
+                                                               'bmiInt_impacted']).size().reset_index(name='n')
             self.stats.bmi_int_cascade = bmi_int_cascade_count
 
             """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
