@@ -95,6 +95,10 @@ def create_mm_detail_stats(pop):
     all_comorbidities = STAGE0 + STAGE1 + STAGE2 + STAGE3
     df = pop[['age_cat'] + all_comorbidities].copy()
     df['multimorbidity'] = df[all_comorbidities].apply(lambda row: ''.join(row.values.astype(str)), axis='columns').apply(int, base=2)
+    """This line of code adds a new column 'multimorbidity' to the DataFrame. The column is created by applying a function to each row of the DataFrame. This function:
+    Converts the values in the comorbidity columns to strings.
+    Joins these strings to create a concatenated binary representation for each row.
+    Converts the binary representation to an integer using base 2."""
 
     # Count how many people have each unique set of comorbidities
     df = df.groupby(['multimorbidity']).size().reset_index(name='n')
@@ -427,16 +431,75 @@ def simulate_new_dx(new_dx, linkage_to_care):
     return n_initial_nonusers, new_agents
 
 
-def apply_bmi_intervention(pop, parameters):
-    pop['post_art_bmi_inter'] = calculate_post_art_bmi(pop.copy(), parameters, intervention=True)
-    pop['eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30)
-    pop['become_obese'] = pop['post_art_bmi'] > 30
-    pop['inter_effective'] = np.random.choice([1, 0], size=len(pop), replace=True,
-                                              p=[parameters.bmi_intervention_probability, 1 - parameters.bmi_intervention_probability])
-    pop['intervention_year'] = pop['h1yy'].isin(range(2021, 2027))
-    pop['intervention'] = pop['intervention_year'] & pop['eligible'] & pop['become_obese'] & pop['inter_effective']
-    pop.loc[pop['intervention'], 'post_art_bmi'] = pop.loc[pop['intervention'], 'post_art_bmi_inter']
-    return pop['post_art_bmi']
+def apply_bmi_intervention(pop, parameters): #pop is a copy of the new population of ART initiators that are starting ART in this year
+    if parameters.bmi_intervention == 0:
+        raise ValueError('Running apply_bmi_intervention despite bmi_intervention=0')
+    pop['bmiInt_scenario'] = parameters.bmi_intervention_scenario
+    pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year+1)) # this function doesnt capture the last value, so we do +1
+    pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
+                                              p=[parameters.bmi_intervention_coverage, #prob of choosing the value of 1
+                                                 1 - parameters.bmi_intervention_coverage])
+    pop['bmiInt_effectiveness'] = np.random.choice([1, 0], size=len(pop), replace=True,
+                                                   p=[parameters.bmi_intervention_effectiveness,
+                                                      1 - parameters.bmi_intervention_effectiveness])
+    # determine eligibility:
+    pop['bmiInt_ineligible_dm'] = (pop['dm'] == 1)
+    pop['bmiInt_ineligible_underweight'] = (pop['pre_art_bmi'] < 18.5)
+    pop['bmiInt_ineligible_obese'] = (pop['pre_art_bmi'] > 30)
+    pop['bmiInt_eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] <= 30) & (pop['dm'] == 0)
+
+    # eligible people are enrolled in the intervention:
+    pop['bmiInt_received'] = pop['bmiInt_eligible'] & pop['bmiInt_year'] & pop['bmiInt_coverage']
+
+    # creating new outputs:
+    pop['post_art_bmi_without_bmiInt'] = pop['post_art_bmi']
+    pop['bmi_increase_postART'] = (pop['post_art_bmi'] / pop['pre_art_bmi'] > 1)
+    pop['bmi_increase_postART_over5p']= (pop['post_art_bmi']/pop['pre_art_bmi'] > 1.05)
+    pop['become_obese_postART'] = pop['post_art_bmi_without_bmiInt'] > 30
+
+
+    # Scenario0: no BMI intervention
+    pop['bmiInt_impacted'] = 0
+
+    # Scenario1: Based on BMI threshold:
+    # Anyone gaining weight who pass the threshold of BMI=30 (obesity) will experience benefits from this intervention
+    # by retaining their weight at a threshold of 29.9 (below obesity)
+    if parameters.bmi_intervention_scenario == 1:
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['become_obese_postART'] & pop[
+            'bmiInt_effectiveness']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = 29.9
+
+    # Scenario2: Based on % gain in BMI :
+    # Anyone experiencing >5% increase in pre-ART BMI will experience benefits from this intervention by retaining their
+    # BMI at 1.05 times the starting value. Those surpassing the BMI of 30 (obesity threshold) will retain their weights
+    # at a threshold of 29.9 (below obesity)
+    if parameters.bmi_intervention_scenario == 2:
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART_over5p'] & pop[
+            'bmiInt_effectiveness']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = np.minimum(29.9, 1.05 * pop.loc[pop['bmiInt_impacted'], 'pre_art_bmi'])
+
+    # Scenario3: No BMI gain:
+    # Anyone gaining BMI will experience benefits from this intervention by retaining their weight at the level of
+    # pre-ART BMI. Those experiencing reductions in their weight are allowed to follow the natural weight loss trajectory.
+    if parameters.bmi_intervention_scenario == 3:
+        pop['bmiInt_impacted'] = pop['bmiInt_received'] & pop['bmi_increase_postART'] & pop[
+            'bmiInt_effectiveness']
+        pop.loc[pop['bmiInt_impacted'], 'post_art_bmi'] = pop.loc[pop['bmiInt_impacted'], 'pre_art_bmi']
+
+    ###
+    return pop[['bmiInt_scenario',
+                'bmiInt_ineligible_dm',
+                'bmiInt_ineligible_underweight',
+                'bmiInt_ineligible_obese',
+                'bmiInt_eligible',
+                'bmiInt_received',
+                'bmi_increase_postART',
+                'bmi_increase_postART_over5p',
+                'become_obese_postART',
+                'bmiInt_impacted',
+                'pre_art_bmi',
+                'post_art_bmi_without_bmiInt',
+                'post_art_bmi']]
 
 
 ###############################################################################
@@ -446,6 +509,8 @@ def apply_bmi_intervention(pop, parameters):
 class Pearl:
     """The PEARL class runs a simulation when initialized."""
     def __init__(self, parameters, group_name, replication):
+        #print(f'Initializing PEARL class for group_name: {group_name}, replication: {replication}') #@DEBUG
+
         """Takes an instance of the Parameters class, the group name and replication number and runs a simulation."""
         self.group_name = group_name
         self.replication = replication
@@ -599,6 +664,7 @@ class Pearl:
             # Apply comorbidities
             for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
                 population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_users_dict[condition].values).astype(int)
+                population[f't_{condition}'] = 0
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
@@ -697,9 +763,11 @@ class Pearl:
             # Apply comorbidities
             for condition in STAGE0:
                 population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_users_dict[condition].values).astype(int)
+                population[f't_{condition}'] = population[condition] # 0 if not having a condition, and 1 if they have it
             for condition in STAGE1 + STAGE2 + STAGE3:
                 population[condition] = (np.random.rand(len(population.index)) < (self.parameters.prev_users_dict[condition].values) *
                                          self.parameters.sa_aim2_prev_dict[condition]).astype(int)
+                population[f't_{condition}'] = population[condition] # 0 if not having a condition, and 1 if they have it
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
@@ -769,14 +837,29 @@ class Pearl:
         # Add id number
         population['id'] = np.arange(len(self.population), (len(self.population) + population.index.size))
 
+        #this section of the code doesnt run in pycharm. there is a problem with indexing the population.loc[h1yy, 'init_sqrtcd4n']
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
-        population = population.set_index('h1yy')
-        for h1yy, group in population.groupby(level=0):
+        # population = population.set_index('h1yy')
+        # for h1yy, group in population.groupby(level=0):
+        #     mu = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'mu'), 'estimate']
+        #     sigma = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'sigma'), 'estimate']
+        #     size = group.shape[0]
+        #     sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
+        #     population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+        #
+        #     #population['init_sqrtcd4n'][h1yy] = sqrt_cd4n #the problem is that this will return a copy of population and wont modify the original copy
+
+        #PK: here is my revision
+        population.reset_index()
+        unique_h1yy = population['h1yy'].unique()
+        population['init_sqrtcd4n'] = 0
+        for h1yy in unique_h1yy:
             mu = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'mu'), 'estimate']
             sigma = self.parameters.cd4n_by_h1yy.loc[(h1yy, 'sigma'), 'estimate']
-            size = group.shape[0]
+            size = len(population[population['h1yy'] == h1yy]['init_sqrtcd4n'])
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size)
-            population.loc[h1yy, 'init_sqrtcd4n'] = sqrt_cd4n
+            population.loc[population['h1yy'] == h1yy, 'init_sqrtcd4n'] = sqrt_cd4n #we should use .loc indexer for both getting and setting values
+
         population = population.reset_index().set_index('id').sort_index()
 
         # Sensitivity Analysis
@@ -796,26 +879,44 @@ class Pearl:
         population['intercept'] = 1.0
         population['year'] = 2009
 
-        # If doing an Aim 2 simulation calculate bmi variables for the population
+        # Prevalence of existing comorbidities and BMI dynamics:
         if self.parameters.comorbidity_flag:
-            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
-                                                              self.parameters.pre_art_bmi_rse)
-            population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
-
-            # Apply post_art_bmi intervention
-            if self.parameters.bmi_intervention:
-                population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
-
-            population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
-
-            # Apply comorbidities
+            # Pre-exisiting comorbidities:
             for condition in STAGE0:
                 population[condition] = (np.random.rand(len(population.index)) < self.parameters.prev_inits_dict[condition].values).astype(int)
+                population[f't_{condition}'] = population[condition] # 0 if not having a condition, and 1 if they have it
             for condition in STAGE1 + STAGE2 + STAGE3:
                 population[condition] = (np.random.rand(len(population.index)) < (self.parameters.prev_inits_dict[condition].values) *
                                          self.parameters.sa_aim2_prev_dict[condition]).astype(int)
+                population[f't_{condition}'] = population[condition] # 0 if not having a condition, and 1 if they have it
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
+
+            # pre- / post-ART BMI:
+            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model,
+                                                              self.parameters.pre_art_bmi,
+                                                              self.parameters.pre_art_bmi_age_knots,
+                                                              self.parameters.pre_art_bmi_h1yy_knots,
+                                                              self.parameters.pre_art_bmi_rse)
+            population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters)
+
+            # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
+            if self.parameters.bmi_intervention:
+                # population['post_art_bmi'] = apply_bmi_intervention(population.copy(), self.parameters)
+                population[['bmiInt_scenario',
+                            'bmiInt_ineligible_dm',
+                            'bmiInt_ineligible_underweight',
+                            'bmiInt_ineligible_obese',
+                            'bmiInt_eligible',
+                            'bmiInt_received',
+                            'bmi_increase_postART',
+                            'bmi_increase_postART_over5p',
+                            'become_obese_postART',
+                            'bmiInt_impacted',
+                            'pre_art_bmi',
+                            'post_art_bmi_without_bmiInt',
+                            'post_art_bmi']] = apply_bmi_intervention(population.copy(), self.parameters)
+
+            population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
@@ -824,8 +925,15 @@ class Pearl:
         sa_initial_cd4_inits = population.groupby('h1yy')['init_sqrtcd4n'].agg(mean_cd4=lambda x: (x ** 2).mean(), n='size')
         self.stats.sa_initial_cd4_inits = self.stats.sa_initial_cd4_inits.append(sa_initial_cd4_inits, ignore_index=True)
 
+        # print("*** checking the population object before appending")
+        # print(population.tail(1))
+        # print(f"year from {population['h1yy'].min()} to {population['h1yy'].max()}")
+
         # Append new population to pearl population
         self.population = self.population.append(population)
+
+        # print("*** checking the population object after appending")
+        # print(self.population.tail(1))
 
     def run(self):
         """ Simulate from 2010 to final_year """
@@ -1104,8 +1212,13 @@ class Pearl:
             # Draw for incidence
             rand = prob > np.random.rand(len(self.population.index))
             old = self.population[condition]
-            new = rand & (in_care | out_care) & ~old
+            new = rand & (in_care | out_care) & ~old # new incident comorbidities
             self.population[condition] = (old | new).astype(int)
+            # Update time of incident comorbidity
+            self.population[f't_{condition}'] = self.population[f't_{condition}'] + new * self.year #we keep the exisiting values
+
+
+
 
             # Save incidence statistics
             incidence_in_care = (self.population.loc[new & in_care].groupby(['age_cat']).size()
@@ -1117,6 +1230,13 @@ class Pearl:
                                   .reindex(index=self.parameters.AGE_CATS, fill_value=0).reset_index(name='n')
                                   .assign(year=self.year, condition=condition))[['condition', 'year', 'age_cat', 'n']]
             self.stats.incidence_out_care = self.stats.incidence_out_care.append(incidence_out_care)
+            #PK:
+            # incidence_in_care_by_h1yy = (self.population.loc[new & in_care].groupby(['h1yy']).size()
+            #                              .reindex(index=self.parameters.ALL_YEARS, fill_value=0).reset_index(name='n')
+            #                              .assign(year=self.year, condition=condition))[
+            #     ['condition', 'year', 'hh1y', 'n']]
+            # self.stats.incidence_in_care_by_h1yy = self.stats.incidence_in_care_by_h1yy.append(
+            #     incidence_in_care_by_h1yy)
 
     def update_mm(self):
         """Calculate and update the multimorbidity, defined as the number of stage 2 and 3 comorbidities in each agent."""
@@ -1232,9 +1352,55 @@ class Pearl:
             self.stats.mm_detail_dead = self.stats.mm_detail_dead.append(mm_detail_dead)
 
     def record_final_stats(self):
+        """all of these are summarized as frequency of events at different tiers, where the last column in the dataset is n """
         """Record some stats that are better calculated at the end of the simulation. A count of new initiators, those dying in care, and
         those dying out of care is recorded as well as the cd4 count of ART initiators.
         """
+        if self.parameters.bmi_intervention:
+            """bmi_int_cascade: summary statistics on population receiving the intervention and their characteristics"""
+            # record agegroup at art_initiation
+            bins = [0, 25, 35, 45, 55, 65, 75, float('inf')]
+            #labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
+            self.population['init_age_group'] = pd.cut(self.population['init_age'], labels=False, bins=bins, right=False)
+            # choose columns, fill Na values with 0 and transform to integer
+            bmi_int_cascade = self.population[['bmiInt_scenario',
+                                                'h1yy',
+                                                'bmiInt_ineligible_dm',
+                                                'bmiInt_ineligible_underweight',
+                                                'bmiInt_ineligible_obese',
+                                                'bmiInt_eligible',
+                                                'bmiInt_received',
+                                                'bmi_increase_postART',
+                                                'bmi_increase_postART_over5p',
+                                                'become_obese_postART',
+                                                'bmiInt_impacted']].fillna(0).astype(int)
+
+            # Group by all categories and calculate the count in each one
+            bmi_int_cascade_count = bmi_int_cascade.groupby(['bmiInt_scenario',
+                                                               'h1yy',
+                                                               'bmiInt_ineligible_dm',
+                                                               'bmiInt_ineligible_underweight',
+                                                               'bmiInt_ineligible_obese',
+                                                               'bmiInt_eligible',
+                                                               'bmiInt_received',
+                                                               'bmi_increase_postART',
+                                                               'bmi_increase_postART_over5p',
+                                                               'become_obese_postART',
+                                                               'bmiInt_impacted']).size().reset_index(name='n')
+            self.stats.bmi_int_cascade = bmi_int_cascade_count
+
+            """bmi_int_dm_prev: report the number of people with diabetes based on intervention status"""
+            dm_int = self.population.groupby(['bmiInt_scenario',
+                                              'h1yy',
+                                              'init_age_group',
+                                              'bmiInt_eligible',
+                                              'bmiInt_received',
+                                              'bmiInt_impacted',
+                                              'dm',
+                                              't_dm']).size().reset_index(name='n')
+            self.stats.bmi_int_dm_prev = dm_int
+
+
         dead_in_care = self.population['status'] == DEAD_ART_USER
         dead_out_care = self.population['status'] == DEAD_ART_NONUSER
         new_inits = self.population['h1yy'] >= 2010
@@ -1278,7 +1444,13 @@ class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
     def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
                  mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
-                 sa_value=None, bmi_intervention=False, bmi_intervention_probability=1.0):
+                 sa_value=None,
+                 bmi_intervention=0,
+                 bmi_intervention_scenario=1,
+                 bmi_intervention_start_year=2020,
+                 bmi_intervention_end_year=2030,
+                 bmi_intervention_coverage=1.0,
+                 bmi_intervention_effectiveness=1.0):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
         record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
@@ -1405,7 +1577,11 @@ class Parameters:
 
         # BMI Intervention Probability
         self.bmi_intervention = bmi_intervention
-        self.bmi_intervention_probability = bmi_intervention_probability
+        self.bmi_intervention_scenario = bmi_intervention_scenario
+        self.bmi_intervention_start_year = bmi_intervention_start_year
+        self.bmi_intervention_end_year = bmi_intervention_end_year
+        self.bmi_intervention_coverage = bmi_intervention_coverage
+        self.bmi_intervention_effectiveness = bmi_intervention_effectiveness
 
         # Comorbidities
         self.prev_users_dict = {comorbidity: pd.read_hdf(path, f'{comorbidity}_prev_users').loc[group_name] for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3}
@@ -1437,6 +1613,9 @@ class Statistics:
         """
 
         self.output_folder = output_folder
+
+        self.bmi_int_cascade = pd.DataFrame() ##of people covered by the bmi intervention
+        self.bmi_int_dm_prev = pd.DataFrame()  ##of people with/without dm who receive/didnt receive intervention
 
         self.in_care_age = pd.DataFrame()
         self.out_care_age = pd.DataFrame()
@@ -1480,7 +1659,15 @@ class Statistics:
         self.sa_cd4_decrease_out_care = pd.DataFrame()
 
     def save(self):
+
         """Save all internal dataframes as csv files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
-                item.to_csv(self.output_folder/f'{name}.csv', index=False)
+                try:
+                    item.to_csv(self.output_folder/f'{name}.csv', index=False)
+                    #print(f'Successfully saved DataFrame: {name}')
+                except Exception as e:
+                    print(f'Error saving DataFrame {name}: {e}')
+
+
+# population [t_comorbidi
