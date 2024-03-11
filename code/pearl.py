@@ -435,7 +435,7 @@ def apply_bmi_intervention(pop, parameters):
     if parameters.bmi_intervention == 0:
         raise ValueError('Running apply_bmi_intervention despite bmi_intervention=0')
     pop['bmiInt_scenario'] = parameters.bmi_intervention_scenario
-    pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year))
+    pop['bmiInt_year'] = pop['h1yy'].isin(range(parameters.bmi_intervention_start_year, parameters.bmi_intervention_end_year+1)) # this function doesnt capture the last value, so we do +1
     pop['bmiInt_coverage'] = np.random.choice([1, 0], size=len(pop), replace=True,
                                               p=[parameters.bmi_intervention_coverage,
                                                  1 - parameters.bmi_intervention_coverage])
