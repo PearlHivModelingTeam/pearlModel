@@ -49,7 +49,7 @@ Finally, enter the code folder and run the first two numbered scripts. This will
 cd code
 python 1_create_param_file.py
 python 2_simulate.py
-python 3_convert_csv_to_hdf.py --dir test_yyyy_mm_dd
+python 3_convert_csv_to_hdf.py --dir test_yyyy-mm-dd
 ```
 
 ## Configuration
