@@ -77,7 +77,7 @@ for col in age_in_2009.select_dtypes(include=np.number).columns.tolist():
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 
 # New dx prediction intervals
-new_dx = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval.csv').set_index(['group', 'year'])
+new_dx = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval_updated.csv').set_index(['group', 'year'])
 new_dx_ehe = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_combined_ehe.csv').set_index(['group', 'year'])
 new_dx_sa = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval_sa.csv').set_index(['group', 'year'])
 
