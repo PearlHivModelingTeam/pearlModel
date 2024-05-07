@@ -54,6 +54,34 @@ sa_aim2_mort_default_dict = {i: j for i, j in zip(sa_aim2_mort_var, len(sa_aim2_
 ###############################################################################
 # Functions                                                                   #
 ###############################################################################
+def create_template_df(df, target_col = None):
+    # First get target cols
+    column_list = [col for col in df.columns if col != target_col]
+    col_dict = {}
+    for col in column_list:
+        col_dict[col] = list(df[col].unique())
+
+    # Calculating the Cartesian product of all values
+    product_of_values = list(itertools.product(*[value for value in col_dict.values()]))
+
+    # Creating DataFrame from the product
+    column_names = list(col_dict.keys())
+    template_df = pd.DataFrame(product_of_values, columns=column_names)
+    
+    template_df[target_col] = 0
+    
+    return template_df
+
+def match_template_and_data(template_df, data_df, columns_to_match = [], target_col = None):
+    # Perform a left join
+    result_df = pd.merge(template_df, data_df, on= columns_to_match, suffixes=('_temp', ''), how='left')
+    result_df = result_df.fillna(0)
+    
+    # form a final output column
+    result_df = result_df.drop(columns = [target_col+'_temp'])
+    
+    return result_df
+              
 def restricted_cubic_spline_var(x, t, i):
     """Return a numpy array of the i'th restricted cubic spline variable for numpy array x with knots t.
     Adapted from: https:github.com/harrelfe/Hmisc/blob/master/R/rcspline.eval.s
@@ -1398,7 +1426,19 @@ class Pearl:
                                               'bmiInt_impacted',
                                               'dm',
                                               't_dm']).size().reset_index(name='n')
-            self.stats.bmi_int_dm_prev = dm_int
+          
+            # Set up Variabels
+            target_col = 'n'
+            columns_to_match = [col for col in dm_int.columns if col != target_col]
+
+            # First create a template df from dm_int
+            dm_int_temp_df = create_template_df(dm_int, target_col = target_col)
+
+            # Then match template df and dm_int with target col
+            columns_to_match = [col for col in dm_int.columns if col != target_col]
+            final_dm_int = match_template_and_data(dm_int_temp_df, dm_int, columns_to_match = columns_to_match, target_col = target_col)
+
+            self.stats.bmi_int_dm_prev = final_dm_int
 
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
