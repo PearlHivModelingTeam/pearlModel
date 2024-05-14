@@ -60,10 +60,13 @@ def create_template_df(df, target_col = None):
     col_dict = {}
     for col in column_list:
         col_dict[col] = list(df[col].unique())
-
+        
+    if 'init_age_group' in col_dict.keys():
+        col_dict['init_age_group'] = np.arange(0,7)
+        
     # Calculating the Cartesian product of all values
     product_of_values = list(itertools.product(*[value for value in col_dict.values()]))
-
+    
     # Creating DataFrame from the product
     column_names = list(col_dict.keys())
     template_df = pd.DataFrame(product_of_values, columns=column_names)
