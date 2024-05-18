@@ -103,7 +103,7 @@ age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']]
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = pd.read_csv(param_dir/'new_diagnosis_population/cd4_at_art_init/cd4n_by_h1yy.csv').set_index('group').sort_index()
-years = np.arange(2010, 2035)
+years = np.arange(2010, 2036)
 params = ['mu', 'sigma']
 
 df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years], names=['group', 'param', 'h1yy']), columns=['low_value', 'high_value']).sort_index()
