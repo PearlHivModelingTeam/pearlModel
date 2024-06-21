@@ -41,8 +41,9 @@ def run(group_name_run, replication_run):
 ###############################
 
 if __name__ == '__main__':
+    num_rep=20
     print("1", flush=True)
-    client = Client()
+    client = Client(n_workers=num_rep)
     print("2", flush=True)
 
     start_time = datetime.now()
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     results = []
     if sa_variables is None:
         print("running main analysis...", flush=True)
-        for replication_run in range(config['replications']):
+        for replication_run in range(num_rep):
             results.append(client.submit(run, group_name_run, replication_run))
 
     # Gather results back to local computer
