@@ -2,8 +2,7 @@
 import shutil
 import platform
 
-from dask.distributed import LocalCluster
-from dask.distributed import fire_and_forget
+from dask.distributed import Client
 import pearl
 import yaml
 import pkg_resources
@@ -43,7 +42,7 @@ def run(group_name_run, replication_run):
 
 if __name__ == '__main__':
     print("1", flush=True)
-    client = LocalCluster().get_client()
+    client = Client()
     print("2", flush=True)
 
     start_time = datetime.now()
