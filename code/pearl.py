@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+import itertools
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
