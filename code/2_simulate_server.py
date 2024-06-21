@@ -122,14 +122,13 @@ if __name__ == '__main__':
     # Launching simulations
     print("5", flush=True)
 
-    results = []
     if sa_variables is None:
         print("running main analysis...", flush=True)
-        for replication_run in range(num_rep):
-            results.append(client.submit(run, group_name_run, replication_run))
-
-    # Gather results back to local computer
-    results = client.gather(results)
+        for group_name_run in config['group_names']:
+            for replication_run in range(num_rep):
+                results.append(client.submit(run, group_name_run, replication_run))
+            #   Gather results back to local computer
+            results = client.gather(results)
 
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
