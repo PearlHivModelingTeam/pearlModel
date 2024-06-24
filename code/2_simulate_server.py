@@ -45,7 +45,7 @@ def run(group_name_run, replication_run):
 if __name__ == '__main__':
     num_rep=20
     print("1", flush=True)
-    ccluster = LocalCluster()
+    cluster = LocalCluster()
     client = Client(cluster)
 
     adaptive = Adaptive(cluster)
