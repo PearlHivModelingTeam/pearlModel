@@ -45,7 +45,7 @@ if __name__ == '__main__':
     num_rep=20
     print("1", flush=True)
     cluster = LocalCluster()
-    cluster.adapt(minimum=0, maximum=100)
+    cluster.adapt(minimum=0, maximum=30)
     client = Client(cluster)
 
     print("2", flush=True)
@@ -128,12 +128,13 @@ if __name__ == '__main__':
 
     if sa_variables is None:
         print("running main analysis...", flush=True)
+        results = []
         for group_name_run in config['group_names']:
-            results = []
+            
             for replication_run in range(num_rep):
                 results.append(client.submit(run, group_name_run, replication_run))
             #   Gather results back to local computer
-            results = client.gather(results)
+        results = client.gather(results)
 
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
