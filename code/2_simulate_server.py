@@ -131,7 +131,7 @@ if __name__ == '__main__':
         for group_name_run in config['group_names']:
             
             for replication_run in range(num_rep):
-                client.submit(run, group_name_run, replication_run, pure=True)
+                client.submit(run, group_name_run, replication_run, pure=False)
 
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
