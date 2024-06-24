@@ -12,6 +12,7 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 import os
+import math
 
 
 def run(group_name_run, replication_run):
@@ -42,11 +43,9 @@ def run(group_name_run, replication_run):
 ###############################
 
 if __name__ == '__main__':
-    num_rep=20
+    max_workers=30
     print("1", flush=True)
-    cluster = LocalCluster()
-    cluster.adapt(minimum=0, maximum=30)
-    client = Client(cluster)
+    client = Client(n_workers=max_workers)
 
     print("2", flush=True)
 
@@ -125,13 +124,19 @@ if __name__ == '__main__':
 
     # Launching simulations
     print("5", flush=True)
+    
+    num_batches = math.ceil(config['replications'] / max_workers)
 
     if sa_variables is None:
         print("running main analysis...", flush=True)
+        results = []
         for group_name_run in config['group_names']:
-            
-            for replication_run in range(num_rep):
-                client.submit(run, group_name_run, replication_run, pure=False)
+            for batch in range(num_batches):
+                for replication_run in range(max_workers):
+                    replication_run += batch * max_workers
+                    results.append(client.submit(run, group_name_run, replication_run))
+                #   Gather results back to local computer
+                results = client.gather(results)
 
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
