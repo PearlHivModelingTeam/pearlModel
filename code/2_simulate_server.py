@@ -2,7 +2,9 @@
 import shutil
 import platform
 
-from dask.distributed import Client
+from dask.distributed import LocalCluster, Client
+from dask.distributed import Adaptive
+
 import pearl
 import yaml
 import pkg_resources
@@ -43,7 +45,11 @@ def run(group_name_run, replication_run):
 if __name__ == '__main__':
     num_rep=20
     print("1", flush=True)
-    client = Client(n_workers=num_rep)
+    ccluster = LocalCluster()
+    client = Client(cluster)
+
+    adaptive = Adaptive(cluster)
+    adaptive.start()
     print("2", flush=True)
 
     start_time = datetime.now()
