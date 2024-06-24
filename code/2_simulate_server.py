@@ -129,6 +129,7 @@ if __name__ == '__main__':
     if sa_variables is None:
         print("running main analysis...", flush=True)
         for group_name_run in config['group_names']:
+            results = []
             for replication_run in range(num_rep):
                 results.append(client.submit(run, group_name_run, replication_run))
             #   Gather results back to local computer
