@@ -3,7 +3,6 @@ import shutil
 import platform
 
 from dask.distributed import LocalCluster, Client
-from dask.distributed import Adaptive
 
 import pearl
 import yaml
@@ -46,10 +45,9 @@ if __name__ == '__main__':
     num_rep=20
     print("1", flush=True)
     cluster = LocalCluster()
+    cluster.adapt(minimum=0, maximum=100)
     client = Client(cluster)
 
-    adaptive = Adaptive(cluster)
-    adaptive.start()
     print("2", flush=True)
 
     start_time = datetime.now()
