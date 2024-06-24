@@ -3,7 +3,6 @@ import shutil
 import platform
 
 from dask.distributed import LocalCluster, Client
-from dask import config as cfg
 
 import pearl
 import yaml
@@ -45,7 +44,6 @@ def run(group_name_run, replication_run):
 if __name__ == '__main__':
     num_rep=20
     print("1", flush=True)
-    cfg.set({'distributed.scheduler.worker-ttl': None})
     cluster = LocalCluster()
     cluster.adapt(minimum=0, maximum=30)
     client = Client(cluster)
