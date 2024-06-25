@@ -134,9 +134,13 @@ if __name__ == '__main__':
         for group_name_run in config['group_names']:
             for replication_run in range(config['replications']):
                 results.append(run(group_name_run, replication_run))
-                #   Gather results back to local computer
-            dask.compute(results)
-            '''
+    
+        dask.compute(results)
+    
+    end_time = datetime.now()
+    print(f'**** Elapsed Time: {end_time - start_time} ****')
+    
+'''
             for batch in range(num_batches):
                 for replication_run in range(max_workers):
                     replication_run += batch * max_workers
@@ -145,6 +149,6 @@ if __name__ == '__main__':
                     results.append(client.submit(run, group_name_run, replication_run))
                 #   Gather results back to local computer
                 results = client.gather(results)
-            '''
-    end_time = datetime.now()
-    print(f'**** Elapsed Time: {end_time - start_time} ****')
+'''
+
+    
