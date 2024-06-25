@@ -2,7 +2,8 @@
 import shutil
 import platform
 
-from dask.distributed import LocalCluster, Client
+from dask.distributed import Client
+import dask
 
 import pearl
 import yaml
@@ -14,7 +15,7 @@ from datetime import datetime
 import os
 import math
 
-
+@dask.delayed
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     out_path = f"csv_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
@@ -43,9 +44,9 @@ def run(group_name_run, replication_run):
 ###############################
 
 if __name__ == '__main__':
-    max_workers=30
+    #max_workers=30
     print("1", flush=True)
-    client = Client(n_workers=max_workers)
+    #client = Client(n_workers=max_workers)
 
     print("2", flush=True)
 
@@ -125,12 +126,17 @@ if __name__ == '__main__':
     # Launching simulations
     print("5", flush=True)
     
-    num_batches = math.ceil(config['replications'] / max_workers)
+    #num_batches = math.ceil(config['replications'] / max_workers)
 
     if sa_variables is None:
         print("running main analysis...", flush=True)
         results = []
         for group_name_run in config['group_names']:
+            for replication_run in range(config['replications']):
+                results.append(run(group_name_run, replication_run))
+                #   Gather results back to local computer
+            dask.compute(results)
+            '''
             for batch in range(num_batches):
                 for replication_run in range(max_workers):
                     replication_run += batch * max_workers
@@ -139,6 +145,6 @@ if __name__ == '__main__':
                     results.append(client.submit(run, group_name_run, replication_run))
                 #   Gather results back to local computer
                 results = client.gather(results)
-
+            '''
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
