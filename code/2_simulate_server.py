@@ -15,7 +15,7 @@ from datetime import datetime
 import os
 import math
 
-
+@dask.delayed
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     out_path = f"csv_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         results = []
         for group_name_run in config['group_names']:
             for replication_run in range(config['replications']):
-                results.append(dask.delayed(run)(group_name_run, replication_run))
+                results.append(run(group_name_run, replication_run))
     
         dask.compute(results)
     
