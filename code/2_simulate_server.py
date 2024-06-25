@@ -135,7 +135,7 @@ if __name__ == '__main__':
             for replication_run in range(config['replications']):
                 results.append(run(group_name_run, replication_run))
     
-        dask.compute(results, scheduler="processes")
+        dask.compute(results, scheduler="processes", num_workers=max_workers)
     
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
