@@ -44,7 +44,7 @@ def run(group_name_run, replication_run):
 ###############################
 
 if __name__ == '__main__':
-    max_workers=30
+    max_workers=150
     print("1", flush=True)
     #client = Client(n_workers=max_workers)
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
             for replication_run in range(config['replications']):
                 results.append(run(group_name_run, replication_run))
     
-        dask.compute(results, scheduler="processes", num_workers=max_workers)
+        dask.compute(results, scheduler="processes")
     
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
