@@ -3,7 +3,6 @@ import yaml
 import shutil
 import numpy as np
 import pandas as pd
-import statsmodels.stats.weightstats as weightstats
 from pathlib import Path
 from datetime import datetime
 import argparse
