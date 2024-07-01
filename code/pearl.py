@@ -1477,8 +1477,8 @@ class Pearl:
             pre_art_bmi = pre_art_bmi.groupby(['h1yy', 'pre_art_bmi']).size()
             self.stats.pre_art_bmi = pre_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'})
 
-            post_art_bmi = self.population[['post_art_bmi', 'h1yy']].round(0).astype(int)
-            post_art_bmi = post_art_bmi.groupby(['h1yy', 'post_art_bmi']).size()
+            post_art_bmi = self.population[['post_art_bmi', 'h1yy','pre_art_bmi','bmiInt_scenario']]
+            post_art_bmi = post_art_bmi.groupby(['bmiInt_scenario','h1yy', 'post_art_bmi','pre_art_bmi']).size()
             self.stats.post_art_bmi = post_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'})
 
 
