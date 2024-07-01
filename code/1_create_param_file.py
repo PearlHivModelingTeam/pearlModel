@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # Define directories
 param_dir = Path('../param_files')
@@ -10,7 +11,7 @@ param_dir = Path('../param_files')
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
                'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
-
+start_time = datetime.now()
 
 def clean_coeff(df):
     """Format tables holding coefficient values"""
@@ -76,7 +77,7 @@ for col in age_in_2009.select_dtypes(include=np.number).columns.tolist():
 age_in_2009 = age_in_2009.set_index(['group', 'term']).sort_index(level=0)
 
 # New dx prediction intervals
-new_dx = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval.csv').set_index(['group', 'year'])
+new_dx = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval_updated.csv').set_index(['group', 'year'])
 new_dx_ehe = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_combined_ehe.csv').set_index(['group', 'year'])
 new_dx_sa = pd.read_csv(param_dir/'new_diagnosis_population/population_size/new_dx_interval_sa.csv').set_index(['group', 'year'])
 
@@ -102,7 +103,7 @@ age_by_h1yy = age_by_h1yy[['group', 'param', 'h1yy', 'low_value', 'high_value']]
 
 # Mean and std of sqrtcd4n as a glm of h1yy for each group: cd4n_by_h1yy
 cd4n_by_h1yy = pd.read_csv(param_dir/'new_diagnosis_population/cd4_at_art_init/cd4n_by_h1yy.csv').set_index('group').sort_index()
-years = np.arange(2010, 2035)
+years = np.arange(2010, 2036)
 params = ['mu', 'sigma']
 
 df = pd.DataFrame(index=pd.MultiIndex.from_product([group_names, params, years], names=['group', 'param', 'h1yy']), columns=['low_value', 'high_value']).sort_index()
@@ -426,3 +427,7 @@ with pd.HDFStore(out_file) as store:
     store['mortality_threshold_idu_1x'] = mortality_threshold_idu_1x
     store['mortality_threshold_idu_5x'] = mortality_threshold_idu_5x
     store['mortality_threshold_idu_10x'] = mortality_threshold_idu_10x
+
+print("code ran successfully.")
+end_time = datetime.now()
+print(f'Elapsed Time: {end_time - start_time}')

@@ -1,30 +1,38 @@
+# similar version of the code to run simulations locally
+# python3 2_simulate_local.py --config="test.yaml"
+
 # Imports
 import shutil
 import platform
-import ray
-import pearl
 import yaml
 import pkg_resources
 import subprocess
 from pathlib import Path
 import argparse
 from datetime import datetime
+import pearl
+import sys
+print("Running Python version=" , sys.version)
+#Running Python version= 3.6.0 (v3.6.0:41df79263a11, Dec 22 2016, 17:23:13) #output from PK Mac
 
-
-@ray.remote
-def run(group_name_run, replication_run):
+def run(group_name_run, replication_run, output_path):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    output_path = output_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}'
+    output_path = output_path
     rerun_path = rerun_root_path/'csv_output'/group_name_run/f'replication_{replication_run_str}' if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path, rerun_folder=rerun_path, output_folder=output_path,
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
-                                  verbose=config['verbose'], bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
+                                  verbose=config['verbose'],
+                                  bmi_intervention=config['bmi_intervention'],
+                                  bmi_intervention_scenario=config['bmi_intervention_scenario'],
+                                  bmi_intervention_start_year=config['bmi_intervention_start_year'],
+                                  bmi_intervention_end_year=config['bmi_intervention_end_year'],
+                                  bmi_intervention_coverage=config['bmi_intervention_coverage'],
+                                  bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
     pearl.Pearl(parameters, group_name_run, replication_run)
 
 
-@ray.remote
 def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     output_path = output_root_path/'csv_output'/f'{sa_variable_run}_{sa_value_run}'/group_name_run/f'replication_{replication_run_str}'
@@ -33,17 +41,24 @@ def run_sa(sa_variable_run, sa_value_run, group_name_run, replication_run):
                                   group_name=group_name_run, comorbidity_flag=config['comorbidity_flag'], new_dx=config['new_dx'],
                                   final_year=config['final_year'], mortality_model=config['mortality_model'],
                                   mortality_threshold_flag=config['mortality_threshold_flag'], idu_threshold=config['idu_threshold'],
-                                  verbose=config['verbose'], sa_type=config['sa_type'], sa_variable=sa_variable_run,
-                                  sa_value=sa_value_run, bmi_intervention=config['bmi_intervention'], bmi_intervention_probability=config['bmi_intervention_probability'])
+                                  verbose=config['verbose'],
+                                  sa_type=config['sa_type'],
+                                  sa_variable=sa_variable_run,
+                                  sa_value=sa_value_run,
+                                  bmi_intervention=config['bmi_intervention'],
+                                  bmi_intervention_scenario=config['bmi_intervention_scenario'],
+                                  bmi_intervention_start_year=config['bmi_intervention_start_year'],
+                                  bmi_intervention_end_year=config['bmi_intervention_end_year'],
+                                  bmi_intervention_coverage=config['bmi_intervention_coverage'],
+                                  bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
     pearl.Pearl(parameters, group_name_run, replication_run)
 
 
 start_time = datetime.now()
-
 # Define the argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('--config')
-parser.add_argument('--rerun')
+parser.add_argument('--rerun') #what is a rerun?
 parser.add_argument('--overwrite', action='store_true')
 args = parser.parse_args()
 
@@ -67,10 +82,12 @@ elif args.rerun:
 else:
     config_file_path = pearl_path/'config/test.yaml'
     output_root_path = pearl_path/f'out/{config_file_path.stem}_{date_string}'
-
 # Load config_file
 with open(config_file_path, 'r') as config_file:
     config = yaml.safe_load(config_file)
+
+# set the output path:
+print(f'output directory set to {output_root_path}')
 
 # If it's a rerun check that python version and commit hash are correct else save those details for future runs
 if args.rerun:
@@ -115,8 +132,9 @@ if sa_variables is None:
     for group_name in config['group_names']:
         for replication in range(config['replications']):
             replication_str = str(replication).zfill(len(str(config['replications'])))
-            output_path = output_root_path/'csv_output'/group_name/f'replication_{replication_str}'
-            output_path.mkdir(parents=True)
+            output_path = output_root_path/'csv_output'/group_name/f"bmi_{config['bmi_intervention']}/replication_{replication_str}"
+            if not output_path.is_dir():  # Check if the directory already exists
+                output_path.mkdir(parents=True)
 else:
     for sa_variable in sa_variables:
         for sa_value in sa_values:
@@ -124,24 +142,30 @@ else:
                 for replication in range(config['replications']):
                     replication_str = str(replication).zfill(len(str(config['replications'])))
                     output_path = output_root_path/'csv_output'/f'{sa_variable}_{sa_value}'/group_name/f'replication_{replication_str}'
-                    output_path.mkdir(parents=True)
+                    if not output_path.is_dir():  # Check if the directory already exists
+                        output_path.mkdir(parents=True)
 
 # Copy config file to output dir
 with open(output_root_path/'config.yaml', 'w') as yaml_file:
     yaml.safe_dump(config, yaml_file)
-
-# Initialize ray with the desired number of threads
-ray.init(num_cpus=config['num_cpus'])
+########################################################################
+# Initialize locally (set up only for the main analysis so far)
 if sa_variables is None:
-    ray.get([run.remote(group_name, replication)
-             for group_name in config['group_names']
-             for replication in range(config['replications'])])
+    for group_name in config['group_names']:
+        for replication in range(config['replications']):
+            replication_str = str(replication).zfill(len(str(config['replications'])))
+            output_path = output_root_path/'csv_output'/group_name/f"bmi_{config['bmi_intervention']}/replication_{replication_str}"
+            print(f'output path is set to:    {output_path}')
+            if not output_path.is_dir():  # Check if the directory already exists
+                output_path.mkdir(parents=True)
+            print(f'Running the model for {group_name}, replication {replication}')
+            run(group_name, replication, output_path)  # Execute the task
 else:
-    ray.get([run_sa.remote(sa_variable, sa_value, group_name, replication)
-             for sa_variable in sa_variables
-             for sa_value in sa_values
-             for group_name in config['group_names']
-             for replication in range(config['replications'])])
+    for sa_variable in sa_variables:
+        for sa_value in sa_values:
+            for group_name in config['group_names']:
+                for replication in range(config['replications']):
+                    run_sa(sa_variable, sa_value, group_name, replication)
 
 end_time = datetime.now()
 print(f'Elapsed Time: {end_time - start_time}')
