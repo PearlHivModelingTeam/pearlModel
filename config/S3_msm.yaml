@@ -1,4 +1,4 @@
-group_names: ['msm_white_male',
+group_names: ['msm_white_male', 'msm_black_male', 'msm_hisp_male'
 ]
 num_cpus: 150
 replications: 200
