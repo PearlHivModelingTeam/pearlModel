@@ -20,7 +20,7 @@ comorbidity_flag: 1 # 0, 1
 new_dx: 'base' # base, ehe, sa
 mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall
 mortality_threshold_flag: 1 # 0, 1:
-final_year: 2031 # [2010 - 2035]
+final_year: 2035 # [2010 - 2035]
 verbose: 0 #0, 1
 sa_type: 'none' # none, type1, type2, aim2_inc, aim2_prev, aim2_mort
 idu_threshold: '2x' # 2x, 5x, 10x
