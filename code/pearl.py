@@ -478,9 +478,9 @@ def apply_bmi_intervention(pop, parameters):
                                                       1 - parameters.bmi_intervention_effectiveness])
     # determine eligibility:
     pop['bmiInt_ineligible_dm'] = (pop['dm'] == 1)
-    pop['bmiInt_ineligible_underweight'] = (pop['pre_art_bmi'] <= 18.5)
+    pop['bmiInt_ineligible_underweight'] = (pop['pre_art_bmi'] < 18.5)
     pop['bmiInt_ineligible_obese'] = (pop['pre_art_bmi'] >= 30)
-    pop['bmiInt_eligible'] = (pop['pre_art_bmi'] > 18.5) & (pop['pre_art_bmi'] < 30) & (pop['dm'] == 0)
+    pop['bmiInt_eligible'] = (pop['pre_art_bmi'] >= 18.5) & (pop['pre_art_bmi'] < 30) & (pop['dm'] == 0)
 
     # eligible people are enrolled in the intervention:
     pop['bmiInt_received'] = pop['bmiInt_eligible'] & pop['bmiInt_year'] & pop['bmiInt_coverage']
