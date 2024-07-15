@@ -128,20 +128,7 @@ if __name__ == '__main__':
             for replication_run in range(config['replications']):
                 results.append(run(group_name_run, replication_run))
     
-        dask.compute(results, scheduler="processes")
+        dask.compute(results, scheduler="processes", num_workers=1)
     
     end_time = datetime.now()
     print(f'**** Elapsed Time: {end_time - start_time} ****')
-    
-'''
-            for batch in range(num_batches):
-                for replication_run in range(max_workers):
-                    replication_run += batch * max_workers
-                    if replication_run >= config['replications']:
-                        break
-                    results.append(client.submit(run, group_name_run, replication_run))
-                #   Gather results back to local computer
-                results = client.gather(results)
-'''
-
-    
