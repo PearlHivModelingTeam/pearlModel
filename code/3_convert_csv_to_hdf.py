@@ -1,11 +1,11 @@
 import os
 import yaml
 import shutil
-import numpy as np
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import argparse
+from definitions import ROOT_DIR
 
 sa_types = ['type1', 'type2', 'aim2_inc', 'aim2_prev', 'aim2_mort']
 
@@ -15,24 +15,12 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir')
 args = parser.parse_args()
-pearl_path = Path('..')
+pearl_path = Path(ROOT_DIR)
 in_dir = pearl_path/'out'/args.dir/'csv_output'
 out_dir = pearl_path/'out'/args.dir/'hdf_output'
 if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
-
-# dir = "bmi_2023-11-22"
-# pearl_path = Path("")
-# in_dir = pearl_path / 'out' / dir / 'csv_output'
-# print(in_dir.resolve())
-# out_dir = pearl_path / 'out' / dir / 'hdf_output'
-# if not out_dir.parent.is_dir():  # Check if parent directory exists
-#     print("out directory exists")
-#     out_dir.parent.mkdir(parents=True)  # Create parent directories if they don't exist
-# if out_dir.is_dir():  # Creating output folders
-#     shutil.rmtree(out_dir)
-# out_dir.mkdir()
 
 combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age', 'dead_in_care_age',
                      'dead_out_care_age', 'new_init_age', 'years_out', 'cd4_inits', 'cd4_in_care', 'cd4_out_care',

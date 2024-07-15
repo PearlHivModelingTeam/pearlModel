@@ -4,9 +4,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from definitions import PROJECT_DIR
 
 # Define directories
-param_dir = Path('../param_files')
+param_dir = PROJECT_DIR/'param_files'
 
 group_names = ['msm_white_male', 'msm_black_male', 'msm_hisp_male', 'idu_white_male', 'idu_black_male',
                'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',

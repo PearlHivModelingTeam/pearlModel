@@ -1,19 +1,12 @@
 # Imports
 import shutil
-import platform
-
-from dask.distributed import Client
 import dask
-
 import pearl
 import yaml
-import pkg_resources
-import subprocess
 from pathlib import Path
 import argparse
 from datetime import datetime
-import os
-import math
+from definitions import PROJECT_DIR
 
 @dask.delayed
 def run(group_name_run, replication_run):
@@ -58,7 +51,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite', action='store_true')
     args = parser.parse_args()
 
-    pearl_path = Path('..')
+    pearl_path = PROJECT_DIR
     date_string = datetime.today().strftime('%Y-%m-%d')
     param_file_path = pearl_path/'param_files/parameters.h5'
 
