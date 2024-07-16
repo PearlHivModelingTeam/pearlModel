@@ -37,11 +37,8 @@ def run(group_name_run, replication_run):
 ###############################
 
 if __name__ == '__main__':
-    max_workers=150
-    print("1", flush=True)
-    #client = Client(n_workers=max_workers)
 
-    print("2", flush=True)
+    print("1", flush=True)
 
     start_time = datetime.now()
     # Define the argument parser
@@ -54,10 +51,6 @@ if __name__ == '__main__':
     pearl_path = PROJECT_DIR
     date_string = datetime.today().strftime('%Y-%m-%d')
     param_file_path = pearl_path/'param_files/parameters.h5'
-
-    # Check that requirements.txt is met
-    """with open(pearl_path/'requirements.txt', 'r') as requirements:
-        pkg_resources.require(requirements)"""
 
     # Original run, rerun, or test run?
     rerun_root_path = None
@@ -76,19 +69,7 @@ if __name__ == '__main__':
     with open(config_file_path, 'r') as config_file:
         config = yaml.safe_load(config_file)
 
-    print("3", flush=True)
-    # If it's a rerun check that python version and commit hash are correct else save those details for future runs
-    """if args.rerun:
-        print('This is a rerun')
-        python_version = config['python_version']
-        if python_version != platform.python_version():
-            raise EnvironmentError("Incorrect python version for rerun")
-        commit_hash = config['commit_hash']
-        if commit_hash != subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip():
-            raise EnvironmentError("Incorrect commit hash for rerun")
-    else:
-        config['python_version'] = platform.python_version()
-        config['commit_hash'] = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()"""
+    print("2", flush=True)
 
     # Load sensitivity analysis variables
     if config['sa_type'] == 'none':
@@ -103,7 +84,7 @@ if __name__ == '__main__':
         else:
             raise FileExistsError("Output folder already exists")
 
-    print("4", flush=True)
+    print("3", flush=True)
     if sa_variables is None:
         for group_name_run in config['group_names']:
             for replication_run in range(config['replications']):
@@ -117,9 +98,7 @@ if __name__ == '__main__':
         yaml.safe_dump(config, yaml_file)
 
     # Launching simulations
-    print("5", flush=True)
-    
-    #num_batches = math.ceil(config['replications'] / max_workers)
+    print("4", flush=True)
 
     if sa_variables is None:
         print("running main analysis...", flush=True)
