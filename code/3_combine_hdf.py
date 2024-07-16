@@ -16,8 +16,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dir')
 args = parser.parse_args()
 pearl_path = Path(ROOT_DIR)
-in_dir = pearl_path/'out'/args.dir/'csv_output'
-out_dir = pearl_path/'out'/args.dir/'hdf_output'
+in_dir = pearl_path/'out'/args.dir/'hdf_output'
+out_dir = pearl_path/'out'/args.dir/'hdf_combined'
 if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
