@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import argparse
-from definitions import ROOT_DIR
+from definitions import PROJECT_DIR
 
 sa_types = ['type1', 'type2', 'aim2_inc', 'aim2_prev', 'aim2_mort']
 
@@ -15,7 +15,7 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir')
 args = parser.parse_args()
-pearl_path = Path(ROOT_DIR)
+pearl_path = Path(PROJECT_DIR)
 in_dir = pearl_path/'out'/args.dir/'hdf_output'
 out_dir = pearl_path/'out'/args.dir/'hdf_combined'
 if out_dir.is_dir(): #creating output folders
@@ -56,13 +56,13 @@ for output_table in output_tables:
                 replication_int = int(replication.split(sep='_')[1])
                 if config['sa_type'] in sa_types:
                     chunk_list.append(
-                        pd.read_csv(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
+                        pd.read_hdf(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
                 else:
                     print(f'{in_dir / group_name / replication / output_table}')
                     chunk_list.append(
-                        pd.read_csv(in_dir/group_name/replication/output_table).assign(model=model_name,
+                        pd.read_hdf(in_dir/group_name/replication/output_table).assign(model=model_name,
                                                                                        group=group_name,
                                                                                        replication=replication_int))
     df = pd.concat(chunk_list, ignore_index=True)
