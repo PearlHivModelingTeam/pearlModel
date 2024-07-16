@@ -1725,6 +1725,3 @@ class Statistics:
                     item.to_csv(self.output_folder/f'{name}.csv', index=False)
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')
-
-
-# population [t_comorbidi
