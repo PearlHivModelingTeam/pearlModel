@@ -75,7 +75,7 @@ for output_table in output_tables:
     df = df.set_index(['model', 'group', 'replication'] + list(table_cols)).sort_index()
     if config['sa_type'] not in ['type1', 'type2', 'aim2']:
         df.index = df.index.droplevel()
-    df.to_hdf(out_dir/f'{Path(output_table).stem}.h5', 'df', mode='w', format='table')
+    df.to_hdf(out_dir/f'{Path(output_table).stem}.h5', key='df', mode='w', format='table')
 
 # Copy the config file to the output directory
 shutil.copy(in_dir/'../config.yaml', out_dir/'config.yaml')
