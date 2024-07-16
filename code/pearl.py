@@ -1,7 +1,9 @@
 ﻿# Imports
 import pickle
 import os
+#TODO move this somewhere better, like into docker
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
