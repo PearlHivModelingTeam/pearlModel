@@ -1496,9 +1496,19 @@ class Pearl:
             self.stats.pre_art_bmi = pre_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'}).astype({'year': 'int16', 'pre_art_bmi' : 'int8', 'n' : 'int32'})
 
             post_art_bmi = self.population[['post_art_bmi', 'h1yy','pre_art_bmi','bmiInt_scenario']]
-            post_art_bmi = post_art_bmi.groupby(['bmiInt_scenario','h1yy', 'post_art_bmi','pre_art_bmi']).size()
-            self.stats.post_art_bmi = post_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'}).astype({'n' : 'int32'})
+            
+            # post_art_bmi are break into categories instead of report the exactly number of BMI
+            post_art_bmi['pre_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.loc[post_art_bmi['pre_art_bmi'] < 18.5, 'pre_bmi_cat'] = np.array(0, dtype = 'int8')
+            post_art_bmi.loc[post_art_bmi['pre_art_bmi'] >= 30, 'pre_bmi_cat'] = np.array(2, dtype = 'int8')
+            
+            post_art_bmi['post_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.loc[post_art_bmi['post_art_bmi'] < 18.5, 'post_bmi_cat'] = np.array(0, dtype = 'int8')
+            post_art_bmi.loc[post_art_bmi['post_art_bmi'] >= 30, 'post_bmi_cat'] = np.array(2, dtype = 'int8')
 
+            post_art_bmi = post_art_bmi.groupby(['bmiInt_scenario','h1yy', 'post_bmi_cat','pre_bmi_cat']).size()
+          
+            self.stats.post_art_bmi = post_art_bmi.reset_index(name='n').rename(columns={'h1yy': 'year'}).astype({'n' : 'int32'})
 
 ###############################################################################
 # Parameter and Statistics Classes                                            #
