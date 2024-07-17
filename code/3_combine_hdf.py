@@ -53,9 +53,7 @@ for output_table in output_tables:
     print(output_table)
     chunk_list = []
     for model_name in model_names:
-        print('   ', model_name)
         for group_name in group_names:
-            print('   ', '   ', group_name)
             for replication in replications:
                 replication_int = int(replication.split(sep='_')[1])
                 if config['sa_type'] in sa_types:
@@ -64,7 +62,6 @@ for output_table in output_tables:
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
                 else:
-                    print(f'{in_dir / group_name / replication / output_table}')
                     chunk_list.append(
                         pd.read_hdf(in_dir/group_name/replication/output_table).assign(model=model_name,
                                                                                        group=group_name,
