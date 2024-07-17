@@ -29,6 +29,8 @@ combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age',
                      'mm_detail_in_care', 'mm_detail_out_care', 'mm_detail_inits', 'mm_detail_dead', 'pre_art_bmi',
                      'post_art_bmi', 'bmi_int_coverage','bmi_int_dm_prev']
 
+run_list = ['bmi_int_dm_prev.h5', 'new_init_age.h5', 'bmi_int_cascade.h5']
+
 # Load config_file
 with open(in_dir/'../config.yaml', 'r') as config_file:
     config = yaml.safe_load(config_file)
@@ -46,6 +48,8 @@ else:
 
 
 for output_table in output_tables:
+    if output_table not in run_list:
+        continue
     print(output_table)
     chunk_list = []
     for model_name in model_names:
