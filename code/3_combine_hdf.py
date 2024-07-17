@@ -62,6 +62,7 @@ for output_table in output_tables:
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
                 else:
+                    print(f'{in_dir}/{group_name}/{replication}/{output_table}')
                     chunk_list.append(
                         pd.read_hdf(in_dir/group_name/replication/output_table).assign(model=model_name,
                                                                                        group=group_name,
