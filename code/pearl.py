@@ -1738,6 +1738,6 @@ class Statistics:
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
                 try:
-                    item.to_hdf(self.output_folder/f'{name}.h5', key=name, index=False)
+                    item.to_hdf(self.output_folder/f'{name}.h5', key=name, index=False, format='table')
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')

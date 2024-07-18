@@ -23,6 +23,9 @@ dependencies:
   - tzdata=2024a=h0c530f3_0
   - xz=5.2.6=h9cdd2b7_0
   - bioconda::snakemake
+  - dask
+  - scipy
+  - pytables
   - pip:
     - pip==24.0
     - setuptools==70.3.0
