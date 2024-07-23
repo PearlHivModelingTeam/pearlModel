@@ -5,7 +5,6 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import argparse
-from definitions import PROJECT_DIR
 
 sa_types = ['type1', 'type2', 'aim2_inc', 'aim2_prev', 'aim2_mort']
 
@@ -13,11 +12,16 @@ start_time = datetime.now()
 
 # Define the argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument('--dir')
+parser.add_argument('--in_dir')
+parser.add_argument('--out_dir')
 args = parser.parse_args()
-pearl_path = Path(PROJECT_DIR)
-in_dir = pearl_path/'out'/args.dir/'hdf_output'
-out_dir = pearl_path/'out'/args.dir/'hdf_combined'
+
+in_dir = Path(args.in_dir)
+if not args.out_dir:
+    out_dir = Path(args.in_dir).parent/'combined'
+else:
+    out_dir = Path(args.out_dir)
+    
 if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
@@ -28,8 +32,6 @@ combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age',
                      'prevalence_inits', 'prevalence_dead', 'mm_in_care', 'mm_out_care', 'mm_inits', 'mm_dead',
                      'mm_detail_in_care', 'mm_detail_out_care', 'mm_detail_inits', 'mm_detail_dead', 'pre_art_bmi',
                      'post_art_bmi', 'bmi_int_coverage','bmi_int_dm_prev']
-
-run_list = ['bmi_int_dm_prev.h5', 'new_init_age.h5', 'bmi_int_cascade.h5']
 
 # Load config_file
 try:
@@ -50,8 +52,6 @@ else:
 
 
 for output_table in output_tables:
-    if output_table not in run_list:
-        continue
     print(output_table)
     chunk_list = []
     for model_name in model_names:
@@ -60,26 +60,31 @@ for output_table in output_tables:
                 replication_int = int(replication.split(sep='_')[1])
                 if config['sa_type'] in sa_types:
                     chunk_list.append(
-                        pd.read_hdf(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
+                        pd.read_parquet(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
                 else:
                     print(f'{in_dir}/{group_name}/{replication}/{output_table}')
                     chunk_list.append(
-                        pd.read_hdf(in_dir/group_name/replication/output_table).assign(model=model_name,
-                                                                                       group=group_name,
-                                                                                       replication=replication_int))
+                        pd.read_parquet(in_dir/group_name/replication/output_table).assign(
+                                                                                            model=model_name,
+                                                                                            group=group_name,
+                                                                                            replication=replication_int
+                                                                                            ))
     df = pd.concat(chunk_list, ignore_index=True)
+    df = df.astype({'model' : 'category',
+                    'group' : 'category',
+                    'replication' : 'int16'})
     measured_var = df.columns[-4]
     table_cols = df.columns[:-4]
-    if output_table[:-3] in combinable_tables:
+    if Path(output_table).stem in combinable_tables:
         groupby_cols = list(df.columns.drop(['group', measured_var]))
-        ov = df.groupby(groupby_cols)[measured_var].sum().reset_index().assign(group='overall')
+        ov = df.groupby(groupby_cols, observed=False)[measured_var].sum().reset_index().assign(group='overall')
         df = pd.concat([df, ov], ignore_index=True)
     df = df.set_index(['model', 'group', 'replication'] + list(table_cols)).sort_index()
     if config['sa_type'] not in ['type1', 'type2', 'aim2']:
         df.index = df.index.droplevel()
-    df.to_hdf(out_dir/f'{Path(output_table).stem}.h5', key='df', mode='w', format='table')
+    df.to_parquet(out_dir/f'{Path(output_table).stem}.parquet')
 
 # Copy the config file to the output directory
 shutil.copy(in_dir/'../config.yaml', out_dir/'config.yaml')
