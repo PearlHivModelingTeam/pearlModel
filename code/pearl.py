@@ -1734,10 +1734,10 @@ class Statistics:
 
     def save(self):
 
-        """Save all internal dataframes as hdf files."""
+        """Save all internal dataframes as parquet files."""
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
                 try:
-                    item.to_hdf(self.output_folder/f'{name}.h5', key=name, index=False, format='table')
+                    item.to_parquet(self.output_folder/f'{name}.parquet', index=False)
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')

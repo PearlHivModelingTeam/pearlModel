@@ -11,7 +11,7 @@ from definitions import PROJECT_DIR
 @dask.delayed
 def run(group_name_run, replication_run):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-    out_path = f"hdf_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
+    out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
     output_folder = output_root_path/out_path
     rerun_folder = rerun_root_path/out_path if rerun_root_path is not None else None
     parameters = pearl.Parameters(path=param_file_path,
@@ -46,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--config')
     parser.add_argument('--rerun')
     parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
 
     pearl_path = PROJECT_DIR
@@ -89,7 +90,7 @@ if __name__ == '__main__':
         for group_name_run in config['group_names']:
             for replication_run in range(config['replications']):
                 replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
-                out_path = f"hdf_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
+                out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
                 output_folder = output_root_path/out_path
                 output_folder.mkdir(parents=True)
 
@@ -107,6 +108,9 @@ if __name__ == '__main__':
             for replication_run in range(config['replications']):
                 results.append(run(group_name_run, replication_run))
     
+    if args.debug:
+        dask.compute(results, scheduler="processes", num_workers=1)
+    else:
         dask.compute(results, scheduler="processes")
     
     end_time = datetime.now()
