@@ -85,7 +85,7 @@ for output_table in output_tables:
         groupby_cols = list(df.columns.drop(['group', measured_var]))
         ov = df.groupby(groupby_cols, observed=False)[measured_var].sum().reset_index().assign(group='overall')
         df = dd.concat([df, ov], ignore_index=True)
-    df = df.repartition(partition_size="10MB")
+    df = df.repartition(partition_size="100MB")
     df.to_parquet(out_dir/f'{Path(output_table).stem}.parquet')
     table_end = datetime.now()
     print(f'Table {output_table} took: {table_end - table_start}')
