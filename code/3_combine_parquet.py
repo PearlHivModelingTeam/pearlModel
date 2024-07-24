@@ -3,6 +3,8 @@ import yaml
 import shutil
 import pandas as pd
 from pathlib import Path
+from dask import dataframe as dd
+from dask import delayed
 from datetime import datetime
 import argparse
 
@@ -50,9 +52,12 @@ else:
     replications = next(os.walk(in_dir/group_names[0]))[1]
     output_tables = [x for x in next(os.walk(in_dir/group_names[0]/replications[0]))[2] if x != 'random.state']
 
+test = ['bmi_int_dm_prev', 'cd4_in_care']
 
 for output_table in output_tables:
-    print(output_table)
+    if Path(output_table).stem not in test:
+        continue
+    table_start = datetime.now()
     chunk_list = []
     for model_name in model_names:
         for group_name in group_names:
@@ -60,31 +65,30 @@ for output_table in output_tables:
                 replication_int = int(replication.split(sep='_')[1])
                 if config['sa_type'] in sa_types:
                     chunk_list.append(
-                        pd.read_parquet(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
+                        dd.read_parquet(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
                                                                                                   group=group_name,
                                                                                                   replication=replication_int))
                 else:
-                    print(f'{in_dir}/{group_name}/{replication}/{output_table}')
                     chunk_list.append(
-                        pd.read_parquet(in_dir/group_name/replication/output_table).assign(
+                        dd.read_parquet(in_dir/group_name/replication/output_table).assign(
                                                                                             model=model_name,
                                                                                             group=group_name,
                                                                                             replication=replication_int
                                                                                             ))
-    df = pd.concat(chunk_list, ignore_index=True)
+    df = dd.concat(chunk_list, ignore_index=True)
     df = df.astype({'model' : 'category',
                     'group' : 'category',
                     'replication' : 'int16'})
     measured_var = df.columns[-4]
     table_cols = df.columns[:-4]
-    if Path(output_table).stem in combinable_tables:
+    if Path(output_table).stem in combinable_tables and False:
         groupby_cols = list(df.columns.drop(['group', measured_var]))
         ov = df.groupby(groupby_cols, observed=False)[measured_var].sum().reset_index().assign(group='overall')
-        df = pd.concat([df, ov], ignore_index=True)
-    df = df.set_index(['model', 'group', 'replication'] + list(table_cols)).sort_index()
-    if config['sa_type'] not in ['type1', 'type2', 'aim2']:
-        df.index = df.index.droplevel()
+        df = dd.concat([df, ov], ignore_index=True)
+    df = df.repartition(partition_size="10MB")
     df.to_parquet(out_dir/f'{Path(output_table).stem}.parquet')
+    table_end = datetime.now()
+    print(f'Table {output_table} took: {table_end - table_start}')
 
 # Copy the config file to the output directory
 shutil.copy(in_dir/'../config.yaml', out_dir/'config.yaml')
