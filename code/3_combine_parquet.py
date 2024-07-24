@@ -63,6 +63,8 @@ for output_table in output_tables:
         for group_name in group_names:
             for replication in replications:
                 replication_int = int(replication.split(sep='_')[1])
+                chunk_list.append(in_dir/group_name/replication/output_table)
+    '''
                 if config['sa_type'] in sa_types:
                     chunk_list.append(
                         dd.read_parquet(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
@@ -75,12 +77,15 @@ for output_table in output_tables:
                                                                                             group=group_name,
                                                                                             replication=replication_int
                                                                                             ))
-    df = dd.concat(chunk_list, ignore_index=True)
+                
+    df = dd.concat(chunk_list, ignore_index=True, interleave_partitions=True)
     df = df.astype({'model' : 'category',
                     'group' : 'category',
                     'replication' : 'int16'})
-    measured_var = df.columns[-4]
-    table_cols = df.columns[:-4]
+    '''
+    df = dd.read_parquet(chunk_list)
+    #measured_var = df.columns[-4]
+    #table_cols = df.columns[:-4]
     if Path(output_table).stem in combinable_tables and False:
         groupby_cols = list(df.columns.drop(['group', measured_var]))
         ov = df.groupby(groupby_cols, observed=False)[measured_var].sum().reset_index().assign(group='overall')
