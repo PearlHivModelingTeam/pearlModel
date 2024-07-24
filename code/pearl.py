@@ -572,6 +572,8 @@ class Pearl:
 
         # Initiate output class
         self.stats = Statistics(output_folder=self.parameters.output_folder,
+                                group_name = group_name,
+                                replication = replication,
                                 comorbidity_flag=self.parameters.comorbidity_flag,
                                 sa_type=self.parameters.sa_type)
 
@@ -1498,11 +1500,11 @@ class Pearl:
             post_art_bmi = self.population[['post_art_bmi', 'h1yy','pre_art_bmi','bmiInt_scenario']]
             
             # post_art_bmi are break into categories instead of report the exactly number of BMI
-            post_art_bmi['pre_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.loc['pre_bmi_cat'] = np.array(1, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['pre_art_bmi'] < 18.5, 'pre_bmi_cat'] = np.array(0, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['pre_art_bmi'] >= 30, 'pre_bmi_cat'] = np.array(2, dtype = 'int8')
             
-            post_art_bmi['post_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.loc['post_bmi_cat'] = np.array(1, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['post_art_bmi'] < 18.5, 'post_bmi_cat'] = np.array(0, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['post_art_bmi'] >= 30, 'post_bmi_cat'] = np.array(2, dtype = 'int8')
 
@@ -1681,12 +1683,14 @@ class Parameters:
 
 class Statistics:
     """A class housing the output from a PEARL run."""
-    def __init__(self, output_folder, comorbidity_flag=None, sa_type=None):
+    def __init__(self, output_folder, group_name: str, replication: int, comorbidity_flag=None, sa_type=None):
         """The init function operates on two levels. If called with no out_list a new Statistics class is initialized, with empty dataframes to fill with data.
         Otherwise it concatenates the out_list dataframes so that the results of all replications and groups are stored in a single dataframe.
         """
 
         self.output_folder = output_folder
+        self.group_name = group_name
+        self.replication = replication
 
         self.bmi_int_cascade = pd.DataFrame() ##of people covered by the bmi intervention
         self.bmi_int_dm_prev = pd.DataFrame()  ##of people with/without dm who receive/didnt receive intervention
@@ -1738,6 +1742,9 @@ class Statistics:
         for name, item in self.__dict__.items():
             if isinstance(item, pd.DataFrame):
                 try:
+                    item = item.assign(group = self.group_name,
+                                       replication = self.replication).astype({'group' : 'category',
+                                                                               'replication' : 'int16'})
                     item.to_parquet(self.output_folder/f'{name}.parquet', index=False)
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')
