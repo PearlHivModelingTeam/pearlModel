@@ -28,13 +28,6 @@ if out_dir.is_dir(): #creating output folders
     shutil.rmtree(out_dir)
 out_dir.mkdir()
 
-combinable_tables = ['in_care_age', 'out_care_age', 'reengaged_age', 'ltfu_age', 'dead_in_care_age',
-                     'dead_out_care_age', 'new_init_age', 'years_out', 'cd4_inits', 'cd4_in_care', 'cd4_out_care',
-                     'incidence_in_care', 'incidence_out_care', 'prevalence_in_care', 'prevalence_out_care',
-                     'prevalence_inits', 'prevalence_dead', 'mm_in_care', 'mm_out_care', 'mm_inits', 'mm_dead',
-                     'mm_detail_in_care', 'mm_detail_out_care', 'mm_detail_inits', 'mm_detail_dead', 'pre_art_bmi',
-                     'post_art_bmi', 'bmi_int_coverage','bmi_int_dm_prev']
-
 # Load config_file
 try:
     with open(in_dir/'../config.yaml', 'r') as config_file:
@@ -64,32 +57,12 @@ for output_table in output_tables:
             for replication in replications:
                 replication_int = int(replication.split(sep='_')[1])
                 chunk_list.append(in_dir/group_name/replication/output_table)
-    '''
-                if config['sa_type'] in sa_types:
-                    chunk_list.append(
-                        dd.read_parquet(in_dir/model_name/group_name/replication/output_table).assign(model=model_name,
-                                                                                                  group=group_name,
-                                                                                                  replication=replication_int))
-                else:
-                    chunk_list.append(
-                        dd.read_parquet(in_dir/group_name/replication/output_table).assign(
-                                                                                            model=model_name,
-                                                                                            group=group_name,
-                                                                                            replication=replication_int
-                                                                                            ))
-                
-    df = dd.concat(chunk_list, ignore_index=True, interleave_partitions=True)
+    df = dd.read_parquet(chunk_list).assign(model=model_name,
+                                            group=group_name,
+                                            replication=replication_int)
     df = df.astype({'model' : 'category',
                     'group' : 'category',
                     'replication' : 'int16'})
-    '''
-    df = dd.read_parquet(chunk_list)
-    #measured_var = df.columns[-4]
-    #table_cols = df.columns[:-4]
-    if Path(output_table).stem in combinable_tables and False:
-        groupby_cols = list(df.columns.drop(['group', measured_var]))
-        ov = df.groupby(groupby_cols, observed=False)[measured_var].sum().reset_index().assign(group='overall')
-        df = dd.concat([df, ov], ignore_index=True)
     df = df.repartition(partition_size="100MB")
     df.to_parquet(out_dir/f'{Path(output_table).stem}.parquet')
     table_end = datetime.now()
