@@ -1743,8 +1743,7 @@ class Statistics:
             if isinstance(item, pd.DataFrame):
                 try:
                     item = item.assign(group = self.group_name,
-                                       replication = self.replication).astype({'group' : 'category',
-                                                                               'replication' : 'int16'})
+                                       replication = self.replication).astype({'replication' : 'int16'})
                     item.to_parquet(self.output_folder/f'{name}.parquet', index=False)
                 except Exception as e:
                     print(f'Error saving DataFrame {name}: {e}')
