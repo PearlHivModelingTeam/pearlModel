@@ -12,6 +12,7 @@ from definitions import POPULATION_TYPE_DICT
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+pd.options.mode.chained_assignment = None  # default='warn'
 
 ###############################################################################
 # Constants                                                                   #
@@ -557,6 +558,8 @@ class Pearl:
         self.replication = replication
         self.year = 2009
         self.parameters = parameters
+        if self.parameters.seed:
+            np.random.seed(self.parameters.seed)
 
         # If this is a rerun, reload the random state
         if self.parameters.rerun_folder is not None:
@@ -619,6 +622,8 @@ class Pearl:
 
         # Save output
         self.stats.save()
+        
+        self.population.to_parquet(self.parameters.output_folder/'population.parquet')
 
     def __str__(self):
         """Output diagnostic information when the verbose flag is true."""
@@ -1500,11 +1505,11 @@ class Pearl:
             post_art_bmi = self.population[['post_art_bmi', 'h1yy','pre_art_bmi','bmiInt_scenario']]
             
             # post_art_bmi are break into categories instead of report the exactly number of BMI
-            post_art_bmi.loc['pre_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.assign(pre_bmi_cat = np.array(1, dtype = 'int8'))
             post_art_bmi.loc[post_art_bmi['pre_art_bmi'] < 18.5, 'pre_bmi_cat'] = np.array(0, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['pre_art_bmi'] >= 30, 'pre_bmi_cat'] = np.array(2, dtype = 'int8')
             
-            post_art_bmi.loc['post_bmi_cat'] = np.array(1, dtype = 'int8')
+            post_art_bmi.assign(post_bmi_cat = np.array(1, dtype = 'int8'))
             post_art_bmi.loc[post_art_bmi['post_art_bmi'] < 18.5, 'post_bmi_cat'] = np.array(0, dtype = 'int8')
             post_art_bmi.loc[post_art_bmi['post_art_bmi'] >= 30, 'post_bmi_cat'] = np.array(2, dtype = 'int8')
 
@@ -1526,7 +1531,8 @@ class Parameters:
                  bmi_intervention_start_year=2020,
                  bmi_intervention_end_year=2030,
                  bmi_intervention_coverage=1.0,
-                 bmi_intervention_effectiveness=1.0):
+                 bmi_intervention_effectiveness=1.0,
+                 seed=None):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
         record detailed comorbidity information, the type of new_dx parameter to use, the final year of the model, the
@@ -1544,6 +1550,7 @@ class Parameters:
         self.sa_type = sa_type
         self.sa_variable = sa_variable
         self.sa_value = sa_value
+        self.seed = seed
 
         # 2009 population
         self.on_art_2009 = pd.read_hdf(path, 'on_art_2009').loc[group_name]

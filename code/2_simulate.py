@@ -9,7 +9,7 @@ from datetime import datetime
 from definitions import PROJECT_DIR
 
 @dask.delayed
-def run(group_name_run, replication_run):
+def run(group_name_run, replication_run, seed=None):
     replication_run_str = str(replication_run).zfill(len(str(config['replications'])))
     out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
     output_folder = output_root_path/out_path
@@ -30,7 +30,8 @@ def run(group_name_run, replication_run):
                                   bmi_intervention_start_year=config['bmi_intervention_start_year'],
                                   bmi_intervention_end_year=config['bmi_intervention_end_year'],
                                   bmi_intervention_coverage=config['bmi_intervention_coverage'],
-                                  bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'])
+                                  bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'],
+                                  seed=seed)
     print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}', flush=True)
     pearl.Pearl(parameters, group_name_run, replication_run)
     print(f'simulation finished for {group_name_run},rep= {replication_run}', flush=True)
@@ -104,12 +105,14 @@ if __name__ == '__main__':
     if sa_variables is None:
         print("running main analysis...", flush=True)
         results = []
+        seed = 0
         for group_name_run in config['group_names']:
             for replication_run in range(config['replications']):
-                results.append(run(group_name_run, replication_run))
+                results.append(run(group_name_run, replication_run, seed=seed))
+                seed += 1
     
     if args.debug:
-        dask.compute(results, scheduler="processes", num_workers=1)
+        dask.compute(results, scheduler="processes", num_workers=config['num_cpus'])
     else:
         dask.compute(results, scheduler="processes")
     
