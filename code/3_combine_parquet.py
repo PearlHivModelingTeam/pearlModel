@@ -10,7 +10,7 @@ import argparse
 @delayed
 def load_and_write(parquet_file_list, target_path):
     df = dd.read_parquet(parquet_file_list)
-    df = df.repartition(partition_size="100MB")
+    df = df.repartition(partition_size="1000MB")
     df.to_parquet(target_path)
 
 if __name__ == "__main__":
