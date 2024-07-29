@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from definitions import PROJECT_DIR
+from pearl.definitions import PROJECT_DIR
 
 # Define directories
 param_dir = PROJECT_DIR/'param_files'

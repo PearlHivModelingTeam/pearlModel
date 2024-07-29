@@ -11,4 +11,4 @@ RUN echo "source activate myenv" > ~/.bashrc
 ENV PATH /opt/conda/envs/myenv/bin:$PATH
 
 ADD . /
-RUN pip install -e .
+RUN pip install .

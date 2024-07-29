@@ -1,12 +1,12 @@
 # Imports
 import shutil
 import dask
-import pearl
 import yaml
 from pathlib import Path
 import argparse
 from datetime import datetime
-from definitions import PROJECT_DIR
+from pearl.definitions import PROJECT_DIR
+from pearl.model import Parameters, Pearl
 
 @dask.delayed
 def run(group_name_run, replication_run, seed=None):
@@ -14,7 +14,7 @@ def run(group_name_run, replication_run, seed=None):
     out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}" #setting up the path name
     output_folder = output_root_path/out_path
     rerun_folder = rerun_root_path/out_path if rerun_root_path is not None else None
-    parameters = pearl.Parameters(path=param_file_path,
+    parameters = Parameters(path=param_file_path,
                                   rerun_folder=rerun_folder,
                                   output_folder=output_folder,
                                   group_name=group_name_run,
@@ -33,9 +33,9 @@ def run(group_name_run, replication_run, seed=None):
                                   bmi_intervention_effectiveness=config['bmi_intervention_effectiveness'],
                                   seed=seed)
     print(f'Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}', flush=True)
-    pearl.Pearl(parameters, group_name_run, replication_run)
+    Pearl(parameters, group_name_run, replication_run)
     print(f'simulation finished for {group_name_run},rep= {replication_run}', flush=True)
-###############################
+
 
 if __name__ == '__main__':
 
