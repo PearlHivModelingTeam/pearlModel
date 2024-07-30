@@ -1,15 +1,14 @@
 FROM condaforge/mambaforge:4.9.2-5 as conda
 
-# Add requirements.txt
-ADD requirements.txt /tmp/requirements.txt
-
-#upgrade pip
-RUN python -m pip install --upgrade pip
+# Add environment lock file
+ADD environment.yml /tmp/environment.yml
 
 # create a conda env
 ENV CONDA_ENV ./conda/bin
-RUN conda create -n "myenv" python=3.11.9
-ENV PATH "${CONDA_ENV}_ENV}/bin:${PATH}"
+RUN conda env create -f /tmp/environment.yml
 
-# install all pip requirements
-RUN conda install --yes --file /tmp/requirements.txt
+RUN echo "source activate myenv" > ~/.bashrc
+ENV PATH /opt/conda/envs/myenv/bin:$PATH
+
+ADD . /
+RUN pip install .

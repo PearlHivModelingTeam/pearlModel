@@ -1,0 +1,15 @@
+name: myenv
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.*
+  - bioconda::snakemake
+  - dask
+  - scipy
+  - pytables
+  - pip
+  - pip:
+    - pip==24.0
+    - setuptools==70.3.0
+    - wheel==0.43.0
+prefix: /opt/conda/envs/myenv
