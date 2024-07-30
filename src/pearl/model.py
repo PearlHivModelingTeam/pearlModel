@@ -1469,6 +1469,25 @@ class Pearl:
             final_dm_int = match_template_and_data(dm_int_temp_df, dm_int, columns_to_match = columns_to_match, target_col = target_col)
 
             self.stats.bmi_int_dm_prev = final_dm_int.astype({'init_age_group' : 'int8', 'n' : 'int32'})
+            
+            
+            dm_final_output = self.population.groupby(['bmiInt_scenario',
+                                              'h1yy',
+                                              'bmiInt_eligible',
+                                              'bmiInt_received',
+                                              'bmiInt_impacted',
+                                              'dm',
+                                              't_dm']).size().reset_index(name='n').astype({'bmiInt_scenario' : 'int8',
+                                                                                            'h1yy' : 'int16',
+                                                                                            'bmiInt_eligible' : 'bool',
+                                                                                            'bmiInt_received' : 'bool',
+                                                                                            'bmiInt_impacted' : 'bool',
+                                                                                            'dm' : 'bool',
+                                                                                            't_dm' : 'int16',
+                                                                                            'n' : 'int32'})
+                                                                                            
+            self.stats.dm_final_output = dm_final_output      
+                                                                                
 
 
         dead_in_care = self.population['status'] == DEAD_ART_USER
