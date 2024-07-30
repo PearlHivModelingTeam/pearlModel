@@ -16,13 +16,14 @@
 	// "forwardPorts": [],
 
 	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
+	"postCreateCommand": "pip install -e .",
 
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
       // Add the IDs of extensions you want installed when the container is created.
-      "extensions": ["ms-python.python"]
+      "extensions": ["ms-python.python",
+					 "ms-azuretools.vscode-docker"]
     }
 	}
 
