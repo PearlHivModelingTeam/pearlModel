@@ -563,16 +563,8 @@ class Pearl:
         else:
             self.random_state = np.random.RandomState(seed=None)
 
-        # If this is a rerun, reload the random state
-        if self.parameters.rerun_folder is not None:
-            with open(self.parameters.rerun_folder/'random.state', 'rb') as state_file_load, \
-                    open(self.parameters.output_folder/'random.state', 'wb') as state_file_save:
-                state = pickle.load(state_file_load)
-                pickle.dump(state, state_file_save)
-            self.random_state = state
-        else:
-            with open(self.parameters.output_folder/'random.state', 'wb') as state_file:
-                pickle.dump(self.random_state, state_file)
+        with open(self.parameters.output_folder/'random.state', 'w') as state_file:
+            state_file.write(str(self.parameters.seed))
 
         # Initiate output class
         self.stats = Statistics(output_folder=self.parameters.output_folder,
