@@ -13,43 +13,51 @@ The ProjEcting Age, multimoRbidity, and poLypharmacy (PEARL) model is an agent-b
 Clone the repository onto your machine and enter the directory.
 
 ```
-git clone git@github.com:PearlHivModelingTeam/pearlModel.git pearl
-cd pearl
+git clone git@github.com:PearlHivModelingTeam/pearlModel.git
+cd pearlModel
 ```
+The ``scripts`` folder holds 3 numbered python scripts as well as a library with the PEARL classes and variables. The python files are numbered so that they can be run one after another to run a simulation. The ``config`` folder holds yaml files for specifying run configurations, the ``param_files`` folder holds the input parameters for use by PEARL and simulation results are generated in the ``out`` folder.
 
-Here you will see 4 folder as well as a requirements.txt file.
+For development, and usage, we suggest using docker and vscode, with instructions outlined below:
+
+## Step 1: Install VSCode
+
+1. Navigate to the [Visual Studio Code website](https://code.visualstudio.com/).
+2. Download the appropriate installer for your operating system (Windows, Linux, or macOS).
+3. Run the installer and follow the on-screen instructions to install VSCode on your system.
+4. After installation, launch VSCode.
+
+## Step 2: Install DevContainer Extension
+
+1. In VSCode, go to the Extensions view by clicking on the Extensions icon in the Activity Bar on the side of the window.
+2. Search for "Dev Containers" in the Extensions view search bar.
+3. Find the "Dev Containers" extension in the search results and click on the install button to install it.
+
+You can also go to the extension's [homepage](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [documentation page](https://code.visualstudio.com/docs/devcontainers/containers) to find more details.
+
+## Step 3: Install Docker and Add Current Login User to Docker Group
+
+1. Follow the [official guide](https://docs.docker.com/get-docker/) to install Docker. Don't forget the [post installation steps](https://docs.docker.com/engine/install/linux-postinstall/).
+
+If you are using [Visual Studio Code Remote - SSH](https://code.visualstudio.com/docs/remote/ssh), then you only need to install Docker in the remote host, not your local computer. And the following steps should be run in the remote host.
+
+## Step 4: Open in DevContainer
+
+In VSCode, use the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS) to run the "Dev Containers: Open Folder in Container..." command.
+
+## Step 5: Wait for Building the Environment
+
+1. After opening the folder in a DevContainer, VSCode will start building the container. This process can take some time as it involves downloading necessary images and setting up the environment.
+2. You can monitor the progress in the VSCode terminal.
+3. Once the build process completes, you'll have a fully configured development environment in a container.
+4. The next time you open the same dev container, it will be much faster, as it does not require building the image again.
+
+Finally, enter the ``scripts`` folder and run the first two numbered scripts. This will generate parameters and run a simulation using the test.yaml config file. The simulation output can be found in ``out/test_yyyy_mm_dd`` with the date corresponding to the initiation of the run. 
 
 ```
-code
-config
-out
-param_files
-requirements.txt
-```
-
-The ``code`` folder holds 3 numbered python scripts as well as a library with the PEARL classes and variables. The python files are numbered so that they can be run one after another to run a simulation. The ``config`` folder holds yaml files for specifying run configurations, the ``param_files`` folder holds the input parameters for use by PEARL and simulation results are generated in the ``out`` folder.
-
-To start your first test run you must set up and activate a python virtual environment
-
-```
-python3 -m venv venv
-source venv/bin/activate
-```
-
-You can then use the ``requirements.txt`` to install the necessary packages for running PEARL.
-
-```
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-Finally, enter the code folder and run the first two numbered scripts. This will generate parameters and run a simulation using the test.yaml config file. The simulation output can be found in ``out/test_yyyy_mm_dd`` with the date corresponding to the initiation of the run. The 3rd numbered script will convert the output from nested folders of csv files into hdf files which can be useful for analysis later. The third script takes the name of the output folder as a command line argument.
-
-```
-cd code
-python 1_create_param_file.py
-python 2_simulate.py
-python 3_convert_csv_to_hdf.py --dir test_yyyy-mm-dd
+python scripts/1_create_param_file.py
+python scripts/2_simulate.py
+python scripts/3_combine_parquet.py --in_dir path/to/out/dir/parquet_output
 ```
 
 ## Configuration
@@ -67,9 +75,6 @@ A list of the sex, race, and hiv-acquisition groups to include in the simulation
  'idu_hisp_male', 'idu_white_female', 'idu_black_female', 'idu_hisp_female', 'het_white_male',
  'het_black_male', 'het_hisp_male', 'het_white_female', 'het_black_female', 'het_hisp_female']
 ```
-
-### ``num_cpus``
-Number of cpus to use for the run, any positive integer. You should have access to this many cpus.
 
 ### ``replications``
 Number of replications of each simulation to run with different seeds. Any positive integer.
