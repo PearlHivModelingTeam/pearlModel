@@ -10,3 +10,4 @@ param_files/.idea
 .DS_Store
 .vscode/
 *.egg*
+*.log

@@ -1,5 +1,5 @@
 # Imports
-import pearl
+from pearl.definitions import PROJECT_DIR
 import yaml
 import subprocess
 from pathlib import Path
@@ -8,11 +8,11 @@ import os
 import argparse
 
 #SETUP: list of config files to run:
-config_files = ['S3.yaml','S2.yaml','S1.yaml','S0.yaml' ]
+config_files = ['test.yaml','test.yaml','test.yaml','test.yaml' ]
 ###############################################################################################
 print("Starting 4_run_scenarios.py")
 start_time = datetime.now()
-pearl_path = Path('..')
+pearl_path = PROJECT_DIR
 date_string = datetime.today().strftime('%Y-%m-%d')
 
 # CREATING PARAMETER FILE:
@@ -21,7 +21,7 @@ parser.add_argument('--createParam', action='store_true')
 args = parser.parse_args()
 if args.createParam:
     print(f"Creating the parameter file ...")
-    command = ["python3", f"{pearl_path}/code/1_create_param_file.py"]
+    command = ["python3", f"{pearl_path}/scripts/1_create_param_file.py"]
     output_and_error_log = "1_out.log"
     with open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
@@ -40,7 +40,7 @@ for f in config_files:
     ############
     print(f"Running simulations in parallel ...")
     # Specify the command to call another Python script
-    command = ["python3", f"{pearl_path}/code/2_simulate_server.py", "--config", f"{config_file_path}","--overwrite"]
+    command = ["python3", f"{pearl_path}/scripts/2_simulate.py", "--config", f"{config_file_path}","--overwrite"]
     # Use subprocess to run the command and redirect both output and error to the same file
     output_and_error_log = f"2_out_{config_file_path.stem}.log"
     with open(output_and_error_log, "w") as log_file:
@@ -51,9 +51,9 @@ for f in config_files:
     exit_code = process.returncode
     print("simulations ran with exit Code:", exit_code)
     ############
-    print(f"Creating HDF outputs ...")
+    print(f"Combining outputs ...")
     # Specify the command to call another Python script
-    command = ["python3", f"{pearl_path}/code/3_convert_csv_to_hdf.py","--dir", f"{output_root_path}"]
+    command = ["python3", f"{pearl_path}/scripts/3_combine_parquet.py","--in_dir", f"{output_root_path}/parquet_output"]
     output_and_error_log = f"3_out_{config_file_path.stem}.log"
     with open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
