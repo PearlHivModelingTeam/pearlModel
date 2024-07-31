@@ -8,11 +8,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: [ "3.11"]
     steps:
-      - name: Install Nox
-        run: pip install --only nox
-      - name: Test with Nox
-        run: nox -s test-${{ matrix.python-version }}
+      - uses: actions/checkout@v2
+      - uses: excitedleigh/setup-nox@v2.1.0
+      - run: nox
