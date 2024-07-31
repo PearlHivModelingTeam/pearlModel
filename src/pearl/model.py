@@ -1,5 +1,4 @@
 ﻿# Imports
-import pickle
 import os
 #TODO move this somewhere better, like into docker
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
