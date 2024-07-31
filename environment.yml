@@ -8,6 +8,7 @@ dependencies:
   - scipy
   - pytables
   - pip
+  - nox
   - pip:
     - pip==24.0
     - setuptools==70.3.0

@@ -1,0 +1,14 @@
+name: python
+
+on: [pull_request]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: excitedleigh/setup-nox@v2.1.0
+      - run: nox

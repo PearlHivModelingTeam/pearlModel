@@ -11,3 +11,5 @@ param_files/.idea
 .vscode/
 *.egg*
 *.log
+.nox/
+build/
