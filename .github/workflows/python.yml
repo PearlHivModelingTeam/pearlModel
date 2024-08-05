@@ -1,7 +1,6 @@
 name: python
 
 on:
-  push:
   pull_request:
     branches:
       -main

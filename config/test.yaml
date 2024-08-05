@@ -1,7 +1,7 @@
 group_names: ['msm_white_male', 'msm_black_male', 'msm_hisp_male'
 ]
-num_cpus: 10
-replications: 5
+num_cpus: 1
+replications: 1
 comorbidity_flag: 1 # 0, 1
 new_dx: 'base' # base, ehe, sa
 mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall

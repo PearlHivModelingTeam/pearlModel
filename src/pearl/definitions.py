@@ -38,3 +38,24 @@ POPULATION_TYPE_DICT = {
             't_smoking' : 'int16',
             'year' : 'int16',
             'years_out' : 'int16',}
+
+# Status Constants
+ART_NAIVE = 0
+DELAYED = 1
+ART_USER = 2
+ART_NONUSER = 3
+REENGAGED = 4
+LTFU = 5
+DYING_ART_USER = 6
+DYING_ART_NONUSER = 7
+DEAD_ART_USER = 8
+DEAD_ART_NONUSER = 9
+
+# Smearing correction
+SMEARING = 1.4
+
+# Comorbidity stages
+STAGE0 = ['hcv', 'smoking']
+STAGE1 = ['anx', 'dpr']
+STAGE2 = ['ckd', 'lipid', 'dm', 'ht']
+STAGE3 = ['malig', 'esld', 'mi']

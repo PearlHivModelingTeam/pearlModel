@@ -9,6 +9,7 @@ dependencies:
   - pytables
   - pip
   - nox
+  - pyright
   - pip:
     - pip==24.0
     - setuptools==70.3.0
