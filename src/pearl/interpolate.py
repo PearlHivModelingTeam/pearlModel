@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def restricted_cubic_spline_var(x: pd.Series, t: pd.Series, i: int) -> pd.Series:
     """Return a pandas Series of the i'th restricted cubic spline variable for numpy array x with knots t.
     Adapted from: https:github.com/harrelfe/Hmisc/blob/master/R/rcspline.eval.s

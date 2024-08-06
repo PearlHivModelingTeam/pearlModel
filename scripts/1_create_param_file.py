@@ -1,9 +1,11 @@
 # Imports
 import os
+from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
+
 from pearl.definitions import PROJECT_DIR
 
 # Define directories

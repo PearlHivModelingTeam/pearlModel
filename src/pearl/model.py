@@ -1,19 +1,32 @@
 ﻿# Imports
 import os
+
 #TODO move this somewhere better, like into docker
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 os.environ['OMP_NUM_THREADS'] = '1'
+import itertools
+
 import numpy as np
 import pandas as pd
-import itertools
-from pearl.definitions import POPULATION_TYPE_DICT
+
 #TODO refactor this into a single data structure
-from pearl.definitions import ART_NAIVE, DELAYED, ART_USER, ART_NONUSER, REENGAGED, LTFU, DYING_ART_USER, DYING_ART_NONUSER, DEAD_ART_USER, DEAD_ART_NONUSER
-from pearl.definitions import STAGE0, STAGE1, STAGE2, STAGE3
-from pearl.population.generation import simulate_ages, simulate_new_dx, apply_bmi_intervention, calculate_post_art_bmi, calculate_pre_art_bmi
-from pearl.population.events import create_mortality_in_care_pop_matrix, create_mortality_out_care_pop_matrix, calculate_cd4_increase, calculate_cd4_decrease
-from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_spline_var
+from pearl.definitions import (ART_NAIVE, ART_NONUSER, ART_USER,
+                               DEAD_ART_NONUSER, DEAD_ART_USER, DELAYED,
+                               DYING_ART_NONUSER, DYING_ART_USER, LTFU,
+                               POPULATION_TYPE_DICT, REENGAGED, STAGE0, STAGE1,
+                               STAGE2, STAGE3)
+from pearl.interpolate import (restricted_cubic_spline_var,
+                               restricted_quadratic_spline_var)
+from pearl.population.events import (calculate_cd4_decrease,
+                                     calculate_cd4_increase,
+                                     create_mortality_in_care_pop_matrix,
+                                     create_mortality_out_care_pop_matrix)
+from pearl.population.generation import (apply_bmi_intervention,
+                                         calculate_post_art_bmi,
+                                         calculate_pre_art_bmi, simulate_ages,
+                                         simulate_new_dx)
 from pearl.sample import draw_from_trunc_norm
+
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)

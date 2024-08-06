@@ -1,11 +1,13 @@
 # Imports
-from pearl.definitions import PROJECT_DIR
-import yaml
-import subprocess
-from pathlib import Path
-from datetime import datetime
-import os
 import argparse
+import os
+import subprocess
+from datetime import datetime
+from pathlib import Path
+
+import yaml
+
+from pearl.definitions import PROJECT_DIR
 
 #SETUP: list of config files to run:
 config_files = ['test.yaml','test.yaml','test.yaml','test.yaml' ]

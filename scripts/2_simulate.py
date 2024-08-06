@@ -1,12 +1,15 @@
 # Imports
+import argparse
 import shutil
+from datetime import datetime
+from pathlib import Path
+
 import dask
 import yaml
-from pathlib import Path
-import argparse
-from datetime import datetime
+
 from pearl.definitions import PROJECT_DIR
 from pearl.model import Parameters, Pearl
+
 
 @dask.delayed
 def run(group_name_run, replication_run, seed=None):

@@ -1,11 +1,13 @@
+import argparse
 import os
 import shutil
+from datetime import datetime
 from pathlib import Path
+
 import dask
 from dask import dataframe as dd
 from dask import delayed
-from datetime import datetime
-import argparse
+
 
 @delayed
 def load_and_write(parquet_file_list, target_path):

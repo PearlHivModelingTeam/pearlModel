@@ -1,5 +1,6 @@
-import scipy.stats as stats
 import numpy as np
+import scipy.stats as stats
+
 
 def draw_from_trunc_norm(a: float, b: float, mu: float, sigma: float, n: int, random_state : np.random.RandomState) -> np.array:
     """Return a numpy array filled with n values drawn from a truncated normal with the given parameters. If n=0 return

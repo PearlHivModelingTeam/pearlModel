@@ -1,7 +1,9 @@
-from pytest import fixture
-from pearl.sample import draw_from_trunc_norm
 import numpy as np
 from numpy.random import RandomState
+from pytest import fixture
+
+from pearl.sample import draw_from_trunc_norm
+
 
 @fixture
 def random_state():
@@ -27,4 +29,4 @@ def test_draw_from_trunc_norm_0_n(random_state):
     '''
     result = draw_from_trunc_norm(a=18, b=85, mu=46, sigma=3.49, n=0, random_state=random_state)
     
-    assert result == []
+    assert np.allclose(result, np.array([]))

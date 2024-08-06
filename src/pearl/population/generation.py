@@ -2,9 +2,11 @@
 Module for the generation of initial population.
 '''
 import numpy as np
-from pearl.sample import draw_from_trunc_norm
+
 from pearl.interpolate import restricted_cubic_spline_var
 from pearl.population.events import calculate_cd4_increase
+from pearl.sample import draw_from_trunc_norm
+
 
 def simulate_ages(coeffs, pop_size, random_state : np.random.RandomState):
     """Return numpy array of ages with length pop_size drawn from a mixed gaussian of given coefficients truncated

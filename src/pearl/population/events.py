@@ -1,6 +1,9 @@
 import numpy as np
-from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_spline_var
+
 from pearl.definitions import SMEARING
+from pearl.interpolate import (restricted_cubic_spline_var,
+                               restricted_quadratic_spline_var)
+
 
 def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
     """Return the population matrix as a numpy array for calculating mortality in care. This log odds of mortality are a linear function of calendar year,

@@ -1,11 +1,14 @@
-from pathlib import Path
-from pearl.model import Pearl, Parameters
-from pytest import fixture
-import pandas as pd
-import shutil
 import os
-from dask import delayed
+import shutil
+from pathlib import Path
+
 import dask
+import pandas as pd
+from dask import delayed
+from pytest import fixture
+
+from pearl.model import Parameters, Pearl
+
 
 @fixture
 def config():
