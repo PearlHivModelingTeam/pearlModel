@@ -1,14 +1,17 @@
 '''
 Module for the generation of initial population.
 '''
+from typing import Tuple
+
 import numpy as np
+import pandas as pd
 
 from pearl.interpolate import restricted_cubic_spline_var
 from pearl.population.events import calculate_cd4_increase
 from pearl.sample import draw_from_trunc_norm
 
 
-def simulate_ages(coeffs, pop_size, random_state : np.random.RandomState):
+def simulate_ages(coeffs: pd.DataFrame, pop_size: int, random_state : np.random.RandomState) -> np.array:
     """Return numpy array of ages with length pop_size drawn from a mixed gaussian of given coefficients truncated
     at 18 and 85.
     """
@@ -22,7 +25,7 @@ def simulate_ages(coeffs, pop_size, random_state : np.random.RandomState):
     ages = np.concatenate((ages_1, ages_2))
     return ages
 
-def simulate_new_dx(new_dx, linkage_to_care, random_state : np.random.RandomState):
+def simulate_new_dx(new_dx: pd.DataFrame, linkage_to_care: pd.DataFrame, random_state : np.random.RandomState) -> Tuple[int, pd.DataFrame]:
     """Return the number of ART non-users in 2009 as an integer and the number of agents entering the model each year as art users and non-users
     as a dataframe. Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of new art
     initiators by assuming a certain number link in the first year as estimated by a linear regression on CDC data, capped at 95%. We assume
@@ -47,11 +50,12 @@ def simulate_new_dx(new_dx, linkage_to_care, random_state : np.random.RandomStat
     new_dx['art_initiators'] = (new_dx['total_linked'] * linkage_to_care['art_prob']).astype(int)
     new_dx['art_delayed'] = (new_dx['total_linked'] * (1 - linkage_to_care['art_prob'])).astype(int)
 
+    # TODO make the start and end dates here parametric
     # Count those not starting art 2006 - 2009 as initial ART nonusers
     n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), 'art_delayed'].sum()
 
     # Compile list of number of new agents to be introduced in the model
-    new_agents = new_dx.loc[np.arange(2010, 2036), ['art_initiators', 'art_delayed']]
+    new_agents = new_dx.loc[np.arange(2010, new_dx.index.max() + 1), ['art_initiators', 'art_delayed']]
 
     return n_initial_nonusers, new_agents
 
@@ -174,10 +178,16 @@ def calculate_post_art_bmi(pop, parameters, random_state : np.random.RandomState
 
     return post_art_bmi
 
-def calculate_pre_art_bmi(pop, model, coeffs, t_age, t_h1yy, rse, random_state : np.random.RandomState):
+def calculate_pre_art_bmi(pop, parameters, random_state : np.random.RandomState):
     """Calculate and return pre art bmi for a given population dataframe. Each subpopulation can use a different model of pre art bmi."""
     # Calculate pre art bmi using one of 5 different models depending on subpopulation
+    # Copy coefficients and knots to more reasonable variable names
+    coeffs = parameters.pre_art_bmi
+    t_age = parameters.pre_art_bmi_age_knots
+    t_h1yy = parameters.pre_art_bmi_h1yy_knots
+    rse = parameters.pre_art_bmi_rse
     pre_art_bmi = np.nan
+    model = parameters.pre_art_bmi_model
     if model == 6:
         pop['age_'] = restricted_cubic_spline_var(pop['init_age'], t_age, 1)
         pop['age__'] = restricted_cubic_spline_var(pop['init_age'], t_age, 2)

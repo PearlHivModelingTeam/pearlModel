@@ -338,10 +338,9 @@ class Pearl:
 
         # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
         if self.parameters.comorbidity_flag:
+            #TODO remove all population.copy() calls
             # Bmi
-            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
-                                                              self.parameters.pre_art_bmi_rse, self.random_state)
+            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters, self.random_state)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters, self.random_state)
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -440,9 +439,7 @@ class Pearl:
         # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
         if self.parameters.comorbidity_flag:
             # Bmi
-            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model, self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots, self.parameters.pre_art_bmi_h1yy_knots,
-                                                              self.parameters.pre_art_bmi_rse, random_state)
+            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters, random_state)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters, random_state)
             population['delta_bmi'] = population['post_art_bmi'] - population['pre_art_bmi']
 
@@ -570,11 +567,7 @@ class Pearl:
             population['mm'] = population[STAGE2 + STAGE3].sum(axis=1)
 
             # pre- / post-ART BMI:
-            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters.pre_art_bmi_model,
-                                                              self.parameters.pre_art_bmi,
-                                                              self.parameters.pre_art_bmi_age_knots,
-                                                              self.parameters.pre_art_bmi_h1yy_knots,
-                                                              self.parameters.pre_art_bmi_rse, random_state)
+            population['pre_art_bmi'] = calculate_pre_art_bmi(population.copy(), self.parameters, random_state)
             population['post_art_bmi'] = calculate_post_art_bmi(population.copy(), self.parameters, random_state)
 
             # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
@@ -1164,8 +1157,19 @@ class Pearl:
 
 class Parameters:
     """This class holds all the parameters needed for PEARL to run."""
-    def __init__(self, path, rerun_folder, output_folder, group_name, comorbidity_flag, new_dx, final_year,
-                 mortality_model, mortality_threshold_flag, idu_threshold, verbose, sa_type=None, sa_variable=None,
+    def __init__(self, path,
+                 rerun_folder,
+                 output_folder,
+                 group_name,
+                 comorbidity_flag,
+                 new_dx,
+                 final_year,
+                 mortality_model,
+                 mortality_threshold_flag,
+                 idu_threshold,
+                 verbose,
+                 sa_type=None,
+                 sa_variable=None,
                  sa_value=None,
                  bmi_intervention=0,
                  bmi_intervention_scenario=1,

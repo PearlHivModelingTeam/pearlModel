@@ -18,5 +18,5 @@ requires-python = ">= 3.11"
 test = [
     "pytest",
     "nox",
-    "pyright"
+    "pyright",
     ]

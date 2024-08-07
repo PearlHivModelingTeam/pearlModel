@@ -31,11 +31,11 @@ def config():
 
 @fixture
 def param_file_path():
-    return Path("tests/pearl/integration/assets/pearl_test/parameters.h5")
+    return Path("tests/pearl/assets/parameters.h5")
 
 @fixture
 def output_folder():
-    out_dir = Path("tests/pearl/integration/output")
+    out_dir = Path("tests/pearl/end_to_end/output")
     if out_dir.is_dir():
         shutil.rmtree(out_dir)
     os.mkdir(out_dir)
@@ -66,7 +66,7 @@ def parameter(param_file_path, output_folder, config):
 
 @fixture
 def expected_population():
-    return pd.read_parquet(Path("tests/pearl/integration/assets/pearl_test/population.parquet"))
+    return pd.read_parquet(Path("tests/pearl/assets/pearl_test/population.parquet"))
 
 def test_pearl_single_threaded(parameter, expected_population, output_folder):
     '''
