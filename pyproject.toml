@@ -19,4 +19,5 @@ test = [
     "pytest",
     "nox",
     "pyright",
+    "ruff",
     ]
