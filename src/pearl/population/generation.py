@@ -157,8 +157,7 @@ def calculate_post_art_bmi(pop, parameters, random_state : np.random.RandomState
     pop_future['age_cat'] = np.floor(pop_future['age'] / 10)
     pop_future.loc[pop_future['age_cat'] < 2, 'age_cat'] = 2
     pop_future.loc[pop_future['age_cat'] > 7, 'age_cat'] = 7
-    pop['sqrtcd4_post'] = calculate_cd4_increase(pop_future, parameters.cd4_increase_knots, parameters.cd4_increase.to_numpy(dtype=float),
-                                                 parameters.cd4_increase_vcov.to_numpy(dtype=float), parameters.sa_type1_dict['cd4_increase'])
+    pop['sqrtcd4_post'] = calculate_cd4_increase(pop_future, parameters)
 
     pop['sqrtcd4_post_'] = restricted_cubic_spline_var(pop['sqrtcd4_post'], t_sqrtcd4_post, 1)
     pop['sqrtcd4_post__'] = restricted_cubic_spline_var(pop['sqrtcd4_post'], t_sqrtcd4_post, 2)

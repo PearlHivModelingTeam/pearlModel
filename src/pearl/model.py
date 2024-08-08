@@ -331,8 +331,7 @@ class Pearl:
         population['year'] = np.array(2009, dtype='int16')
 
         # Calculate time varying cd4 count
-        population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), self.parameters.cd4_increase_knots, self.parameters.cd4_increase.to_numpy(dtype=float),
-                                                                     self.parameters.cd4_increase_vcov.to_numpy(dtype=float), self.parameters.sa_type1_dict['cd4_increase'])
+        population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), self.parameters)
 
         # Set status and initiate out of care variables
         population['status'] = ART_USER
@@ -426,8 +425,7 @@ class Pearl:
         population['year'] = 2009
 
         # Calculate time varying cd4 count
-        population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), self.parameters.cd4_increase_knots, self.parameters.cd4_increase.to_numpy(dtype=float),
-                                                                     self.parameters.cd4_increase_vcov.to_numpy(dtype=float), self.parameters.sa_type1_dict['cd4_increase'])
+        population['time_varying_sqrtcd4n'] = calculate_cd4_increase(population.copy(), self.parameters)
 
         # Set status and initiate out of care variables
         years_out_of_care = random_state.choice(a=self.parameters.years_out_of_care['years'], size=n_initial_nonusers, p=self.parameters.years_out_of_care['probability'])
@@ -656,12 +654,7 @@ class Pearl:
         """Calculate and set new CD4 count for ART using population."""
         in_care = self.population['status'] == ART_USER
 
-        new_sqrt_cd4 = calculate_cd4_increase(
-            self.population.loc[in_care].copy(),
-            self.parameters.cd4_increase_knots,
-            self.parameters.cd4_increase.to_numpy(dtype=float),
-            self.parameters.cd4_increase_vcov.to_numpy(dtype=float),
-            self.parameters.sa_type1_dict['cd4_increase'])
+        new_sqrt_cd4 = calculate_cd4_increase(self.population.loc[in_care].copy(), self.parameters)
 
         # Sensitivity Analysis
         new_sqrt_cd4 = np.sqrt(self.parameters.sa_type2_dict['cd4_increase'] * np.power(new_sqrt_cd4, 2))
@@ -681,10 +674,7 @@ class Pearl:
         """Calculate and set new CD4 count for ART non-using population."""
         out_care = self.population['status'] == ART_NONUSER
         new_sqrt_cd4 = calculate_cd4_decrease(
-            self.population.loc[out_care].copy(),
-            self.parameters.cd4_decrease.to_numpy(dtype=float),
-            self.parameters.sa_type1_dict['cd4_decrease'],
-            self.parameters.cd4_decrease_vcov.to_numpy(dtype=float))
+            self.population.loc[out_care].copy(), self.parameters)
 
         # Sensitivity Analysis
         new_sqrt_cd4 = np.sqrt(self.parameters.sa_type2_dict['cd4_decrease'] * np.power(new_sqrt_cd4, 2))

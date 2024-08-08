@@ -46,10 +46,15 @@ def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
         pop['time_varying_sqrtcd4n__'] = restricted_cubic_spline_var(pop['time_varying_sqrtcd4n'], parameters.mortality_out_care_tv_sqrtcd4, 2)
         return pop[['intercept', 'year', 'age', 'age_', 'age__', 'time_varying_sqrtcd4n', 'time_varying_sqrtcd4n_', 'time_varying_sqrtcd4n__']].to_numpy(dtype=float)
 
-def calculate_cd4_increase(pop, knots, coeffs, vcov, sa):
+def calculate_cd4_increase(pop, parameters):
     """Return new cd4 count of the given population as calculated via a linear function of time since art initiation modeled as a spline, initial
     cd4 count category, age category and cross terms.
     """
+    knots = parameters.cd4_increase_knots
+    coeffs = parameters.cd4_increase.to_numpy(dtype=float)
+    vcov = parameters.cd4_increase_vcov.to_numpy(dtype=float)
+    sa = parameters.sa_type1_dict['cd4_increase']
+
     # Calculate spline variables
     pop['time_from_h1yy'] = pop['year'] - pop['last_h1yy']
     pop['time_from_h1yy_'] = restricted_quadratic_spline_var(pop['time_from_h1yy'], knots.to_numpy(), 1)
@@ -91,8 +96,13 @@ def calculate_cd4_increase(pop, knots, coeffs, vcov, sa):
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
     return new_cd4
 
-def calculate_cd4_decrease(pop, coeffs, sa, vcov):
+def calculate_cd4_decrease(pop, parameters, smearing=SMEARING):
     """ Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4 count at exit from care."""
+    
+    coeffs = parameters.cd4_decrease.to_numpy(dtype=float)
+    sa = parameters.sa_type1_dict['cd4_decrease']
+    vcov = parameters.cd4_decrease_vcov.to_numpy(dtype=float)
+    
     # Calculate the time_out variable and perform the matrix multiplication
     pop['time_out'] = pop['year'] - pop['ltfu_year']
     pop_matrix = pop[['intercept', 'time_out', 'sqrtcd4n_exit']].to_numpy(dtype=float)
@@ -106,6 +116,6 @@ def calculate_cd4_decrease(pop, coeffs, sa, vcov):
         elif sa == 'high':
             diff += 1.96 * se
 
-    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy(dtype=float) ** 2) * np.exp(diff) * SMEARING)
+    new_cd4 = np.sqrt((pop['sqrtcd4n_exit'].to_numpy(dtype=float) ** 2) * np.exp(diff) * smearing)
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
     return new_cd4
