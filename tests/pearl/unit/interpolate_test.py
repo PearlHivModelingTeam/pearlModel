@@ -11,22 +11,22 @@ from pearl.interpolate import (
 
 
 @fixture
-def cubic_test_series():
+def cubic_test_series() -> pd.Series:
     return pd.Series([18, 35, 52, 70])
 
 
 @fixture
-def cubic_knots():
+def cubic_knots() -> pd.Series:
     return pd.Series([24.0, 37.0, 45.0, 59.0])
 
 
 @fixture
-def expected_first_cubic_knot():
+def expected_first_cubic_knot() -> pd.Series:
     return pd.Series([0.0, 1.0865306122448988, 17.220000000000006, 49.200000000000045])
 
 
 @fixture
-def expected_second_cubic_knot():
+def expected_second_cubic_knot() -> pd.Series:
     return pd.Series([0.0, 0.0, 2.3151020408163285, 9.913469387755109])
 
 
@@ -82,7 +82,7 @@ def expected_third_quadratic_knot():
 
 
 def test_restricted_quadratic_spline_var(
-    cubic_test_series,
+    quadratic_test_series,
     cubic_knots,
     expected_first_quadratic_knot,
     expected_second_quadratic_knot,
@@ -91,9 +91,9 @@ def test_restricted_quadratic_spline_var(
     """
     It should return the expected value.
     """
-    first_knot = restricted_quadratic_spline_var(cubic_test_series, cubic_knots, 1)
-    second_knot = restricted_quadratic_spline_var(cubic_test_series, cubic_knots, 2)
-    third_knot = restricted_quadratic_spline_var(cubic_test_series, cubic_knots, 3)
+    first_knot = restricted_quadratic_spline_var(quadratic_test_series, cubic_knots, 1)
+    second_knot = restricted_quadratic_spline_var(quadratic_test_series, cubic_knots, 2)
+    third_knot = restricted_quadratic_spline_var(quadratic_test_series, cubic_knots, 3)
 
     assert_series_equal(first_knot, expected_first_quadratic_knot)
     assert_series_equal(second_knot, expected_second_quadratic_knot)
