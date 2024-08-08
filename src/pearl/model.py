@@ -247,6 +247,7 @@ class Pearl:
         # Save output
         self.stats.save()
         
+        self.population = self.population.assign(group=self.group_name, replication=self.replication)
         self.population.to_parquet(self.parameters.output_folder/'population.parquet')
 
     def __str__(self):
