@@ -51,9 +51,7 @@ if __name__ == "__main__":
                 replication_int = int(replication.split(sep="_")[1])
                 chunk_list.append(in_dir / group_name / replication / output_table)
 
-        results.append(
-            load_and_write(chunk_list, out_dir / f"{Path(output_table).stem}.parquet")
-        )
+        results.append(load_and_write(chunk_list, out_dir / f"{Path(output_table).stem}.parquet"))
 
     dask.compute(results, scheduler="processes")
     # Copy the config file to the output directory

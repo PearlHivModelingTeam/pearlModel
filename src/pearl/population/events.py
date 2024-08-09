@@ -1,10 +1,8 @@
 import numpy as np
 
 from pearl.definitions import SMEARING
-from pearl.interpolate import (
-    restricted_cubic_spline_var,
-    restricted_quadratic_spline_var,
-)
+from pearl.interpolate import (restricted_cubic_spline_var,
+                               restricted_quadratic_spline_var)
 
 
 def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
@@ -44,12 +42,8 @@ def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
             ]
         ].to_numpy(dtype=float)
     else:
-        pop["age_"] = restricted_cubic_spline_var(
-            pop["age"], parameters.mortality_in_care_age, 1
-        )
-        pop["age__"] = restricted_cubic_spline_var(
-            pop["age"], parameters.mortality_in_care_age, 2
-        )
+        pop["age_"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_in_care_age, 1)
+        pop["age__"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_in_care_age, 2)
         pop["h1yy_cat_1"] = 0
         pop["h1yy_cat_2"] = 0
         pop.loc[pop["h1yy"].isin(np.arange(2009, 2013)), "h1yy_cat_1"] = 1
@@ -112,9 +106,7 @@ def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
             ]
         ].to_numpy(dtype=float)
     else:
-        pop["age_"] = restricted_cubic_spline_var(
-            pop["age"], parameters.mortality_out_care_age, 1
-        )
+        pop["age_"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_out_care_age, 1)
         pop["age__"] = restricted_cubic_spline_var(
             pop["age"], parameters.mortality_out_care_age, 2
         )
@@ -161,12 +153,10 @@ def calculate_cd4_increase(pop, parameters):
 
     # Calculate CD4 Category Variables
     pop["cd4_cat_349"] = (
-        pop["last_init_sqrtcd4n"].ge(np.sqrt(200.0))
-        & pop["last_init_sqrtcd4n"].lt(np.sqrt(350.0))
+        pop["last_init_sqrtcd4n"].ge(np.sqrt(200.0)) & pop["last_init_sqrtcd4n"].lt(np.sqrt(350.0))
     ).astype(int)
     pop["cd4_cat_499"] = (
-        pop["last_init_sqrtcd4n"].ge(np.sqrt(350.0))
-        & pop["last_init_sqrtcd4n"].lt(np.sqrt(500.0))
+        pop["last_init_sqrtcd4n"].ge(np.sqrt(350.0)) & pop["last_init_sqrtcd4n"].lt(np.sqrt(500.0))
     ).astype(int)
     pop["cd4_cat_500"] = pop["last_init_sqrtcd4n"].ge(np.sqrt(500.0)).astype(int)
 
@@ -241,8 +231,6 @@ def calculate_cd4_decrease(pop, parameters, smearing=SMEARING):
         elif sa == "high":
             diff += 1.96 * se
 
-    new_cd4 = np.sqrt(
-        (pop["sqrtcd4n_exit"].to_numpy(dtype=float) ** 2) * np.exp(diff) * smearing
-    )
+    new_cd4 = np.sqrt((pop["sqrtcd4n_exit"].to_numpy(dtype=float) ** 2) * np.exp(diff) * smearing)
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
     return new_cd4

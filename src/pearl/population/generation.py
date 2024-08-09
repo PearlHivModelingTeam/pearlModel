@@ -57,9 +57,7 @@ def simulate_new_dx(
     """
 
     # Draw new dx from a uniform distribution between upper and lower for 2016-final_year
-    new_dx["n_dx"] = (
-        new_dx["lower"] + (new_dx["upper"] - new_dx["lower"]) * random_state.uniform()
-    )
+    new_dx["n_dx"] = new_dx["lower"] + (new_dx["upper"] - new_dx["lower"]) * random_state.uniform()
 
     # Only a proportion of new diagnoses link to care and 40% of the remaining link in the next 3 years
     new_dx["unlinked"] = new_dx["n_dx"] * (1 - linkage_to_care["link_prob"])
@@ -68,17 +66,13 @@ def simulate_new_dx(
     new_dx["year1"] = new_dx["gardner_per_year"].shift(1, fill_value=0)
     new_dx["year2"] = new_dx["gardner_per_year"].shift(2, fill_value=0)
     new_dx["year3"] = new_dx["gardner_per_year"].shift(3, fill_value=0)
-    new_dx["total_linked"] = (
-        new_dx["year0"] + new_dx["year1"] + new_dx["year2"] + new_dx["year3"]
-    )
+    new_dx["total_linked"] = new_dx["year0"] + new_dx["year1"] + new_dx["year2"] + new_dx["year3"]
 
     # Proportion of those linked to care start ART
-    new_dx["art_initiators"] = (
-        new_dx["total_linked"] * linkage_to_care["art_prob"]
-    ).astype(int)
-    new_dx["art_delayed"] = (
-        new_dx["total_linked"] * (1 - linkage_to_care["art_prob"])
-    ).astype(int)
+    new_dx["art_initiators"] = (new_dx["total_linked"] * linkage_to_care["art_prob"]).astype(int)
+    new_dx["art_delayed"] = (new_dx["total_linked"] * (1 - linkage_to_care["art_prob"])).astype(
+        int
+    )
 
     # TODO make the start and end dates here parametric
     # Count those not starting art 2006 - 2009 as initial ART nonusers
@@ -95,9 +89,7 @@ def simulate_new_dx(
 def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState):
     if parameters.bmi_intervention == 0:
         raise ValueError("Running apply_bmi_intervention despite bmi_intervention=0")
-    pop["bmiInt_scenario"] = np.array(
-        parameters.bmi_intervention_scenario, dtype="int8"
-    )
+    pop["bmiInt_scenario"] = np.array(parameters.bmi_intervention_scenario, dtype="int8")
     pop["bmiInt_year"] = pop["h1yy"].isin(
         range(
             parameters.bmi_intervention_start_year,
@@ -137,9 +129,7 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
     )
 
     # eligible people are enrolled in the intervention:
-    pop["bmiInt_received"] = (
-        pop["bmiInt_eligible"] & pop["bmiInt_year"] & pop["bmiInt_coverage"]
-    )
+    pop["bmiInt_received"] = pop["bmiInt_eligible"] & pop["bmiInt_year"] & pop["bmiInt_coverage"]
 
     # creating new outputs:
     pop["post_art_bmi_without_bmiInt"] = pop["post_art_bmi"]
@@ -155,9 +145,7 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
     # by retaining their weight at a threshold of 29.9 (below obesity)
     if parameters.bmi_intervention_scenario == 1:
         pop["bmiInt_impacted"] = (
-            pop["bmiInt_received"]
-            & pop["become_obese_postART"]
-            & pop["bmiInt_effectiveness"]
+            pop["bmiInt_received"] & pop["become_obese_postART"] & pop["bmiInt_effectiveness"]
         )
         pop.loc[pop["bmiInt_impacted"], "post_art_bmi"] = 29.9
 
@@ -180,9 +168,7 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
     # pre-ART BMI. Those experiencing reductions in their weight are allowed to follow the natural weight loss trajectory.
     if parameters.bmi_intervention_scenario == 3:
         pop["bmiInt_impacted"] = (
-            pop["bmiInt_received"]
-            & pop["bmi_increase_postART"]
-            & pop["bmiInt_effectiveness"]
+            pop["bmiInt_received"] & pop["bmi_increase_postART"] & pop["bmiInt_effectiveness"]
         )
         pop.loc[pop["bmiInt_impacted"], "post_art_bmi"] = pop.loc[
             pop["bmiInt_impacted"], "pre_art_bmi"
@@ -240,12 +226,8 @@ def calculate_post_art_bmi(
     pop_future.loc[pop_future["age_cat"] > 7, "age_cat"] = 7
     pop["sqrtcd4_post"] = calculate_cd4_increase(pop_future, parameters)
 
-    pop["sqrtcd4_post_"] = restricted_cubic_spline_var(
-        pop["sqrtcd4_post"], t_sqrtcd4_post, 1
-    )
-    pop["sqrtcd4_post__"] = restricted_cubic_spline_var(
-        pop["sqrtcd4_post"], t_sqrtcd4_post, 2
-    )
+    pop["sqrtcd4_post_"] = restricted_cubic_spline_var(pop["sqrtcd4_post"], t_sqrtcd4_post, 1)
+    pop["sqrtcd4_post__"] = restricted_cubic_spline_var(pop["sqrtcd4_post"], t_sqrtcd4_post, 2)
 
     # Create the population matrix and perform the matrix multiplication
     pop_matrix = pop[
@@ -305,9 +287,7 @@ def calculate_pre_art_bmi(pop, parameters, random_state: np.random.RandomState):
     elif model == 5:
         pop["age_"] = restricted_cubic_spline_var(pop["init_age"], t_age, 1)
         pop["age__"] = restricted_cubic_spline_var(pop["init_age"], t_age, 2)
-        pop_matrix = pop[["init_age", "age_", "age__", "h1yy", "intercept"]].to_numpy(
-            dtype=float
-        )
+        pop_matrix = pop[["init_age", "age_", "age__", "h1yy", "intercept"]].to_numpy(dtype=float)
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
 
     elif model == 3:
@@ -341,9 +321,9 @@ def calculate_pre_art_bmi(pop, parameters, random_state: np.random.RandomState):
         pop["age__"] = (pop["init_age"] >= 40) & (pop["init_age"] < 50)
         pop["age___"] = (pop["init_age"] >= 50) & (pop["init_age"] < 60)
         pop["age____"] = pop["init_age"] >= 60
-        pop_matrix = pop[
-            ["age_", "age__", "age___", "age____", "h1yy", "intercept"]
-        ].to_numpy(dtype=float)
+        pop_matrix = pop[["age_", "age__", "age___", "age____", "h1yy", "intercept"]].to_numpy(
+            dtype=float
+        )
         log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
 
     log_pre_art_bmi = log_pre_art_bmi.T[0]

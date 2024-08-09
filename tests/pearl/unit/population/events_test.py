@@ -77,9 +77,7 @@ def expected_cd4_increase():
     )
 
 
-def test_calculate_cd4_increase(
-    test_cd4_increase_pop, test_parameters, expected_cd4_increase
-):
+def test_calculate_cd4_increase(test_cd4_increase_pop, test_parameters, expected_cd4_increase):
     """
     It should return the expected numbers
     """
@@ -117,9 +115,7 @@ def expected_cd4_decrease():
     )
 
 
-def test_calculate_cd4_decrease(
-    test_cd4_decrease_pop, test_parameters, expected_cd4_decrease
-):
+def test_calculate_cd4_decrease(test_cd4_decrease_pop, test_parameters, expected_cd4_decrease):
     """
     It should return the expected numbers
     """

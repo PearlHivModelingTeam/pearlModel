@@ -25,7 +25,5 @@ def restricted_quadratic_spline_var(x: pd.Series, t: np.array, i: int) -> pd.Ser
     """Return a pandas Series of the i'th restricted quadratic spline variable for numpy array x with knots t."""
     if i < 1 or i > 3:
         raise ValueError("i must be 1, 2, or 3")
-    y = (np.maximum(0, x - t[i - 1]) ** 2 - np.maximum(0, x - t[3]) ** 2) / (
-        t[3] - t[0]
-    )
+    y = (np.maximum(0, x - t[i - 1]) ** 2 - np.maximum(0, x - t[3]) ** 2) / (t[3] - t[0])
     return y

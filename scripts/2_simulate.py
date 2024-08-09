@@ -41,9 +41,7 @@ def run(group_name_run, replication_run, seed=None):
         flush=True,
     )
     Pearl(parameters, group_name_run, replication_run)
-    print(
-        f"simulation finished for {group_name_run},rep= {replication_run}", flush=True
-    )
+    print(f"simulation finished for {group_name_run},rep= {replication_run}", flush=True)
 
 
 if __name__ == "__main__":
@@ -98,9 +96,7 @@ if __name__ == "__main__":
     if sa_variables is None:
         for group_name_run in config["group_names"]:
             for replication_run in range(config["replications"]):
-                replication_run_str = str(replication_run).zfill(
-                    len(str(config["replications"]))
-                )
+                replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
                 out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"  # setting up the path name
                 output_folder = output_root_path / out_path
                 output_folder.mkdir(parents=True)
