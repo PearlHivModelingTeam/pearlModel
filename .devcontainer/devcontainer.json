@@ -22,8 +22,12 @@
 	"customizations": {
 		"vscode": {
       // Add the IDs of extensions you want installed when the container is created.
-      "extensions": ["ms-python.python",
-					 "ms-azuretools.vscode-docker"]
+      "extensions": [
+					"ms-python.python",
+					"ms-azuretools.vscode-docker",
+					"ms-toolsai.jupyter",
+					"github.vscode-github-actions"
+					]
     }
 	}
 

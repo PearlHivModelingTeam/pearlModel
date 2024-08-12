@@ -5,4 +5,4 @@ import nox
 def tests(session):
     session.conda_install("pytest", "pandas", "dask", "numpy", "scipy", "pytables")
     session.install(".")
-    session.run('pytest')
+    session.run("pytest")
