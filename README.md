@@ -79,9 +79,6 @@ A list of the sex, race, and hiv-acquisition groups to include in the simulation
 ### ``replications``
 Number of replications of each simulation to run with different seeds. Any positive integer.
 
-### ``comorbidity_flag``
-Flag indicating whether the simulation should include comorbidities, risk factors, and bmi. 0 or 1.
-
 ### ``new_dx``
 String indicating which set of parameters to use for number of new diagnoses. ``base``, ``ehe``, ``sa``. The alternate models correspond to models used in some previous papers.
 

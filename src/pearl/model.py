@@ -446,26 +446,25 @@ class Pearl:
         # Set status and initiate out of care variables
         population["status"] = ART_USER
 
-        # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
-        if self.parameters.comorbidity_flag:
-            # TODO remove all population.copy() calls
-            # Bmi
-            population["pre_art_bmi"] = calculate_pre_art_bmi(
-                population.copy(), self.parameters, self.random_state
-            )
-            population["post_art_bmi"] = calculate_post_art_bmi(
-                population.copy(), self.parameters, self.random_state
-            )
-            population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        # add bmi, comorbidity, and multimorbidity columns
+        
+        # Bmi
+        population["pre_art_bmi"] = calculate_pre_art_bmi(
+            population.copy(), self.parameters, self.random_state
+        )
+        population["post_art_bmi"] = calculate_post_art_bmi(
+            population.copy(), self.parameters, self.random_state
+        )
+        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
-            # Apply comorbidities
-            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
-                population[condition] = (
-                    self.random_state.rand(len(population.index))
-                    < self.parameters.prev_users_dict[condition].values
-                ).astype(int)
-                population[f"t_{condition}"] = np.array(0, dtype="int8")
-            population["mm"] = np.array(population[STAGE2 + STAGE3].sum(axis=1), dtype="int8")
+        # Apply comorbidities
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            population[condition] = (
+                self.random_state.rand(len(population.index))
+                < self.parameters.prev_users_dict[condition].values
+            ).astype(int)
+            population[f"t_{condition}"] = np.array(0, dtype="int8")
+        population["mm"] = np.array(population[STAGE2 + STAGE3].sum(axis=1), dtype="int8")
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
@@ -551,35 +550,35 @@ class Pearl:
         population["return_year"] = 2009 + years_out_of_care
         population["n_lost"] += 1
 
-        # If doing a comorbidity simulation, add bmi, comorbidity, and multimorbidity columns
-        if self.parameters.comorbidity_flag:
-            # Bmi
-            population["pre_art_bmi"] = calculate_pre_art_bmi(
-                population.copy(), self.parameters, random_state
-            )
-            population["post_art_bmi"] = calculate_post_art_bmi(
-                population.copy(), self.parameters, random_state
-            )
-            population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        # add bmi, comorbidity, and multimorbidity columns
+        
+        # Bmi
+        population["pre_art_bmi"] = calculate_pre_art_bmi(
+            population.copy(), self.parameters, random_state
+        )
+        population["post_art_bmi"] = calculate_post_art_bmi(
+            population.copy(), self.parameters, random_state
+        )
+        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
-            # Apply comorbidities
-            for condition in STAGE0:
-                population[condition] = (
-                    random_state.rand(len(population.index))
-                    < self.parameters.prev_users_dict[condition].values
-                ).astype(int)
-                population[f"t_{condition}"] = population[
-                    condition
-                ]  # 0 if not having a condition, and 1 if they have it
-            for condition in STAGE1 + STAGE2 + STAGE3:
-                population[condition] = (
-                    random_state.rand(len(population.index))
-                    < (self.parameters.prev_users_dict[condition].values)
-                ).astype(int)
-                population[f"t_{condition}"] = population[
-                    condition
-                ]  # 0 if not having a condition, and 1 if they have it
-            population["mm"] = population[STAGE2 + STAGE3].sum(axis=1)
+        # Apply comorbidities
+        for condition in STAGE0:
+            population[condition] = (
+                random_state.rand(len(population.index))
+                < self.parameters.prev_users_dict[condition].values
+            ).astype(int)
+            population[f"t_{condition}"] = population[
+                condition
+            ]  # 0 if not having a condition, and 1 if they have it
+        for condition in STAGE1 + STAGE2 + STAGE3:
+            population[condition] = (
+                random_state.rand(len(population.index))
+                < (self.parameters.prev_users_dict[condition].values)
+            ).astype(int)
+            population[f"t_{condition}"] = population[
+                condition
+            ]  # 0 if not having a condition, and 1 if they have it
+        population["mm"] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
@@ -702,55 +701,55 @@ class Pearl:
         population["year"] = 2009
 
         # Prevalence of existing comorbidities and BMI dynamics:
-        if self.parameters.comorbidity_flag:
-            # Pre-exisiting comorbidities:
-            for condition in STAGE0:
-                population[condition] = (
-                    random_state.rand(len(population.index))
-                    < self.parameters.prev_inits_dict[condition].values
-                ).astype(int)
-                population[f"t_{condition}"] = population[
-                    condition
-                ]  # 0 if not having a condition, and 1 if they have it
-            for condition in STAGE1 + STAGE2 + STAGE3:
-                population[condition] = (
-                    random_state.rand(len(population.index))
-                    < (self.parameters.prev_inits_dict[condition].values)
-                ).astype(int)
-                population[f"t_{condition}"] = population[
-                    condition
-                ]  # 0 if not having a condition, and 1 if they have it
-            population["mm"] = population[STAGE2 + STAGE3].sum(axis=1)
+        
+        # Pre-exisiting comorbidities:
+        for condition in STAGE0:
+            population[condition] = (
+                random_state.rand(len(population.index))
+                < self.parameters.prev_inits_dict[condition].values
+            ).astype(int)
+            population[f"t_{condition}"] = population[
+                condition
+            ]  # 0 if not having a condition, and 1 if they have it
+        for condition in STAGE1 + STAGE2 + STAGE3:
+            population[condition] = (
+                random_state.rand(len(population.index))
+                < (self.parameters.prev_inits_dict[condition].values)
+            ).astype(int)
+            population[f"t_{condition}"] = population[
+                condition
+            ]  # 0 if not having a condition, and 1 if they have it
+        population["mm"] = population[STAGE2 + STAGE3].sum(axis=1)
 
-            # pre- / post-ART BMI:
-            population["pre_art_bmi"] = calculate_pre_art_bmi(
-                population.copy(), self.parameters, random_state
-            )
-            population["post_art_bmi"] = calculate_post_art_bmi(
-                population.copy(), self.parameters, random_state
-            )
+        # pre- / post-ART BMI:
+        population["pre_art_bmi"] = calculate_pre_art_bmi(
+            population.copy(), self.parameters, random_state
+        )
+        population["post_art_bmi"] = calculate_post_art_bmi(
+            population.copy(), self.parameters, random_state
+        )
 
-            # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
-            if self.parameters.bmi_intervention:
-                population[
-                    [
-                        "bmiInt_scenario",
-                        "bmiInt_ineligible_dm",
-                        "bmiInt_ineligible_underweight",
-                        "bmiInt_ineligible_obese",
-                        "bmiInt_eligible",
-                        "bmiInt_received",
-                        "bmi_increase_postART",
-                        "bmi_increase_postART_over5p",
-                        "become_obese_postART",
-                        "bmiInt_impacted",
-                        "pre_art_bmi",
-                        "post_art_bmi_without_bmiInt",
-                        "post_art_bmi",
-                    ]
-                ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
+        # Apply post_art_bmi intervention (eligibility may depend on current exisiting comorbidities)
+        if self.parameters.bmi_intervention:
+            population[
+                [
+                    "bmiInt_scenario",
+                    "bmiInt_ineligible_dm",
+                    "bmiInt_ineligible_underweight",
+                    "bmiInt_ineligible_obese",
+                    "bmiInt_eligible",
+                    "bmiInt_received",
+                    "bmi_increase_postART",
+                    "bmi_increase_postART_over5p",
+                    "become_obese_postART",
+                    "bmiInt_impacted",
+                    "pre_art_bmi",
+                    "post_art_bmi_without_bmiInt",
+                    "post_art_bmi",
+                ]
+            ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
 
-            population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
@@ -767,9 +766,8 @@ class Pearl:
             self.increment_years()
 
             # Apply comorbidities
-            if self.parameters.comorbidity_flag:
-                self.apply_comorbidity_incidence()
-                self.update_mm()
+            self.apply_comorbidity_incidence()
+            self.update_mm()
 
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care
@@ -846,15 +844,12 @@ class Pearl:
         # Calculate death probability
         in_care = self.population["status"] == ART_USER
         pop = self.population.copy()
-        coeff_matrix = (
-            self.parameters.mortality_in_care_co.to_numpy(dtype=float)
-            if self.parameters.comorbidity_flag
-            else self.parameters.mortality_in_care.to_numpy(dtype=float)
-        )
+        coeff_matrix = self.parameters.mortality_in_care_co.to_numpy(dtype=float)
+
         pop_matrix = create_mortality_in_care_pop_matrix(
-            pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters
+            pop.copy(), parameters=self.parameters
         )
-        vcov_matrix = self.parameters.mortality_in_care_vcov.to_numpy(dtype=float)
+        
         pop["death_prob"] = calculate_prob(
             pop_matrix,
             coeff_matrix,
@@ -900,15 +895,12 @@ class Pearl:
         # Calculate death probability
         out_care = self.population["status"] == ART_NONUSER
         pop = self.population.copy()
-        coeff_matrix = (
-            self.parameters.mortality_out_care_co.to_numpy(dtype=float)
-            if self.parameters.comorbidity_flag
-            else self.parameters.mortality_out_care.to_numpy(dtype=float)
-        )
+        coeff_matrix = self.parameters.mortality_out_care_co.to_numpy(dtype=float)
+            
         pop_matrix = create_mortality_out_care_pop_matrix(
-            pop.copy(), self.parameters.comorbidity_flag, parameters=self.parameters
+            pop.copy(), parameters=self.parameters
         )
-        vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
+
         pop["death_prob"] = calculate_prob(
             pop_matrix,
             coeff_matrix
@@ -1163,162 +1155,161 @@ class Pearl:
         )
         self.stats.cd4_out_care = pd.concat([self.stats.cd4_out_care, cd4_out_care])
 
-        if self.parameters.comorbidity_flag:
-            for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
-                has_condition = self.population[condition] == 1
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            has_condition = self.population[condition] == 1
 
-                # Record prevalence for in care, out of care, initiator, and dead populations
-                prevalence_in_care = (
-                    self.population.loc[in_care & has_condition]
-                    .groupby(["age_cat"])
-                    .size()
-                    .reindex(index=self.parameters.AGE_CATS, fill_value=0)
-                    .reset_index(name="n")
-                    .assign(year=self.year, condition=condition)
-                )[["condition", "year", "age_cat", "n"]].astype(
-                    {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
-                )
-                self.stats.prevalence_in_care = pd.concat(
-                    [self.stats.prevalence_in_care, prevalence_in_care]
-                )
-                prevalence_out_care = (
-                    self.population.loc[out_care & has_condition]
-                    .groupby(["age_cat"])
-                    .size()
-                    .reindex(index=self.parameters.AGE_CATS, fill_value=0)
-                    .reset_index(name="n")
-                    .assign(year=self.year, condition=condition)
-                )[["condition", "year", "age_cat", "n"]].astype(
-                    {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
-                )
-                self.stats.prevalence_out_care = pd.concat(
-                    [self.stats.prevalence_out_care, prevalence_out_care]
-                )
-                prevalence_inits = (
-                    self.population.loc[initiating & has_condition]
-                    .groupby(["age_cat"])
-                    .size()
-                    .reindex(index=self.parameters.AGE_CATS, fill_value=0)
-                    .reset_index(name="n")
-                    .assign(year=self.year, condition=condition)
-                )[["condition", "year", "age_cat", "n"]].astype(
-                    {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
-                )
-                self.stats.prevalence_inits = pd.concat(
-                    [self.stats.prevalence_inits, prevalence_inits]
-                )
-                prevalence_dead = (
-                    self.population.loc[dying & has_condition]
-                    .groupby(["age_cat"])
-                    .size()
-                    .reindex(index=self.parameters.AGE_CATS, fill_value=0)
-                    .reset_index(name="n")
-                    .assign(year=self.year, condition=condition)
-                )[["condition", "year", "age_cat", "n"]].astype(
-                    {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
-                )
-                self.stats.prevalence_dead = pd.concat(
-                    [self.stats.prevalence_dead, prevalence_dead]
-                )
-
-            # Record the multimorbidity information for the in care, out of care, initiating, and dead populations
-            mm_in_care = (
-                self.population.loc[in_care]
-                .groupby(["age_cat", "mm"])
+            # Record prevalence for in care, out of care, initiator, and dead populations
+            prevalence_in_care = (
+                self.population.loc[in_care & has_condition]
+                .groupby(["age_cat"])
                 .size()
-                .reindex(
-                    index=pd.MultiIndex.from_product(
-                        [self.parameters.AGE_CATS, np.arange(0, 8)],
-                        names=["age_cat", "mm"],
-                    ),
-                    fill_value=0,
-                )
+                .reindex(index=self.parameters.AGE_CATS, fill_value=0)
                 .reset_index(name="n")
-                .assign(year=self.year)
-            )[["year", "age_cat", "mm", "n"]].astype(
-                {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+                .assign(year=self.year, condition=condition)
+            )[["condition", "year", "age_cat", "n"]].astype(
+                {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
             )
-            self.stats.mm_in_care = pd.concat([self.stats.mm_in_care, mm_in_care])
-            mm_out_care = (
-                self.population.loc[out_care]
-                .groupby(["age_cat", "mm"])
+            self.stats.prevalence_in_care = pd.concat(
+                [self.stats.prevalence_in_care, prevalence_in_care]
+            )
+            prevalence_out_care = (
+                self.population.loc[out_care & has_condition]
+                .groupby(["age_cat"])
                 .size()
-                .reindex(
-                    index=pd.MultiIndex.from_product(
-                        [self.parameters.AGE_CATS, np.arange(0, 8)],
-                        names=["age_cat", "mm"],
-                    ),
-                    fill_value=0,
-                )
+                .reindex(index=self.parameters.AGE_CATS, fill_value=0)
                 .reset_index(name="n")
-                .assign(year=self.year)
-            )[["year", "age_cat", "mm", "n"]].astype(
-                {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+                .assign(year=self.year, condition=condition)
+            )[["condition", "year", "age_cat", "n"]].astype(
+                {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
             )
-            self.stats.mm_out_care = pd.concat([self.stats.mm_out_care, mm_out_care])
-            mm_inits = (
-                self.population.loc[initiating]
-                .groupby(["age_cat", "mm"])
+            self.stats.prevalence_out_care = pd.concat(
+                [self.stats.prevalence_out_care, prevalence_out_care]
+            )
+            prevalence_inits = (
+                self.population.loc[initiating & has_condition]
+                .groupby(["age_cat"])
                 .size()
-                .reindex(
-                    index=pd.MultiIndex.from_product(
-                        [self.parameters.AGE_CATS, np.arange(0, 8)],
-                        names=["age_cat", "mm"],
-                    ),
-                    fill_value=0,
-                )
+                .reindex(index=self.parameters.AGE_CATS, fill_value=0)
                 .reset_index(name="n")
-                .assign(year=self.year)
-            )[["year", "age_cat", "mm", "n"]].astype(
-                {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+                .assign(year=self.year, condition=condition)
+            )[["condition", "year", "age_cat", "n"]].astype(
+                {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
             )
-            self.stats.mm_inits = pd.concat([self.stats.mm_inits, mm_inits])
-            mm_dead = (
-                self.population.loc[dying]
-                .groupby(["age_cat", "mm"])
+            self.stats.prevalence_inits = pd.concat(
+                [self.stats.prevalence_inits, prevalence_inits]
+            )
+            prevalence_dead = (
+                self.population.loc[dying & has_condition]
+                .groupby(["age_cat"])
                 .size()
-                .reindex(
-                    index=pd.MultiIndex.from_product(
-                        [self.parameters.AGE_CATS, np.arange(0, 8)],
-                        names=["age_cat", "mm"],
-                    ),
-                    fill_value=0,
-                )
+                .reindex(index=self.parameters.AGE_CATS, fill_value=0)
                 .reset_index(name="n")
-                .assign(year=self.year)
-            )[["year", "age_cat", "mm", "n"]].astype(
-                {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+                .assign(year=self.year, condition=condition)
+            )[["condition", "year", "age_cat", "n"]].astype(
+                {"condition": str, "year": "int16", "age_cat": "int8", "n": "int32"}
             )
-            self.stats.mm_dead = pd.concat([self.stats.mm_dead, mm_dead])
-
-            # Record the detailed comorbidity information
-            mm_detail_in_care = create_mm_detail_stats(self.population.loc[in_care].copy())
-            mm_detail_in_care = mm_detail_in_care.assign(year=self.year)[
-                ["year", "multimorbidity", "n"]
-            ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
-            self.stats.mm_detail_in_care = pd.concat(
-                [self.stats.mm_detail_in_care, mm_detail_in_care]
+            self.stats.prevalence_dead = pd.concat(
+                [self.stats.prevalence_dead, prevalence_dead]
             )
 
-            mm_detail_out_care = create_mm_detail_stats(self.population.loc[out_care].copy())
-            mm_detail_out_care = mm_detail_out_care.assign(year=self.year)[
-                ["year", "multimorbidity", "n"]
-            ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
-            self.stats.mm_detail_out_care = pd.concat(
-                [self.stats.mm_detail_out_care, mm_detail_out_care]
+        # Record the multimorbidity information for the in care, out of care, initiating, and dead populations
+        mm_in_care = (
+            self.population.loc[in_care]
+            .groupby(["age_cat", "mm"])
+            .size()
+            .reindex(
+                index=pd.MultiIndex.from_product(
+                    [self.parameters.AGE_CATS, np.arange(0, 8)],
+                    names=["age_cat", "mm"],
+                ),
+                fill_value=0,
             )
+            .reset_index(name="n")
+            .assign(year=self.year)
+        )[["year", "age_cat", "mm", "n"]].astype(
+            {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+        )
+        self.stats.mm_in_care = pd.concat([self.stats.mm_in_care, mm_in_care])
+        mm_out_care = (
+            self.population.loc[out_care]
+            .groupby(["age_cat", "mm"])
+            .size()
+            .reindex(
+                index=pd.MultiIndex.from_product(
+                    [self.parameters.AGE_CATS, np.arange(0, 8)],
+                    names=["age_cat", "mm"],
+                ),
+                fill_value=0,
+            )
+            .reset_index(name="n")
+            .assign(year=self.year)
+        )[["year", "age_cat", "mm", "n"]].astype(
+            {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+        )
+        self.stats.mm_out_care = pd.concat([self.stats.mm_out_care, mm_out_care])
+        mm_inits = (
+            self.population.loc[initiating]
+            .groupby(["age_cat", "mm"])
+            .size()
+            .reindex(
+                index=pd.MultiIndex.from_product(
+                    [self.parameters.AGE_CATS, np.arange(0, 8)],
+                    names=["age_cat", "mm"],
+                ),
+                fill_value=0,
+            )
+            .reset_index(name="n")
+            .assign(year=self.year)
+        )[["year", "age_cat", "mm", "n"]].astype(
+            {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+        )
+        self.stats.mm_inits = pd.concat([self.stats.mm_inits, mm_inits])
+        mm_dead = (
+            self.population.loc[dying]
+            .groupby(["age_cat", "mm"])
+            .size()
+            .reindex(
+                index=pd.MultiIndex.from_product(
+                    [self.parameters.AGE_CATS, np.arange(0, 8)],
+                    names=["age_cat", "mm"],
+                ),
+                fill_value=0,
+            )
+            .reset_index(name="n")
+            .assign(year=self.year)
+        )[["year", "age_cat", "mm", "n"]].astype(
+            {"year": "int16", "age_cat": "int8", "mm": "int16", "n": "int32"}
+        )
+        self.stats.mm_dead = pd.concat([self.stats.mm_dead, mm_dead])
 
-            mm_detail_inits = create_mm_detail_stats(self.population.loc[initiating].copy())
-            mm_detail_inits = mm_detail_inits.assign(year=self.year)[
-                ["year", "multimorbidity", "n"]
-            ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
-            self.stats.mm_detail_inits = pd.concat([self.stats.mm_detail_inits, mm_detail_inits])
+        # Record the detailed comorbidity information
+        mm_detail_in_care = create_mm_detail_stats(self.population.loc[in_care].copy())
+        mm_detail_in_care = mm_detail_in_care.assign(year=self.year)[
+            ["year", "multimorbidity", "n"]
+        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+        self.stats.mm_detail_in_care = pd.concat(
+            [self.stats.mm_detail_in_care, mm_detail_in_care]
+        )
 
-            mm_detail_dead = create_mm_detail_stats(self.population.loc[dying].copy())
-            mm_detail_dead = mm_detail_dead.assign(year=self.year)[
-                ["year", "multimorbidity", "n"]
-            ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
-            self.stats.mm_detail_dead = pd.concat([self.stats.mm_detail_dead, mm_detail_dead])
+        mm_detail_out_care = create_mm_detail_stats(self.population.loc[out_care].copy())
+        mm_detail_out_care = mm_detail_out_care.assign(year=self.year)[
+            ["year", "multimorbidity", "n"]
+        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+        self.stats.mm_detail_out_care = pd.concat(
+            [self.stats.mm_detail_out_care, mm_detail_out_care]
+        )
+
+        mm_detail_inits = create_mm_detail_stats(self.population.loc[initiating].copy())
+        mm_detail_inits = mm_detail_inits.assign(year=self.year)[
+            ["year", "multimorbidity", "n"]
+        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+        self.stats.mm_detail_inits = pd.concat([self.stats.mm_detail_inits, mm_detail_inits])
+
+        mm_detail_dead = create_mm_detail_stats(self.population.loc[dying].copy())
+        mm_detail_dead = mm_detail_dead.assign(year=self.year)[
+            ["year", "multimorbidity", "n"]
+        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+        self.stats.mm_detail_dead = pd.concat([self.stats.mm_detail_dead, mm_detail_dead])
 
     def record_final_stats(self):
         """all of these are summarized as frequency of events at different tiers, where the last column in the dataset is n"""
@@ -1502,46 +1493,44 @@ class Pearl:
             .astype({"cd4_count": "int16", "n": "int32"})
         )
 
-        if self.parameters.comorbidity_flag:
-            pre_art_bmi = self.population[["pre_art_bmi", "h1yy"]].round(0).astype(int)
-            pre_art_bmi = pre_art_bmi.groupby(["h1yy", "pre_art_bmi"]).size()
-            self.stats.pre_art_bmi = (
-                pre_art_bmi.reset_index(name="n")
-                .rename(columns={"h1yy": "year"})
-                .astype({"year": "int16", "pre_art_bmi": "int8", "n": "int32"})
-            )
+        pre_art_bmi = self.population[["pre_art_bmi", "h1yy"]].round(0).astype(int)
+        pre_art_bmi = pre_art_bmi.groupby(["h1yy", "pre_art_bmi"]).size()
+        self.stats.pre_art_bmi = (
+            pre_art_bmi.reset_index(name="n")
+            .rename(columns={"h1yy": "year"})
+            .astype({"year": "int16", "pre_art_bmi": "int8", "n": "int32"})
+        )
 
-            post_art_bmi = self.population[
-                ["post_art_bmi", "h1yy", "pre_art_bmi", "bmiInt_scenario"]
-            ]
+        post_art_bmi = self.population[
+            ["post_art_bmi", "h1yy", "pre_art_bmi", "bmiInt_scenario"]
+        ]
 
-            # post_art_bmi are break into categories instead of report the exactly number of BMI
-            post_art_bmi.assign(pre_bmi_cat=np.array(1, dtype="int8"))
-            post_art_bmi.loc[post_art_bmi["pre_art_bmi"] < 18.5, "pre_bmi_cat"] = np.array(
-                0, dtype="int8"
-            )
-            post_art_bmi.loc[post_art_bmi["pre_art_bmi"] >= 30, "pre_bmi_cat"] = np.array(
-                2, dtype="int8"
-            )
+        # post_art_bmi are break into categories instead of report the exactly number of BMI
+        post_art_bmi.assign(pre_bmi_cat=np.array(1, dtype="int8"))
+        post_art_bmi.loc[post_art_bmi["pre_art_bmi"] < 18.5, "pre_bmi_cat"] = np.array(
+            0, dtype="int8"
+        )
+        post_art_bmi.loc[post_art_bmi["pre_art_bmi"] >= 30, "pre_bmi_cat"] = np.array(
+            2, dtype="int8"
+        )
 
-            post_art_bmi.assign(post_bmi_cat=np.array(1, dtype="int8"))
-            post_art_bmi.loc[post_art_bmi["post_art_bmi"] < 18.5, "post_bmi_cat"] = np.array(
-                0, dtype="int8"
-            )
-            post_art_bmi.loc[post_art_bmi["post_art_bmi"] >= 30, "post_bmi_cat"] = np.array(
-                2, dtype="int8"
-            )
+        post_art_bmi.assign(post_bmi_cat=np.array(1, dtype="int8"))
+        post_art_bmi.loc[post_art_bmi["post_art_bmi"] < 18.5, "post_bmi_cat"] = np.array(
+            0, dtype="int8"
+        )
+        post_art_bmi.loc[post_art_bmi["post_art_bmi"] >= 30, "post_bmi_cat"] = np.array(
+            2, dtype="int8"
+        )
 
-            post_art_bmi = post_art_bmi.groupby(
-                ["bmiInt_scenario", "h1yy", "post_bmi_cat", "pre_bmi_cat"]
-            ).size()
+        post_art_bmi = post_art_bmi.groupby(
+            ["bmiInt_scenario", "h1yy", "post_bmi_cat", "pre_bmi_cat"]
+        ).size()
 
-            self.stats.post_art_bmi = (
-                post_art_bmi.reset_index(name="n")
-                .rename(columns={"h1yy": "year"})
-                .astype({"n": "int32"})
-            )
-
+        self.stats.post_art_bmi = (
+            post_art_bmi.reset_index(name="n")
+            .rename(columns={"h1yy": "year"})
+            .astype({"n": "int32"})
+        )
 
 ###############################################################################
 # Parameter and Statistics Classes                                            #
@@ -1557,7 +1546,6 @@ class Parameters:
         rerun_folder: Path,
         output_folder: Path,
         group_name: str,
-        comorbidity_flag: bool,
         new_dx: str,
         final_year: int,
         mortality_model: str,
@@ -1583,7 +1571,6 @@ class Parameters:
         self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.group_name = group_name
-        self.comorbidity_flag = comorbidity_flag
         self.final_year = final_year
         self.mortality_threshold_flag = mortality_threshold_flag
         self.verbose = verbose

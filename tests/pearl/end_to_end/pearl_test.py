@@ -14,7 +14,6 @@ from pearl.model import Parameters, Pearl
 @fixture
 def config():
     config = {
-        "comorbidity_flag": 1,
         "new_dx": "base",
         "final_year": 2012,
         "mortality_model": "by_sex_race_risk",
@@ -52,7 +51,6 @@ def parameter(param_file_path, output_folder, config):
         rerun_folder=None,
         output_folder=output_folder,
         group_name="msm_black_male",
-        comorbidity_flag=config["comorbidity_flag"],
         new_dx=config["new_dx"],
         final_year=config["final_year"],
         mortality_model=config["mortality_model"],

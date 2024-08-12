@@ -21,7 +21,6 @@ def run(group_name_run, replication_run, seed=None):
         rerun_folder=rerun_folder,
         output_folder=output_folder,
         group_name=group_name_run,
-        comorbidity_flag=config["comorbidity_flag"],
         new_dx=config["new_dx"],
         final_year=config["final_year"],
         mortality_model=config["mortality_model"],

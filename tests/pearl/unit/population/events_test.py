@@ -53,7 +53,6 @@ def test_parameters(param_file_path):
         rerun_folder=None,
         output_folder=None,
         group_name="msm_black_male",
-        comorbidity_flag=1,
         new_dx="base",
         final_year=2015,
         mortality_model="by_sex_race_risk",

@@ -5,130 +5,78 @@ from pearl.interpolate import (restricted_cubic_spline_var,
                                restricted_quadratic_spline_var)
 
 
-def create_mortality_in_care_pop_matrix(pop, comorbidity_flag, parameters):
+def create_mortality_in_care_pop_matrix(pop, parameters):
     """Return the population matrix as a numpy array for calculating mortality in care. This log odds of mortality are a linear function of calendar year,
     ART init year category modeled as two binary variables, and age and sqrt initial cd4 count modeled as restricted cubic splines. If using comorbidities,
     log odds of mortality are a linear function of calendar year, age category, initial cd4 count, delta bmi and post art bmi modeled as restricted cubic
     splines, and presence of each individual comorbidity modeled as binary variables.
     """
-    if comorbidity_flag:
-        pop["post_art_bmi_"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 1
-        )
-        pop["post_art_bmi__"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 2
-        )
-        return pop[
-            [
-                "age_cat",
-                "anx",
-                "post_art_bmi",
-                "post_art_bmi_",
-                "post_art_bmi__",
-                "ckd",
-                "dm",
-                "dpr",
-                "esld",
-                "h1yy",
-                "hcv",
-                "ht",
-                "intercept",
-                "lipid",
-                "malig",
-                "mi",
-                "smoking",
-                "init_sqrtcd4n",
-                "year",
-            ]
-        ].to_numpy(dtype=float)
-    else:
-        pop["age_"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_in_care_age, 1)
-        pop["age__"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_in_care_age, 2)
-        pop["h1yy_cat_1"] = 0
-        pop["h1yy_cat_2"] = 0
-        pop.loc[pop["h1yy"].isin(np.arange(2009, 2013)), "h1yy_cat_1"] = 1
-        pop.loc[pop["h1yy"] >= 2013, "h1yy_cat_2"] = 1
-        pop["init_sqrtcd4n_"] = restricted_cubic_spline_var(
-            pop["init_sqrtcd4n"], parameters.mortality_in_care_sqrtcd4, 1
-        )
-        pop["init_sqrtcd4n__"] = restricted_cubic_spline_var(
-            pop["init_sqrtcd4n"], parameters.mortality_in_care_sqrtcd4, 2
-        )
-        return pop[
-            [
-                "intercept",
-                "year",
-                "age",
-                "age_",
-                "age__",
-                "init_sqrtcd4n",
-                "init_sqrtcd4n_",
-                "init_sqrtcd4n__",
-                "h1yy_cat_1",
-                "h1yy_cat_2",
-            ]
-        ].to_numpy(dtype=float)
+    
+    pop["post_art_bmi_"] = restricted_cubic_spline_var(
+        pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 1
+    )
+    pop["post_art_bmi__"] = restricted_cubic_spline_var(
+        pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 2
+    )
+    return pop[
+        [
+            "age_cat",
+            "anx",
+            "post_art_bmi",
+            "post_art_bmi_",
+            "post_art_bmi__",
+            "ckd",
+            "dm",
+            "dpr",
+            "esld",
+            "h1yy",
+            "hcv",
+            "ht",
+            "intercept",
+            "lipid",
+            "malig",
+            "mi",
+            "smoking",
+            "init_sqrtcd4n",
+            "year",
+        ]
+    ].to_numpy(dtype=float)
 
-
-def create_mortality_out_care_pop_matrix(pop, comorbidity_flag, parameters):
+def create_mortality_out_care_pop_matrix(pop, parameters):
     """Return the population matrix as a numpy array for calculating mortality out of care. This log odds of mortality are a linear function of calendar
     year and age and sqrt cd4 count modeled as restricted cubic splines. If using comorbidities, log odds of mortality are a linear function of calendar
     year, age category, sqrt cd4 count, delta bmi and post art bmi modeled as restricted cubic splines, and presence of each individual comorbidity modeled
     as binary variables.
     """
-    if comorbidity_flag:
-        pop["post_art_bmi_"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 1
-        )
-        pop["post_art_bmi__"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 2
-        )
-        return pop[
-            [
-                "age_cat",
-                "anx",
-                "post_art_bmi",
-                "post_art_bmi_",
-                "post_art_bmi__",
-                "ckd",
-                "dm",
-                "dpr",
-                "esld",
-                "hcv",
-                "ht",
-                "intercept",
-                "lipid",
-                "malig",
-                "mi",
-                "smoking",
-                "time_varying_sqrtcd4n",
-                "year",
-            ]
-        ].to_numpy(dtype=float)
-    else:
-        pop["age_"] = restricted_cubic_spline_var(pop["age"], parameters.mortality_out_care_age, 1)
-        pop["age__"] = restricted_cubic_spline_var(
-            pop["age"], parameters.mortality_out_care_age, 2
-        )
-        pop["time_varying_sqrtcd4n_"] = restricted_cubic_spline_var(
-            pop["time_varying_sqrtcd4n"], parameters.mortality_out_care_tv_sqrtcd4, 1
-        )
-        pop["time_varying_sqrtcd4n__"] = restricted_cubic_spline_var(
-            pop["time_varying_sqrtcd4n"], parameters.mortality_out_care_tv_sqrtcd4, 2
-        )
-        return pop[
-            [
-                "intercept",
-                "year",
-                "age",
-                "age_",
-                "age__",
-                "time_varying_sqrtcd4n",
-                "time_varying_sqrtcd4n_",
-                "time_varying_sqrtcd4n__",
-            ]
-        ].to_numpy(dtype=float)
 
+    pop["post_art_bmi_"] = restricted_cubic_spline_var(
+        pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 1
+    )
+    pop["post_art_bmi__"] = restricted_cubic_spline_var(
+        pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 2
+    )
+    return pop[
+        [
+            "age_cat",
+            "anx",
+            "post_art_bmi",
+            "post_art_bmi_",
+            "post_art_bmi__",
+            "ckd",
+            "dm",
+            "dpr",
+            "esld",
+            "hcv",
+            "ht",
+            "intercept",
+            "lipid",
+            "malig",
+            "mi",
+            "smoking",
+            "time_varying_sqrtcd4n",
+            "year",
+        ]
+    ].to_numpy(dtype=float)
 
 def calculate_cd4_increase(pop, parameters):
     """Return new cd4 count of the given population as calculated via a linear function of time since art initiation modeled as a spline, initial
