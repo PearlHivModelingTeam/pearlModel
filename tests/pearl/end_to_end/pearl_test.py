@@ -5,6 +5,7 @@ from pathlib import Path
 import dask
 import pandas as pd
 from dask import delayed
+from pandas.testing import assert_frame_equal
 from pytest import fixture
 
 from pearl.model import Parameters, Pearl
@@ -81,12 +82,11 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
-        assert expected_population.equals(result_population)
+        assert_frame_equal(result_population, expected_population)
     except Exception as e:
-        shutil.rmtree(output_folder)
         raise e
-
-    shutil.rmtree(output_folder)
+    finally:
+        shutil.rmtree(output_folder)
 
 
 def test_pearl_multi_threaded(parameter, expected_population, output_folder):
@@ -106,7 +106,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
-        assert expected_population.equals(result_population)
+        assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
     finally:

@@ -39,6 +39,7 @@ POPULATION_TYPE_DICT = {
     "t_smoking": "int16",
     "year": "int16",
     "years_out": "int16",
+    "intercept" : "int8"
 }
 
 # Status Constants

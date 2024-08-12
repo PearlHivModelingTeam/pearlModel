@@ -35,82 +35,6 @@ pd.set_option("display.width", 1000)
 pd.options.mode.chained_assignment = None  # default='warn'
 
 ##########################
-# Sensitivity analysis default values
-sa_type1_var = [
-    "lambda1",
-    "mu1",
-    "mu2",
-    "sigma1",
-    "sigma2",
-    "mortality_in_care",
-    "mortality_out_care",
-    "loss_to_follow_up",
-    "cd4_increase",
-    "cd4_decrease",
-    "new_pop_size",
-]
-sa_type1_default_dict = {i: j for i, j in zip(sa_type1_var, len(sa_type1_var) * [None])}
-
-sa_type2_var = [
-    "users_2009_n",
-    "users_2009_age",
-    "users_2009_cd4",
-    "nonusers_2009_n",
-    "nonusers_2009_age",
-    "nonusers_2009_cd4",
-    "initiators_n",
-    "initiators_age",
-    "initiators_cd4",
-    "disengagement",
-    "reengagement",
-    "mortality_in_care",
-    "mortality_out_care",
-    "cd4_increase",
-    "cd4_decrease",
-]
-sa_type2_default_dict = {i: j for i, j in zip(sa_type2_var, len(sa_type2_var) * [1.0])}
-
-sa_aim2_var = STAGE1 + STAGE2 + STAGE3
-sa_aim2_default_dict = {i: j for i, j in zip(sa_aim2_var, len(sa_aim2_var) * [1.0])}
-
-sa_aim2_mort_var = ["mortality_in_care", "mortality_out_care"]
-sa_aim2_mort_default_dict = {i: j for i, j in zip(sa_aim2_mort_var, len(sa_aim2_mort_var) * [1.0])}
-
-
-def create_template_df(df, target_col=None):
-    # First get target cols
-    column_list = [col for col in df.columns if col != target_col]
-    col_dict = {}
-    for col in column_list:
-        col_dict[col] = list(df[col].unique())
-
-    if "init_age_group" in col_dict.keys():
-        col_dict["init_age_group"] = np.arange(0, 7)
-
-    # Calculating the Cartesian product of all values
-    product_of_values = list(itertools.product(*[value for value in col_dict.values()]))
-
-    # Creating DataFrame from the product
-    column_names = list(col_dict.keys())
-    template_df = pd.DataFrame(product_of_values, columns=column_names)
-
-    template_df[target_col] = 0
-
-    return template_df
-
-
-def match_template_and_data(template_df, data_df, columns_to_match=[], target_col=None):
-    # Perform a left join
-    result_df = pd.merge(
-        template_df, data_df, on=columns_to_match, suffixes=("_temp", ""), how="left"
-    )
-    result_df = result_df.fillna(0)
-
-    # form a final output column
-    result_df = result_df.drop(columns=[target_col + "_temp"])
-
-    return result_df
-
 
 def make_binary(x, n):
     """Return a binary representation of a decimal number x with n digits"""
@@ -141,7 +65,6 @@ def create_mm_detail_stats(pop):
     # Count how many people have each unique set of comorbidities
     df = df.groupby(["multimorbidity"]).size().reset_index(name="n")
     return df
-
 
 # All code above this line should be removed
 #################################
@@ -333,25 +256,12 @@ def create_ltfu_pop_matrix(pop, knots):
     ].to_numpy(dtype=float)
 
 
-def calculate_prob(pop, coeffs, sa, vcov):
+def calculate_prob(pop, coeffs):
     """Calculate and return a numpy array of individual probabilities from logistic regression given the population and coefficient matrices.
     Used for multiple logistic regression functions.
     """
     # Calculate log odds using a matrix multiplication
     log_odds = np.matmul(pop, coeffs)
-
-    if sa is not None:
-        # Calculate variance of prediction using matrix multiplication
-        a = np.matmul(pop, vcov)
-
-        b = a * pop
-        c = np.sum(b, axis=1)
-
-        se = np.sqrt(c)
-        if sa == "low":
-            log_odds = log_odds - (1.96 * se)
-        elif sa == "high":
-            log_odds = log_odds + (1.96 * se)
 
     # Convert to probability
     prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
@@ -372,10 +282,10 @@ class Pearl:
         self.replication = replication
         self.year = 2009
         self.parameters = parameters
-        if self.parameters.seed:
+        if self.parameters.seed is not None:
             self.random_state = np.random.RandomState(seed=self.parameters.seed)
         else:
-            self.random_state = np.random.RandomState(seed=None)
+            raise ValueError("Parameter should have a seed property")
 
         with Path.open(self.parameters.output_folder / "random.state", "w") as state_file:
             state_file.write(str(self.parameters.seed))
@@ -385,8 +295,6 @@ class Pearl:
             output_folder=self.parameters.output_folder,
             group_name=group_name,
             replication=replication,
-            comorbidity_flag=self.parameters.comorbidity_flag,
-            sa_type=self.parameters.sa_type,
         )
 
         # Simulate number of new art initiators and initial nonusers
@@ -478,15 +386,9 @@ class Pearl:
 
         # Draw ages from the truncated mixed gaussian
         n_initial_users = self.parameters.on_art_2009.iloc[0]
-        n_initial_users = int(
-            self.parameters.sa_type2_dict["users_2009_n"] * n_initial_users
-        )  # Sensitivity analysis
         population["age"] = simulate_ages(
             self.parameters.age_in_2009, n_initial_users, self.random_state
         )
-        population["age"] = (
-            self.parameters.sa_type2_dict["users_2009_age"] * population["age"]
-        )  # Sensitivity analysis
         population.loc[population["age"] < 18, "age"] = 18
         population.loc[population["age"] > 85, "age"] = 85
 
@@ -519,12 +421,6 @@ class Pearl:
             )
             population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
         population = population.reset_index().set_index("id").sort_index()
-
-        # Sensitivity Analysis
-        population["init_sqrtcd4n"] = np.sqrt(
-            self.parameters.sa_type2_dict["users_2009_cd4"]
-            * np.power(population["init_sqrtcd4n"], 2)
-        )
 
         # Toss out age_cat < 2
         population.loc[population["age_cat"] < 2, "age_cat"] = 2
@@ -574,20 +470,6 @@ class Pearl:
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
 
-        # Record classic one-way sa input
-        sa_initial_cd4_in_care = pd.DataFrame(
-            data={
-                "mean_cd4": (population["init_sqrtcd4n"] ** 2).mean(),
-                "n": len(population),
-            },
-            index=[0],
-        ).astype({"n": "int32"})
-        self.stats.sa_initial_cd4_in_care = pd.concat(
-            [self.stats.sa_initial_cd4_in_care, sa_initial_cd4_in_care],
-            ignore_index=True,
-        )
-
-        # TODO figure out what intercept, does and type it
         population = population.astype(POPULATION_TYPE_DICT)
 
         return population
@@ -602,15 +484,9 @@ class Pearl:
         population = pd.DataFrame()
 
         # Draw ages from the truncated mixed gaussian
-        n_initial_nonusers = int(
-            self.parameters.sa_type2_dict["nonusers_2009_n"] * n_initial_nonusers
-        )  # Sensitivity analysis
         population["age"] = simulate_ages(
             self.parameters.age_in_2009, n_initial_nonusers, random_state
         )
-        population["age"] = (
-            self.parameters.sa_type2_dict["nonusers_2009_age"] * population["age"]
-        )  # Sensitivity analysis
         population.loc[population["age"] < 18, "age"] = 18
         population.loc[population["age"] > 85, "age"] = 85
 
@@ -641,12 +517,6 @@ class Pearl:
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size, random_state)
             population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
         population = population.reset_index().set_index("id").sort_index()
-
-        # Sensitivity Analysis
-        population["init_sqrtcd4n"] = np.sqrt(
-            self.parameters.sa_type2_dict["nonusers_2009_cd4"]
-            * np.power(population["init_sqrtcd4n"], 2)
-        )
 
         # Toss out age_cat < 2
         population.loc[population["age_cat"] < 2, "age_cat"] = 2
@@ -705,7 +575,6 @@ class Pearl:
                 population[condition] = (
                     random_state.rand(len(population.index))
                     < (self.parameters.prev_users_dict[condition].values)
-                    * self.parameters.sa_aim2_prev_dict[condition]
                 ).astype(int)
                 population[f"t_{condition}"] = population[
                     condition
@@ -714,20 +583,7 @@ class Pearl:
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
-
-        # Record classic one-way sa input
-        sa_initial_cd4_out_care = pd.DataFrame(
-            data={
-                "mean_cd4": (population["init_sqrtcd4n"] ** 2).mean(),
-                "n": len(population),
-            },
-            index=[0],
-        ).astype({"n": "int32"})
-        self.stats.sa_initial_cd4_out_care = pd.concat(
-            [self.stats.sa_initial_cd4_out_care, sa_initial_cd4_out_care],
-            ignore_index=True,
-        )
-
+        
         population = population.astype(POPULATION_TYPE_DICT)
 
         return population
@@ -778,10 +634,6 @@ class Pearl:
         # Create population
         population = pd.DataFrame()
 
-        n_new_agents = (self.parameters.sa_type2_dict["initiators_n"] * n_new_agents).astype(
-            int
-        )  # Sensitivity analysis
-
         # Generate ages and art status for each new initiator based on year of initiation
         for h1yy in self.parameters.age_by_h1yy.index.levels[0]:
             grouped_pop = pd.DataFrame()
@@ -798,9 +650,6 @@ class Pearl:
             grouped_pop.loc[delayed, "status"] = DELAYED
             population = pd.concat([population, grouped_pop])
 
-        population["age"] = (
-            self.parameters.sa_type2_dict["initiators_age"] * population["age"]
-        )  # Sensitivity analysis
         population.loc[population["age"] < 18, "age"] = 18
         population.loc[population["age"] > 85, "age"] = 85
 
@@ -838,12 +687,6 @@ class Pearl:
 
         population = population.reset_index().set_index("id").sort_index()
 
-        # Sensitivity Analysis
-        population["init_sqrtcd4n"] = np.sqrt(
-            self.parameters.sa_type2_dict["initiators_cd4"]
-            * np.power(population["init_sqrtcd4n"], 2)
-        )
-
         # Calculate time varying cd4 count and other needed variables
         population["last_h1yy"] = population["h1yy"]
         population["time_varying_sqrtcd4n"] = population["init_sqrtcd4n"]
@@ -873,7 +716,6 @@ class Pearl:
                 population[condition] = (
                     random_state.rand(len(population.index))
                     < (self.parameters.prev_inits_dict[condition].values)
-                    * self.parameters.sa_aim2_prev_dict[condition]
                 ).astype(int)
                 population[f"t_{condition}"] = population[
                     condition
@@ -912,16 +754,6 @@ class Pearl:
 
         # Sort columns alphabetically
         population = population.reindex(sorted(population), axis=1)
-
-        # Record classic one-way sa input
-        sa_initial_cd4_inits = (
-            population.groupby("h1yy")["init_sqrtcd4n"]
-            .agg(mean_cd4=lambda x: (x**2).mean(), n="size")
-            .astype({"n": "int32"})
-        )
-        self.stats.sa_initial_cd4_inits = pd.concat(
-            [self.stats.sa_initial_cd4_inits, sa_initial_cd4_inits], ignore_index=True
-        )
 
         # Concat new population to pearl population
         population = population.astype(POPULATION_TYPE_DICT)
@@ -985,23 +817,8 @@ class Pearl:
 
         new_sqrt_cd4 = calculate_cd4_increase(self.population.loc[in_care].copy(), self.parameters)
 
-        # Sensitivity Analysis
-        new_sqrt_cd4 = np.sqrt(
-            self.parameters.sa_type2_dict["cd4_increase"] * np.power(new_sqrt_cd4, 2)
-        )
-
         old_sqrt_cd4 = self.population.loc[in_care, "time_varying_sqrtcd4n"]
         diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
-
-        # Record classic one-way sa input
-        sa_cd4_increase_in_care = pd.DataFrame(
-            data={"year": self.year, "mean_diff": diff_cd4, "n": len(old_sqrt_cd4)},
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_cd4_increase_in_care = pd.concat(
-            [self.stats.sa_cd4_increase_in_care, sa_cd4_increase_in_care],
-            ignore_index=True,
-        )
 
         self.population.loc[in_care, "time_varying_sqrtcd4n"] = new_sqrt_cd4
 
@@ -1010,24 +827,6 @@ class Pearl:
         out_care = self.population["status"] == ART_NONUSER
         new_sqrt_cd4 = calculate_cd4_decrease(
             self.population.loc[out_care].copy(), self.parameters
-        )
-
-        # Sensitivity Analysis
-        new_sqrt_cd4 = np.sqrt(
-            self.parameters.sa_type2_dict["cd4_decrease"] * np.power(new_sqrt_cd4, 2)
-        )
-
-        old_sqrt_cd4 = self.population.loc[out_care, "time_varying_sqrtcd4n"]
-        diff_cd4 = (new_sqrt_cd4**2 - old_sqrt_cd4**2).mean()
-
-        # Record classic one-way sa input
-        sa_cd4_decrease_out_care = pd.DataFrame(
-            data={"year": self.year, "mean_diff": diff_cd4, "n": len(old_sqrt_cd4)},
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_cd4_decrease_out_care = pd.concat(
-            [self.stats.sa_cd4_decrease_out_care, sa_cd4_decrease_out_care],
-            ignore_index=True,
         )
 
         self.population.loc[out_care, "time_varying_sqrtcd4n"] = new_sqrt_cd4
@@ -1059,8 +858,6 @@ class Pearl:
         pop["death_prob"] = calculate_prob(
             pop_matrix,
             coeff_matrix,
-            self.parameters.sa_type1_dict["mortality_in_care"],
-            vcov_matrix,
         )
 
         # Increase mortality to general population threshold
@@ -1086,26 +883,6 @@ class Pearl:
                     in_care & (pop["mortality_age_group"] == mortality_age_group),
                     "death_prob",
                 ] += excess_mortality
-
-        # Sensitivity Analysis
-        pop["death_prob"] = self.parameters.sa_type2_dict["mortality_in_care"] * pop["death_prob"]
-        pop["death_prob"] = (
-            self.parameters.sa_aim2_mort_dict["mortality_in_care"] * pop["death_prob"]
-        )
-
-        # Record classic one-way sa input
-        sa_mortality_in_care_prob = pd.DataFrame(
-            data={
-                "year": self.year,
-                "mean_prob": pop.loc[in_care]["death_prob"].mean(),
-                "n": len(pop.loc[in_care]),
-            },
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_mortality_in_care_prob = pd.concat(
-            [self.stats.sa_mortality_in_care_prob, sa_mortality_in_care_prob],
-            ignore_index=True,
-        )
 
         # Draw for mortality
         died = (
@@ -1134,9 +911,7 @@ class Pearl:
         vcov_matrix = self.parameters.mortality_out_care_vcov.to_numpy(dtype=float)
         pop["death_prob"] = calculate_prob(
             pop_matrix,
-            coeff_matrix,
-            self.parameters.sa_type1_dict["mortality_out_care"],
-            vcov_matrix,
+            coeff_matrix
         )
 
         # Increase mortality to general population threshold
@@ -1163,25 +938,6 @@ class Pearl:
                     "death_prob",
                 ] += excess_mortality
 
-        pop["death_prob"] = self.parameters.sa_type2_dict["mortality_out_care"] * pop["death_prob"]
-        pop["death_prob"] = (
-            self.parameters.sa_aim2_mort_dict["mortality_out_care"] * pop["death_prob"]
-        )
-
-        # Record classic one-way sa input
-        sa_mortality_out_care_prob = pd.DataFrame(
-            data={
-                "year": self.year,
-                "mean_prob": pop.loc[out_care]["death_prob"].mean(),
-                "n": len(pop.loc[out_care]),
-            },
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_mortality_out_care_prob = pd.concat(
-            [self.stats.sa_mortality_out_care_prob, sa_mortality_out_care_prob],
-            ignore_index=True,
-        )
-
         # Draw for mortality
         died = (
             (pop["death_prob"] > self.random_state.rand(len(self.population.index)))
@@ -1204,54 +960,16 @@ class Pearl:
         pop["ltfu_prob"] = calculate_prob(
             pop_matrix,
             coeff_matrix,
-            self.parameters.sa_type1_dict["loss_to_follow_up"],
-            vcov_matrix,
         )
-        pop["ltfu_prob"] = self.parameters.sa_type2_dict["disengagement"] * pop["ltfu_prob"]
 
         lost = (pop["ltfu_prob"] > self.random_state.rand(len(self.population.index))) & in_care
 
-        # Record classic one-way sa input
-        sa_ltfu_prob = pd.DataFrame(
-            data={
-                "year": self.year,
-                "mean_prob": pop.loc[in_care]["ltfu_prob"].mean(),
-                "n": len(pop.loc[in_care]),
-            },
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_ltfu_prob = pd.concat(
-            [self.stats.sa_ltfu_prob, sa_ltfu_prob], ignore_index=True
-        )
-
-        # Draw years spent out of care for those lost
-        if self.parameters.sa_type2_dict["reengagement"] == 1.2:
-            p = self.parameters.years_out_of_care["prob_1.2"]
-        elif self.parameters.sa_type2_dict["reengagement"] == 1.1:
-            p = self.parameters.years_out_of_care["prob_1.1"]
-        elif self.parameters.sa_type2_dict["reengagement"] == 0.9:
-            p = self.parameters.years_out_of_care["prob_0.9"]
-        elif self.parameters.sa_type2_dict["reengagement"] == 0.8:
-            p = self.parameters.years_out_of_care["prob_0.8"]
-        else:
-            p = self.parameters.years_out_of_care["probability"]
+        p = self.parameters.years_out_of_care["probability"]
 
         years_out_of_care = self.random_state.choice(
             a=self.parameters.years_out_of_care["years"],
             size=len(self.population.loc[lost]),
             p=p,
-        )
-
-        sa_years_out_input = pd.DataFrame(
-            data={
-                "year": self.year,
-                "mean_years": years_out_of_care.mean(),
-                "n": len(years_out_of_care),
-            },
-            index=[0],
-        ).astype({"year": "int16", "n": "int32"})
-        self.stats.sa_years_out_input = pd.concat(
-            [self.stats.sa_years_out_input, sa_years_out_input], ignore_index=True
         )
 
         # Set variables for lost population
@@ -1314,8 +1032,7 @@ class Pearl:
             pop_matrix = create_comorbidity_pop_matrix(
                 self.population.copy(), condition=condition, parameters=self.parameters
             )
-            prob = calculate_prob(pop_matrix, coeff_matrix, None, None)
-            prob = self.parameters.sa_aim2_inc_dict[condition] * prob
+            prob = calculate_prob(pop_matrix, coeff_matrix,)
 
             # Draw for incidence
             rand = prob > self.random_state.rand(len(self.population.index))
@@ -1702,26 +1419,6 @@ class Pearl:
                 )
             )
 
-            # Set up Variabels
-            target_col = "n"
-            columns_to_match = [col for col in dm_int.columns if col != target_col]
-
-            # First create a template df from dm_int
-            dm_int_temp_df = create_template_df(dm_int, target_col=target_col)
-
-            # Then match template df and dm_int with target col
-            columns_to_match = [col for col in dm_int.columns if col != target_col]
-            final_dm_int = match_template_and_data(
-                dm_int_temp_df,
-                dm_int,
-                columns_to_match=columns_to_match,
-                target_col=target_col,
-            )
-
-            self.stats.bmi_int_dm_prev = final_dm_int.astype(
-                {"init_age_group": "int8", "n": "int32"}
-            )
-
             dm_final_output = (
                 self.population.groupby(
                     [
@@ -1867,16 +1564,13 @@ class Parameters:
         mortality_threshold_flag: bool,
         idu_threshold: str,
         verbose: bool,
-        sa_type:Optional[str]=None,
-        sa_variable:Optional[str]=None,
-        sa_value:Optional[str]=None,
+        seed: int,
         bmi_intervention:Optional[int]=0,
         bmi_intervention_scenario:Optional[int]=1,
         bmi_intervention_start_year:Optional[int]=2020,
         bmi_intervention_end_year:Optional[int]=2030,
         bmi_intervention_coverage:Optional[float]=1.0,
         bmi_intervention_effectiveness:Optional[float]=1.0,
-        seed:Optional[int]=None,
     ):
         """Takes the path to the parameters.h5 file, the path to the folder containing rerun data if the run is a rerun,
         the output folder, the group name, a flag indicating if the simulation is for aim 2, a flag indicating whether to
@@ -1893,9 +1587,6 @@ class Parameters:
         self.final_year = final_year
         self.mortality_threshold_flag = mortality_threshold_flag
         self.verbose = verbose
-        self.sa_type = sa_type
-        self.sa_variable = sa_variable
-        self.sa_value = sa_value
         self.seed = seed
 
         # 2009 population
@@ -1914,8 +1605,6 @@ class Parameters:
             self.new_dx = pd.read_hdf(path, "new_dx").loc[group_name]
         elif new_dx == "ehe":
             self.new_dx = pd.read_hdf(path, "new_dx_ehe").loc[group_name]
-        elif new_dx == "sa":
-            self.new_dx = pd.read_hdf(path, "new_dx_sa").loc[group_name]
         else:
             raise ValueError("Invalid new diagnosis file specified")
 
@@ -1924,10 +1613,6 @@ class Parameters:
             mortality_model_str = ""
         else:
             mortality_model_str = "_" + mortality_model
-            if sa_type is not None:
-                raise NotImplementedError(
-                    "Using alternative mortality models with sensitivity analysis is not implemented"
-                )
 
         if (mortality_model != "by_sex_race_risk") & (mortality_model != "by_sex_race_risk_2015"):
             if idu_threshold != "2x":
@@ -1985,33 +1670,6 @@ class Parameters:
 
         # Years out of Care
         self.years_out_of_care = pd.read_hdf(path, "years_out_of_care")
-
-        # Set up sensitivity analysis
-        self.sa_type1_dict = sa_type1_default_dict.copy()
-        self.sa_type2_dict = sa_type2_default_dict.copy()
-        self.sa_aim2_inc_dict = sa_aim2_default_dict.copy()
-        self.sa_aim2_prev_dict = sa_aim2_default_dict.copy()
-        self.sa_aim2_mort_dict = sa_aim2_mort_default_dict.copy()
-
-        if sa_type == "type1":
-            self.sa_type1_dict[sa_variable] = sa_value
-            if sa_variable in ["lambda1", "mu1", "mu2", "sigma1", "sigma2"]:
-                self.age_in_2009.loc[sa_variable, "estimate"] = self.age_in_2009.loc[
-                    sa_variable, f"conf_{sa_value}"
-                ]
-            elif sa_variable == "new_pop_size":
-                if sa_value == "low":
-                    self.new_dx["upper"] = self.new_dx["lower"]
-                elif sa_value == "high":
-                    self.new_dx["lower"] = self.new_dx["upper"]
-        elif sa_type == "type2":
-            self.sa_type2_dict[sa_variable] = sa_value
-        elif sa_type == "aim2_inc":
-            self.sa_aim2_inc_dict[sa_variable] = sa_value
-        elif sa_type == "aim2_prev":
-            self.sa_aim2_prev_dict[sa_variable] = sa_value
-        elif sa_type == "aim2_mort":
-            self.sa_aim2_mort_dict[sa_variable] = sa_value
 
         # BMI
         self.pre_art_bmi = pd.read_hdf(path, "pre_art_bmi").loc[group_name]
@@ -2087,8 +1745,6 @@ class Statistics:
         output_folder: Path,
         group_name: str,
         replication: int,
-        comorbidity_flag:Optional[bool]=None,
-        sa_type:Optional[str]=None,
     ) -> None:
         """The init function operates on two levels. If called with no out_list a new Statistics class is initialized, with empty dataframes to fill with data.
         Otherwise it concatenates the out_list dataframes so that the results of all replications and groups are stored in a single dataframe.

@@ -137,7 +137,6 @@ def calculate_cd4_increase(pop, parameters):
     knots = parameters.cd4_increase_knots
     coeffs = parameters.cd4_increase.to_numpy(dtype=float)
     vcov = parameters.cd4_increase_vcov.to_numpy(dtype=float)
-    sa = parameters.sa_type1_dict["cd4_increase"]
 
     # Calculate spline variables
     pop["time_from_h1yy"] = pop["year"] - pop["last_h1yy"]
@@ -198,15 +197,6 @@ def calculate_cd4_increase(pop, parameters):
     # Perform matrix multiplication
     new_cd4 = np.matmul(pop_matrix, coeffs)
 
-    # If this is a sensitivity analysis run take the upper or lower confidence interval prediction
-    if sa is not None:
-        # Calculate variance of prediction using matrix multiplication
-        se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
-        if sa == "low:":
-            new_cd4 -= 1.96 * se
-        elif sa == "high":
-            new_cd4 += 1.96 * se
-
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
     return new_cd4
 
@@ -215,21 +205,12 @@ def calculate_cd4_decrease(pop, parameters, smearing=SMEARING):
     """Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4 count at exit from care."""
 
     coeffs = parameters.cd4_decrease.to_numpy(dtype=float)
-    sa = parameters.sa_type1_dict["cd4_decrease"]
     vcov = parameters.cd4_decrease_vcov.to_numpy(dtype=float)
 
     # Calculate the time_out variable and perform the matrix multiplication
     pop["time_out"] = pop["year"] - pop["ltfu_year"]
     pop_matrix = pop[["intercept", "time_out", "sqrtcd4n_exit"]].to_numpy(dtype=float)
     diff = np.matmul(pop_matrix, coeffs)
-
-    # If this is a sensitivity analysis run take the upper or lower confidence interval prediction
-    if sa is not None:
-        se = np.sqrt(np.sum(np.matmul(pop_matrix, vcov) * pop_matrix, axis=1))
-        if sa == "low":
-            diff -= 1.96 * se
-        elif sa == "high":
-            diff += 1.96 * se
 
     new_cd4 = np.sqrt((pop["sqrtcd4n_exit"].to_numpy(dtype=float) ** 2) * np.exp(diff) * smearing)
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
