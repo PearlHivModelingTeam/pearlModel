@@ -1,8 +1,8 @@
 import argparse
-import os
-import shutil
 from datetime import datetime
+import os
 from pathlib import Path
+import shutil
 
 import dask
 from dask import dataframe as dd

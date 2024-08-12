@@ -1,13 +1,10 @@
 import numpy as np
 import pandas as pd
-import pytest
 from pandas.testing import assert_series_equal
+import pytest
 from pytest import fixture
 
-from pearl.interpolate import (
-    restricted_cubic_spline_var,
-    restricted_quadratic_spline_var,
-)
+from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_spline_var
 
 
 @fixture

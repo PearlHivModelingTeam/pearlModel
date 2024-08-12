@@ -1,52 +1,68 @@
+from typing import Any, Optional
+
 import numpy as np
+from numpy.typing import NDArray
+import pandas as pd
 
 from pearl.definitions import SMEARING
-from pearl.interpolate import (restricted_cubic_spline_var,
-                               restricted_quadratic_spline_var)
+from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_spline_var
+from pearl.parameters import Parameters
 
 
-def create_mortality_in_care_pop_matrix(pop, parameters):
-    """Return the population matrix as a numpy array for calculating mortality in care. This log odds of mortality are a linear function of calendar year,
-    ART init year category modeled as two binary variables, and age and sqrt initial cd4 count modeled as restricted cubic splines. If using comorbidities,
-    log odds of mortality are a linear function of calendar year, age category, initial cd4 count, delta bmi and post art bmi modeled as restricted cubic
+def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
+    """
+    Return the population matrix as a numpy array for calculating mortality in care. This log odds
+    of mortality are a linear function of calendar year, ART init year category modeled as two
+    binary variables, and age and sqrt initial cd4 count modeled as restricted cubic splines. If
+    using comorbidities, log odds of mortality are a linear function of calendar year, age
+    category, initial cd4 count, delta bmi and post art bmi modeled as restricted cubic
     splines, and presence of each individual comorbidity modeled as binary variables.
     """
-    
+
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
         pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 1
     )
     pop["post_art_bmi__"] = restricted_cubic_spline_var(
         pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 2
     )
-    return pop[
-        [
-            "age_cat",
-            "anx",
-            "post_art_bmi",
-            "post_art_bmi_",
-            "post_art_bmi__",
-            "ckd",
-            "dm",
-            "dpr",
-            "esld",
-            "h1yy",
-            "hcv",
-            "ht",
-            "intercept",
-            "lipid",
-            "malig",
-            "mi",
-            "smoking",
-            "init_sqrtcd4n",
-            "year",
-        ]
-    ].to_numpy(dtype=float)
+    return np.array(
+        pop[
+            [
+                "age_cat",
+                "anx",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "ckd",
+                "dm",
+                "dpr",
+                "esld",
+                "h1yy",
+                "hcv",
+                "ht",
+                "intercept",
+                "lipid",
+                "malig",
+                "mi",
+                "smoking",
+                "init_sqrtcd4n",
+                "year",
+            ]
+        ],
+        dtype=float,
+    )
 
-def create_mortality_out_care_pop_matrix(pop, parameters):
-    """Return the population matrix as a numpy array for calculating mortality out of care. This log odds of mortality are a linear function of calendar
-    year and age and sqrt cd4 count modeled as restricted cubic splines. If using comorbidities, log odds of mortality are a linear function of calendar
-    year, age category, sqrt cd4 count, delta bmi and post art bmi modeled as restricted cubic splines, and presence of each individual comorbidity modeled
-    as binary variables.
+
+def create_mortality_out_care_pop_matrix(
+    pop: pd.DataFrame, parameters: Parameters
+) -> NDArray[Any]:
+    """
+    Return the population matrix as a numpy array for calculating mortality out of care.
+    This log odds of mortality are a linear function of calendar year and age and sqrt cd4 count
+    modeled as restricted cubic splines. If using comorbidities, log odds of mortality are a
+    linear  function of calendar year, age category, sqrt cd4 count, delta bmi and post art bmi
+    modeled as  restricted cubic splines, and presence of each individual comorbidity modeled as
+    binary variables.
     """
 
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
@@ -55,36 +71,41 @@ def create_mortality_out_care_pop_matrix(pop, parameters):
     pop["post_art_bmi__"] = restricted_cubic_spline_var(
         pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 2
     )
-    return pop[
-        [
-            "age_cat",
-            "anx",
-            "post_art_bmi",
-            "post_art_bmi_",
-            "post_art_bmi__",
-            "ckd",
-            "dm",
-            "dpr",
-            "esld",
-            "hcv",
-            "ht",
-            "intercept",
-            "lipid",
-            "malig",
-            "mi",
-            "smoking",
-            "time_varying_sqrtcd4n",
-            "year",
-        ]
-    ].to_numpy(dtype=float)
+    return np.array(
+        pop[
+            [
+                "age_cat",
+                "anx",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "ckd",
+                "dm",
+                "dpr",
+                "esld",
+                "hcv",
+                "ht",
+                "intercept",
+                "lipid",
+                "malig",
+                "mi",
+                "smoking",
+                "time_varying_sqrtcd4n",
+                "year",
+            ]
+        ],
+        dtype=float,
+    )
 
-def calculate_cd4_increase(pop, parameters):
-    """Return new cd4 count of the given population as calculated via a linear function of time since art initiation modeled as a spline, initial
-    cd4 count category, age category and cross terms.
+
+def calculate_cd4_increase(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
+    """
+    Return new cd4 count of the given population as calculated via a linear function of time
+    since art initiation modeled as a spline, initial cd4 count category, age category and
+    cross terms.
     """
     knots = parameters.cd4_increase_knots
     coeffs = parameters.cd4_increase.to_numpy(dtype=float)
-    vcov = parameters.cd4_increase_vcov.to_numpy(dtype=float)
 
     # Calculate spline variables
     pop["time_from_h1yy"] = pop["year"] - pop["last_h1yy"]
@@ -146,14 +167,17 @@ def calculate_cd4_increase(pop, parameters):
     new_cd4 = np.matmul(pop_matrix, coeffs)
 
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
-    return new_cd4
+    return np.array(new_cd4)
 
 
-def calculate_cd4_decrease(pop, parameters, smearing=SMEARING):
-    """Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4 count at exit from care."""
+def calculate_cd4_decrease(
+    pop: pd.DataFrame, parameters: Parameters, smearing: Optional[float] = SMEARING
+) -> NDArray[Any]:
+    """Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4
+    count at exit from care.
+    """
 
     coeffs = parameters.cd4_decrease.to_numpy(dtype=float)
-    vcov = parameters.cd4_decrease_vcov.to_numpy(dtype=float)
 
     # Calculate the time_out variable and perform the matrix multiplication
     pop["time_out"] = pop["year"] - pop["ltfu_year"]
@@ -162,4 +186,4 @@ def calculate_cd4_decrease(pop, parameters, smearing=SMEARING):
 
     new_cd4 = np.sqrt((pop["sqrtcd4n_exit"].to_numpy(dtype=float) ** 2) * np.exp(diff) * smearing)
     new_cd4 = np.clip(new_cd4, 0, np.sqrt(2000))
-    return new_cd4
+    return np.array(new_cd4)

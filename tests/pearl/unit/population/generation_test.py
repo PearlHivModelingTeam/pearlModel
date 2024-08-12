@@ -2,22 +2,22 @@
 Test module for generation.py
 """
 
-import numpy as np
-import pandas as pd
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pathlib import Path
 from unittest.mock import Mock
 
+import numpy as np
 from numpy.random import RandomState
-from pathlib import Path
+import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal
 from pytest import fixture
 
 from pearl.model import Parameters
 from pearl.population.generation import (
-    simulate_ages,
-    simulate_new_dx,
     apply_bmi_intervention,
     calculate_post_art_bmi,
     calculate_pre_art_bmi,
+    simulate_ages,
+    simulate_new_dx,
 )
 
 

@@ -2,15 +2,15 @@
 test module for events.py
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
-
-from pathlib import Path
 from pytest import fixture
 
 from pearl.model import Parameters
-from pearl.population.events import calculate_cd4_increase, calculate_cd4_decrease
+from pearl.population.events import calculate_cd4_decrease, calculate_cd4_increase
 
 
 @pytest.mark.xfail

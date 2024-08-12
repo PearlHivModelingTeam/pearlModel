@@ -1,10 +1,10 @@
 import os
-import shutil
 from pathlib import Path
+import shutil
 
 import dask
-import pandas as pd
 from dask import delayed
+import pandas as pd
 from pandas.testing import assert_frame_equal
 from pytest import fixture
 

@@ -3,11 +3,12 @@ Script to run aggregators, this will be replaced by snakemake
 """
 
 import argparse
-import shutil
 from datetime import datetime
 from pathlib import Path
+import shutil
 
 from dask import dataframe as dd
+
 from pearl.post_processing.aggregators import bmi_info
 
 if __name__ == "__main__":

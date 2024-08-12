@@ -2,8 +2,12 @@
 Module for aggregating results from pearl simulation
 """
 
+from pathlib import Path
 
-def bmi_info(population_dataframe, out_dir):
+import pandas as pd
+
+
+def bmi_info(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
     bmi_info_df = (
         population_dataframe.groupby(["group", "replication", "t_dm"])
         .size()
