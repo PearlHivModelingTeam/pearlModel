@@ -13,3 +13,6 @@ param_files/.idea
 *.log
 .nox/
 build/
+.ruff_cashe
+.pytest_cashe
+.mypy_cahse
