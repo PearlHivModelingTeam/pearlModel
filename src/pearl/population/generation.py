@@ -2,21 +2,23 @@
 Module for the generation of initial population.
 """
 
-from typing import Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 import pandas as pd
 
 from pearl.interpolate import restricted_cubic_spline_var
+from pearl.parameters import Parameters
 from pearl.population.events import calculate_cd4_increase
 from pearl.sample import draw_from_trunc_norm
 
 
 def simulate_ages(
     coeffs: pd.DataFrame, pop_size: int, random_state: np.random.RandomState
-) -> np.array:
-    """Return numpy array of ages with length pop_size drawn from a mixed gaussian of given coefficients truncated
-    at 18 and 85.
+) -> NDArray[Any]:
+    """Return numpy array of ages with length pop_size drawn from a mixed gaussian of given
+    coefficients truncated at 18 and 85.
     """
     # Draw population size of each normal from the binomial distribution
     pop_size_1 = random_state.binomial(pop_size, coeffs.loc["lambda1", "estimate"])
@@ -40,7 +42,7 @@ def simulate_ages(
         random_state,
     )
     ages = np.concatenate((ages_1, ages_2))
-    return ages
+    return np.array(ages)
 
 
 def simulate_new_dx(
@@ -48,18 +50,21 @@ def simulate_new_dx(
     linkage_to_care: pd.DataFrame,
     random_state: np.random.RandomState,
 ) -> Tuple[int, pd.DataFrame]:
-    """Return the number of ART non-users in 2009 as an integer and the number of agents entering the model each year as art users and non-users
-    as a dataframe. Draw number of new diagnoses from a uniform distribution between upper and lower bounds. Calculate number of new art
-    initiators by assuming a certain number link in the first year as estimated by a linear regression on CDC data, capped at 95%. We assume
-    that 40% of the remaining population links to care over the next 3 years. We assume that 70% of those linking to care begin ART, rising
-    to 85% in 2011 and 97% afterwards. We take the number of people not initiating ART 2006 - 2009 in this calculation to be the out of
-    care population size in 2009 for our simulation.
+    """Return the number of ART non-users in 2009 as an integer and the number of agents entering
+    the model each year as art users and non-users as a dataframe. Draw number of new diagnoses
+    from a uniform distribution between upper and lower bounds. Calculate number of new art
+    initiators by assuming a certain number link in the first year as estimated by a linear
+    regression on CDC data, capped at 95%. We assume that 40% of the remaining population links to
+    care over the next 3 years. We assume that 70% of those linking to care begin ART, rising
+    to 85% in 2011 and 97% afterwards. We take the number of people not initiating ART 2006 - 2009
+    in this calculation to be the out of care population size in 2009 for our simulation.
     """
 
     # Draw new dx from a uniform distribution between upper and lower for 2016-final_year
     new_dx["n_dx"] = new_dx["lower"] + (new_dx["upper"] - new_dx["lower"]) * random_state.uniform()
 
-    # Only a proportion of new diagnoses link to care and 40% of the remaining link in the next 3 years
+    # Only a proportion of new diagnoses link to care and 40% of the remaining link
+    # in the next 3 years
     new_dx["unlinked"] = new_dx["n_dx"] * (1 - linkage_to_care["link_prob"])
     new_dx["gardner_per_year"] = new_dx["unlinked"] * 0.4 / 3.0
     new_dx["year0"] = new_dx["n_dx"] * linkage_to_care["link_prob"]
@@ -86,7 +91,9 @@ def simulate_new_dx(
     return n_initial_nonusers, new_agents
 
 
-def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState):
+def apply_bmi_intervention(
+    pop: pd.DataFrame, parameters: Parameters, random_state: np.random.RandomState
+) -> pd.DataFrame:
     if parameters.bmi_intervention == 0:
         raise ValueError("Running apply_bmi_intervention despite bmi_intervention=0")
     pop["bmiInt_scenario"] = np.array(parameters.bmi_intervention_scenario, dtype="int8")
@@ -141,8 +148,8 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
     pop["bmiInt_impacted"] = False
 
     # Scenario1: Based on BMI threshold:
-    # Anyone gaining weight who pass the threshold of BMI=30 (obesity) will experience benefits from this intervention
-    # by retaining their weight at a threshold of 29.9 (below obesity)
+    # Anyone gaining weight who pass the threshold of BMI=30 (obesity) will experience benefits
+    # from this intervention by retaining their weight at a threshold of 29.9 (below obesity)
     if parameters.bmi_intervention_scenario == 1:
         pop["bmiInt_impacted"] = (
             pop["bmiInt_received"] & pop["become_obese_postART"] & pop["bmiInt_effectiveness"]
@@ -150,9 +157,9 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
         pop.loc[pop["bmiInt_impacted"], "post_art_bmi"] = 29.9
 
     # Scenario2: Based on % gain in BMI :
-    # Anyone experiencing >5% increase in pre-ART BMI will experience benefits from this intervention by retaining their
-    # BMI at 1.05 times the starting value. Those surpassing the BMI of 30 (obesity threshold) will retain their weights
-    # at a threshold of 29.9 (below obesity)
+    # Anyone experiencing >5% increase in pre-ART BMI will experience benefits from this
+    # intervention by retaining their BMI at 1.05 times the starting value. Those surpassing the
+    # BMI of 30 (obesity threshold) will retain weights at a threshold of 29.9 (below obesity)
     if parameters.bmi_intervention_scenario == 2:
         pop["bmiInt_impacted"] = (
             pop["bmiInt_received"]
@@ -164,8 +171,9 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
         )
 
     # Scenario3: No BMI gain:
-    # Anyone gaining BMI will experience benefits from this intervention by retaining their weight at the level of
-    # pre-ART BMI. Those experiencing reductions in their weight are allowed to follow the natural weight loss trajectory.
+    # Anyone gaining BMI will experience benefits from this intervention by retaining their weight
+    # at the level of pre-ART BMI. Those experiencing reductions in their weight are allowed to
+    # follow the natural weight loss trajectory.
     if parameters.bmi_intervention_scenario == 3:
         pop["bmiInt_impacted"] = (
             pop["bmiInt_received"] & pop["bmi_increase_postART"] & pop["bmiInt_effectiveness"]
@@ -174,7 +182,6 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
             pop["bmiInt_impacted"], "pre_art_bmi"
         ]
 
-    ###
     return pop[
         [
             "bmiInt_scenario",
@@ -195,10 +202,14 @@ def apply_bmi_intervention(pop, parameters, random_state: np.random.RandomState)
 
 
 def calculate_post_art_bmi(
-    pop, parameters, random_state: np.random.RandomState, intervention=False
-):
-    """Calculate and return post art bmi for a population. Sqrt of post art bmi is modeled as a linear function of ART initiation year and
-    age, sqrt of pre art bmi, sqrt initial cd4 count, and sqrt of cd4 count 2 years after art initiation all modeled as restricted cubic splines.
+    pop: pd.DataFrame,
+    parameters: Parameters,
+    random_state: np.random.RandomState,
+    intervention: Optional[bool] = False,
+) -> NDArray[Any]:
+    """Calculate and return post art bmi for a population. Sqrt of post art bmi is modeled as a
+    linear function of ART initiation year and age, sqrt of pre art bmi, sqrt initial cd4 count,
+    and sqrt of cd4 count 2 years after art initiation all modeled as restricted cubic splines.
     """
     # Copy coefficients and knots to more reasonable variable names
     coeffs = parameters.post_art_bmi
@@ -260,11 +271,15 @@ def calculate_post_art_bmi(
         )
     post_art_bmi = sqrt_post_art_bmi**2.0
 
-    return post_art_bmi
+    return np.array(post_art_bmi)
 
 
-def calculate_pre_art_bmi(pop, parameters, random_state: np.random.RandomState):
-    """Calculate and return pre art bmi for a given population dataframe. Each subpopulation can use a different model of pre art bmi."""
+def calculate_pre_art_bmi(
+    pop: pd.DataFrame, parameters: Parameters, random_state: np.random.RandomState
+) -> NDArray[Any]:
+    """Calculate and return pre art bmi for a given population dataframe.
+    Each subpopulation can use a different model of pre art bmi.
+    """
     # Calculate pre art bmi using one of 5 different models depending on subpopulation
     # Copy coefficients and knots to more reasonable variable names
     coeffs = parameters.pre_art_bmi
@@ -331,4 +346,4 @@ def calculate_pre_art_bmi(pop, parameters, random_state: np.random.RandomState):
         np.log10(10), np.log10(65), log_pre_art_bmi, np.sqrt(rse), 1, random_state
     )
     pre_art_bmi = 10.0**log_pre_art_bmi
-    return pre_art_bmi
+    return np.array(pre_art_bmi)

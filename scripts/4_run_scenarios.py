@@ -1,7 +1,7 @@
 # Imports
 import argparse
-import subprocess
 from datetime import datetime
+import subprocess
 
 from pearl.definitions import PROJECT_DIR
 

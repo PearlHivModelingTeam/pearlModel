@@ -1,7 +1,7 @@
 # Imports
 import argparse
-import shutil
 from datetime import datetime
+import shutil
 
 import dask
 import yaml
@@ -21,7 +21,6 @@ def run(group_name_run, replication_run, seed=None):
         rerun_folder=rerun_folder,
         output_folder=output_folder,
         group_name=group_name_run,
-        comorbidity_flag=config["comorbidity_flag"],
         new_dx=config["new_dx"],
         final_year=config["final_year"],
         mortality_model=config["mortality_model"],
@@ -74,15 +73,10 @@ if __name__ == "__main__":
         config_file_path = pearl_path / "config/test.yaml"
         output_root_path = pearl_path / f"out/{config_file_path.stem}_{date_string}"
     # Load config_file
-    with open(config_file_path, "r") as config_file:
+    with open(config_file_path) as config_file:
         config = yaml.safe_load(config_file)
 
     print("2", flush=True)
-
-    # Load sensitivity analysis variables
-    if config["sa_type"] == "none":
-        sa_variables = None
-        sa_values = None
 
     # Create Output folder structure
     if output_root_path.is_dir():
@@ -93,13 +87,12 @@ if __name__ == "__main__":
             raise FileExistsError("Output folder already exists")
 
     print("3", flush=True)
-    if sa_variables is None:
-        for group_name_run in config["group_names"]:
-            for replication_run in range(config["replications"]):
-                replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
-                out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"  # setting up the path name
-                output_folder = output_root_path / out_path
-                output_folder.mkdir(parents=True)
+    for group_name_run in config["group_names"]:
+        for replication_run in range(config["replications"]):
+            replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
+            out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"  # setting up the path name
+            output_folder = output_root_path / out_path
+            output_folder.mkdir(parents=True)
 
     # Copy config file to output dir
     with open(output_root_path / "config.yaml", "w") as yaml_file:
@@ -108,14 +101,13 @@ if __name__ == "__main__":
     # Launching simulations
     print("4", flush=True)
 
-    if sa_variables is None:
-        print("running main analysis...", flush=True)
-        results = []
-        seed = 0
-        for group_name_run in config["group_names"]:
-            for replication_run in range(config["replications"]):
-                results.append(run(group_name_run, replication_run, seed=seed))
-                seed += 1
+    print("running main analysis...", flush=True)
+    results = []
+    seed = 0
+    for group_name_run in config["group_names"]:
+        for replication_run in range(config["replications"]):
+            results.append(run(group_name_run, replication_run, seed=seed))
+            seed += 1
 
     if args.debug:
         dask.compute(results, scheduler="processes", num_workers=config["num_cpus"])

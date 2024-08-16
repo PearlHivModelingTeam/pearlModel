@@ -1,10 +1,11 @@
 import os
-import shutil
 from pathlib import Path
+import shutil
 
 import dask
-import pandas as pd
 from dask import delayed
+import pandas as pd
+from pandas.testing import assert_frame_equal
 from pytest import fixture
 
 from pearl.model import Parameters, Pearl
@@ -13,7 +14,6 @@ from pearl.model import Parameters, Pearl
 @fixture
 def config():
     config = {
-        "comorbidity_flag": 1,
         "new_dx": "base",
         "final_year": 2012,
         "mortality_model": "by_sex_race_risk",
@@ -51,7 +51,6 @@ def parameter(param_file_path, output_folder, config):
         rerun_folder=None,
         output_folder=output_folder,
         group_name="msm_black_male",
-        comorbidity_flag=config["comorbidity_flag"],
         new_dx=config["new_dx"],
         final_year=config["final_year"],
         mortality_model=config["mortality_model"],
@@ -81,12 +80,11 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
-        assert expected_population.equals(result_population)
+        assert_frame_equal(result_population, expected_population)
     except Exception as e:
-        shutil.rmtree(output_folder)
         raise e
-
-    shutil.rmtree(output_folder)
+    finally:
+        shutil.rmtree(output_folder)
 
 
 def test_pearl_multi_threaded(parameter, expected_population, output_folder):
@@ -106,7 +104,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
-        assert expected_population.equals(result_population)
+        assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
     finally:

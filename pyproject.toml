@@ -64,7 +64,7 @@ extend-immutable-calls = ["typer.Argument"]
 [project.optional-dependencies]
 test = [
     "pytest",
-    "nox",
     "pyright",
     "ruff",
+    "mypy"
     ]

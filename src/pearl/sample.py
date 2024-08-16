@@ -1,4 +1,7 @@
+from typing import Any
+
 import numpy as np
+from numpy.typing import NDArray
 import scipy.stats as stats
 
 
@@ -9,9 +12,9 @@ def draw_from_trunc_norm(
     sigma: float,
     n: int,
     random_state: np.random.RandomState,
-) -> np.array:
-    """Return a numpy array filled with n values drawn from a truncated normal with the given parameters. If n=0 return
-    an empty numpy array.
+) -> NDArray[Any]:
+    """Return a numpy array filled with n values drawn from a truncated normal with the given
+    parameters. If n=0 return an empty numpy array.
     """
     y = np.array([])
     if n != 0:
