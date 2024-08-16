@@ -15,11 +15,7 @@ jobs:
        run: docker build -t pearl_model .
      - name: Run tests inside the container
        run: docker run pearl_model pytest tests/pearl
-  
-  ruff:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: chartboost/ruff-action@v1
-
-  
+     - name: mypy
+       run: docker run pearl_model mypy src/
+     - name: ruff
+       run: docker run pearl_model ruff check src/
