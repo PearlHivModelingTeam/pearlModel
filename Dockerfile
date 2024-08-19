@@ -1,5 +1,8 @@
 FROM condaforge/mambaforge:4.9.2-5 as conda
 
+# update packages and install make
+RUN apt-get update && apt-get install make
+
 # Add environment lock file
 ADD environment.yml /tmp/environment.yml
 
