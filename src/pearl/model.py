@@ -232,6 +232,18 @@ class Pearl:
         
         return population
     
+    def add_bmi(self, population):
+        population["pre_art_bmi"] = calculate_pre_art_bmi(
+            population.copy(), self.parameters, self.random_state
+        )
+        population["post_art_bmi"] = calculate_post_art_bmi(
+            population.copy(), self.parameters, self.random_state
+        )
+        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        
+        return population
+        
+    
     def make_base_population(self, n_population: int) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
@@ -284,13 +296,7 @@ class Pearl:
         # add bmi, comorbidity, and multimorbidity columns
 
         # Bmi
-        population["pre_art_bmi"] = calculate_pre_art_bmi(
-            population.copy(), self.parameters, self.random_state
-        )
-        population["post_art_bmi"] = calculate_post_art_bmi(
-            population.copy(), self.parameters, self.random_state
-        )
-        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        population = self.add_bmi(population)
 
         # Apply comorbidities
         for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
@@ -333,13 +339,7 @@ class Pearl:
         # add bmi, comorbidity, and multimorbidity columns
 
         # Bmi
-        population["pre_art_bmi"] = calculate_pre_art_bmi(
-            population.copy(), self.parameters, self.random_state
-        )
-        population["post_art_bmi"] = calculate_post_art_bmi(
-            population.copy(), self.parameters, self.random_state
-        )
-        population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+        population = self.add_bmi(population)
 
         # Apply comorbidities
         for condition in STAGE0:
