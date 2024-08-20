@@ -91,10 +91,11 @@ class Pearl:
         )
 
         # Create art using 2009 population
-        user_pop = self.make_user_pop_2009()
+        n_initial_users = self.parameters.on_art_2009.iloc[0]
+        user_pop = self.make_user_pop_2009(n_initial_users)
 
         # Create art non-using 2009 population
-        non_user_pop = self.make_nonuser_pop_2009(n_initial_nonusers, self.random_state)
+        non_user_pop = self.make_nonuser_pop_2009(n_initial_nonusers)
 
         # concat to get initial population
         self.population = pd.concat([user_pop, non_user_pop])
@@ -231,7 +232,7 @@ class Pearl:
         
         return population
 
-    def make_user_pop_2009(self) -> pd.DataFrame:
+    def make_user_pop_2009(self, n_initial_users: int) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
         NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and 
@@ -242,7 +243,6 @@ class Pearl:
         population = pd.DataFrame()
 
         # Draw ages from the truncated mixed gaussian
-        n_initial_users = self.parameters.on_art_2009.iloc[0]
         population["age"] = simulate_ages(
             self.parameters.age_in_2009, n_initial_users, self.random_state
         )
@@ -298,8 +298,7 @@ class Pearl:
         return population
 
     def make_nonuser_pop_2009(
-        self, n_initial_nonusers: pd.DataFrame, random_state: np.random.RandomState
-    ) -> pd.DataFrame:
+        self, n_initial_nonusers: pd.DataFrame) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
         NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and 
@@ -311,7 +310,7 @@ class Pearl:
 
         # Draw ages from the truncated mixed gaussian
         population["age"] = simulate_ages(
-            self.parameters.age_in_2009, n_initial_nonusers, random_state
+            self.parameters.age_in_2009, n_initial_nonusers, self.random_state
         )
 
         # Create age categories
@@ -335,7 +334,7 @@ class Pearl:
         )
 
         # Set status and initiate out of care variables
-        years_out_of_care = random_state.choice(
+        years_out_of_care = self.random_state.choice(
             a=self.parameters.years_out_of_care["years"],
             size=n_initial_nonusers,
             p=self.parameters.years_out_of_care["probability"],
@@ -350,17 +349,17 @@ class Pearl:
 
         # Bmi
         population["pre_art_bmi"] = calculate_pre_art_bmi(
-            population.copy(), self.parameters, random_state
+            population.copy(), self.parameters, self.random_state
         )
         population["post_art_bmi"] = calculate_post_art_bmi(
-            population.copy(), self.parameters, random_state
+            population.copy(), self.parameters, self.random_state
         )
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
         # Apply comorbidities
         for condition in STAGE0:
             population[condition] = (
-                random_state.rand(len(population.index))
+                self.random_state.rand(len(population.index))
                 < self.parameters.prev_users_dict[condition].values
             ).astype(int)
             population[f"t_{condition}"] = population[
@@ -368,7 +367,7 @@ class Pearl:
             ]  # 0 if not having a condition, and 1 if they have it
         for condition in STAGE1 + STAGE2 + STAGE3:
             population[condition] = (
-                random_state.rand(len(population.index))
+                self.random_state.rand(len(population.index))
                 < (self.parameters.prev_users_dict[condition].values)
             ).astype(int)
             population[f"t_{condition}"] = population[
