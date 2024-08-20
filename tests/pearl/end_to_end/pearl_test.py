@@ -76,7 +76,7 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
     """
     Pearl should run identically when seeded in a single threaded environment.
     """
-    Pearl(parameter, parameter.group_name, 1)
+    Pearl(parameter, parameter.group_name, 1).run()
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
@@ -94,7 +94,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     @delayed
     def run(parameter):
-        Pearl(parameter, parameter.group_name, 1)
+        Pearl(parameter, parameter.group_name, 1).run()
 
     result = []
     for i in range(3):

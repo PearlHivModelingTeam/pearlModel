@@ -11,7 +11,6 @@ import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 
-# TODO refactor this into a single data structure
 from pearl.definitions import (
     ART_NAIVE,
     ART_NONUSER,
@@ -131,18 +130,7 @@ class Pearl:
             print(self)
 
         # Move to 2010
-        self.year += 1
-
-        # Run
-        self.run()
-
-        # Save output
-        self.stats.save()
-
-        self.population = self.population.assign(
-            group=self.group_name, replication=self.replication
-        )
-        self.population.to_parquet(self.parameters.output_folder / "population.parquet")
+        self.year += 1    
         
     @staticmethod
     def calculate_prob(pop: pd.DataFrame, coeffs: NDArray[Any]) -> NDArray[Any]:
@@ -614,8 +602,16 @@ class Pearl:
             # Increment year
             self.year += 1
 
+        self.population = self.population.assign(
+            group=self.group_name, replication=self.replication
+        )
+        self.population.to_parquet(self.parameters.output_folder / "population.parquet")
+
         # Record output statistics for the end of the simulation
         self.record_final_stats()
+        
+        # Save output
+        self.stats.save()
 
     def increment_years(self) -> None:
         """
