@@ -42,6 +42,8 @@ def simulate_ages(
         random_state,
     )
     ages = np.concatenate((ages_1, ages_2))
+    assert ages.min() > 18
+    assert ages.max() < 85
     return np.array(ages)
 
 

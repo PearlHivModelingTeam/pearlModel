@@ -30,3 +30,7 @@ def test_parameters(param_file_path):
 @fixture
 def test_pearl(test_parameters):
     return Pearl(test_parameters, "msm_black_male", 42)
+
+def test_init_year(test_pearl):
+    assert test_pearl.year == 2010
+
