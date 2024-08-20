@@ -128,10 +128,6 @@ class Pearl:
         # First recording of stats
         self.record_stats()
 
-        # Print populations
-        if self.parameters.verbose:
-            print(self)
-
         # Move to 2010
         self.year += 1    
         
