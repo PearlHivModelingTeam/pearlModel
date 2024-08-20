@@ -28,8 +28,9 @@ from pearl.definitions import (
     STAGE1,
     STAGE2,
     STAGE3,
+    ALL_COMORBIDITIES
 )
-from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_spline_var
+from pearl.interpolate import restricted_quadratic_spline_var
 from pearl.parameters import Parameters
 from pearl.population.events import (
     calculate_cd4_decrease,
@@ -52,50 +53,9 @@ pd.set_option("display.max_columns", 500)
 pd.set_option("display.width", 1000)
 pd.options.mode.chained_assignment = None  # default='warn'
 
-def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> NDArray[Any]:
-    """
-    Create and return the population matrix as a numpy array for use in calculating probability 
-    of loss to follow up.
-    """
-    # Create all needed intermediate variables
-    pop["age_"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 1)
-    pop["age__"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 2)
-    pop["age___"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 3)
-    pop["haart_period"] = (pop["h1yy"].values > 2010).astype(int)
-    return np.array(
-        pop[
-            [
-                "intercept",
-                "age",
-                "age_",
-                "age__",
-                "age___",
-                "year",
-                "init_sqrtcd4n",
-                "haart_period",
-            ]
-        ]
-    )
-
-
-def calculate_prob(pop: pd.DataFrame, coeffs: NDArray[Any]) -> NDArray[Any]:
-    """
-    Calculate and return a numpy array of individual probabilities from logistic regression 
-    given the population and coefficient matrices.
-    Used for multiple logistic regression functions.
-    """
-    # Calculate log odds using a matrix multiplication
-    log_odds = np.matmul(pop, coeffs)
-
-    # Convert to probability
-    prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
-    return np.array(prob)
-
-
 ###############################################################################
 # Pearl Class                                                                 #
 ###############################################################################
-
 
 class Pearl:
     """The PEARL class runs a simulation when initialized."""
@@ -183,6 +143,46 @@ class Pearl:
             group=self.group_name, replication=self.replication
         )
         self.population.to_parquet(self.parameters.output_folder / "population.parquet")
+        
+    @staticmethod
+    def calculate_prob(pop: pd.DataFrame, coeffs: NDArray[Any]) -> NDArray[Any]:
+        """
+        Calculate and return a numpy array of individual probabilities from logistic regression 
+        given the population and coefficient matrices.
+        Used for multiple logistic regression functions.
+        """
+        # Calculate log odds using a matrix multiplication
+        log_odds = np.matmul(pop, coeffs)
+
+        # Convert to probability
+        prob = np.exp(log_odds) / (1.0 + np.exp(log_odds))
+        return np.array(prob)
+    
+    @staticmethod
+    def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> NDArray[Any]:
+        """
+        Create and return the population matrix as a numpy array for use in calculating probability 
+        of loss to follow up.
+        """
+        # Create all needed intermediate variables
+        pop["age_"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 1)
+        pop["age__"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 2)
+        pop["age___"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 3)
+        pop["haart_period"] = (pop["h1yy"].values > 2010).astype(int)
+        return np.array(
+            pop[
+                [
+                    "intercept",
+                    "age",
+                    "age_",
+                    "age__",
+                    "age___",
+                    "year",
+                    "init_sqrtcd4n",
+                    "haart_period",
+                ]
+            ]
+        )
 
     def make_user_pop_2009(self) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
@@ -669,7 +669,7 @@ class Pearl:
 
         pop_matrix = create_mortality_in_care_pop_matrix(pop.copy(), parameters=self.parameters)
 
-        pop["death_prob"] = calculate_prob(
+        pop["death_prob"] = self.calculate_prob(
             pop_matrix,
             coeff_matrix,
         )
@@ -719,7 +719,7 @@ class Pearl:
 
         pop_matrix = create_mortality_out_care_pop_matrix(pop.copy(), parameters=self.parameters)
 
-        pop["death_prob"] = calculate_prob(pop_matrix, coeff_matrix)
+        pop["death_prob"] = self.calculate_prob(pop_matrix, coeff_matrix)
 
         # Increase mortality to general population threshold
         if self.parameters.mortality_threshold_flag:
@@ -763,8 +763,8 @@ class Pearl:
         in_care = self.population["status"] == ART_USER
         pop = self.population.copy()
         coeff_matrix = self.parameters.loss_to_follow_up.to_numpy(dtype=float)
-        pop_matrix = create_ltfu_pop_matrix(pop.copy(), self.parameters.ltfu_knots)
-        pop["ltfu_prob"] = calculate_prob(
+        pop_matrix = self.create_ltfu_pop_matrix(pop.copy(), self.parameters.ltfu_knots)
+        pop["ltfu_prob"] = self.calculate_prob(
             pop_matrix,
             coeff_matrix,
         )
@@ -840,7 +840,7 @@ class Pearl:
             pop_matrix = create_comorbidity_pop_matrix(
                 self.population.copy(), condition=condition, parameters=self.parameters
             )
-            prob = calculate_prob(
+            prob = self.calculate_prob(
                 pop_matrix,
                 coeff_matrix,
             )
@@ -1110,30 +1110,30 @@ class Pearl:
         # Record the detailed comorbidity information
         mm_detail_in_care = create_mm_detail_stats(self.population.loc[in_care].copy())
         mm_detail_in_care = mm_detail_in_care.assign(year=self.year)[
-            ["year", "multimorbidity", "n"]
-        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+            ["year", *ALL_COMORBIDITIES, "n"]
+        ].astype({"year": "int16", "n": "int32"})
         self.stats.mm_detail_in_care = pd.concat(  # type: ignore[attr-defined]
             [self.stats.mm_detail_in_care, mm_detail_in_care]
         )
 
         mm_detail_out_care = create_mm_detail_stats(self.population.loc[out_care].copy())
         mm_detail_out_care = mm_detail_out_care.assign(year=self.year)[
-            ["year", "multimorbidity", "n"]
-        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+            ["year", *ALL_COMORBIDITIES, "n"]
+        ].astype({"year": "int16", "n": "int32"})
         self.stats.mm_detail_out_care = pd.concat(  # type: ignore[attr-defined]
             [self.stats.mm_detail_out_care, mm_detail_out_care]
         )
 
         mm_detail_inits = create_mm_detail_stats(self.population.loc[initiating].copy())
         mm_detail_inits = mm_detail_inits.assign(year=self.year)[
-            ["year", "multimorbidity", "n"]
-        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+            ["year", *ALL_COMORBIDITIES, "n"]
+        ].astype({"year": "int16", "n": "int32"})
         self.stats.mm_detail_inits = pd.concat([self.stats.mm_detail_inits, mm_detail_inits])  # type: ignore[attr-defined]
 
         mm_detail_dead = create_mm_detail_stats(self.population.loc[dying].copy())
         mm_detail_dead = mm_detail_dead.assign(year=self.year)[
-            ["year", "multimorbidity", "n"]
-        ].astype({"year": "int16", "multimorbidity": "int16", "n": "int32"})
+            ["year", *ALL_COMORBIDITIES, "n"]
+        ].astype({"year": "int16", "n": "int32"})
         self.stats.mm_detail_dead = pd.concat([self.stats.mm_detail_dead, mm_detail_dead])  # type: ignore[attr-defined]
 
     def record_final_stats(self) -> None:
@@ -1334,7 +1334,7 @@ class Pearl:
 
 
 ###############################################################################
-# Parameter and Statistics Classes                                            #
+#     Statistics Classes                                                      #
 ###############################################################################
 
 

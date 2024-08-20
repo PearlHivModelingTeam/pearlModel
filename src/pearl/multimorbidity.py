@@ -12,29 +12,10 @@ from pearl.interpolate import restricted_cubic_spline_var
 from pearl.parameters import Parameters
 
 def create_mm_detail_stats(pop: pd.DataFrame) -> pd.DataFrame:
-    """Encode all comorbidity information as an 11 bit integer and return a dataframe counting the 
-    number of agents with every unique set of comorbidities.
-    """
-
     all_comorbidities = STAGE0 + STAGE1 + STAGE2 + STAGE3
     df = pop[["age_cat"] + all_comorbidities].copy()
-    if not df.empty:
-        """This line of code adds a new column 'multimorbidity' to the DataFrame. The column is
-        created by applying a function to each row of the DataFrame. This function:
-        Converts the values in the comorbidity columns to strings.
-        Joins these strings to create a concatenated binary representation for each row.
-        Converts the binary representation to an integer using base 2."""
-        df["multimorbidity"] = (
-            df[all_comorbidities]
-            .apply(lambda row: "".join(row.values.astype(int).astype(str)), axis="columns")
-            .apply(int, base=2)
-            .astype("int32")
-        )
-    else:
-        df["multimorbidity"] = []
-
     # Count how many people have each unique set of comorbidities
-    df = df.groupby(["multimorbidity"]).size().reset_index(name="n")
+    df = df.groupby(all_comorbidities).size().reset_index(name="n")
     return df
 
 def create_comorbidity_pop_matrix(

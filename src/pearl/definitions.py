@@ -62,3 +62,4 @@ STAGE0 = ["hcv", "smoking"]
 STAGE1 = ["anx", "dpr"]
 STAGE2 = ["ckd", "lipid", "dm", "ht"]
 STAGE3 = ["malig", "esld", "mi"]
+ALL_COMORBIDITIES = STAGE0 + STAGE1 + STAGE2 + STAGE3
