@@ -174,6 +174,46 @@ class Pearl:
             ]
         )
 
+    @staticmethod
+    def add_age_categories(population: pd.DataFrame) -> pd.DataFrame:
+        
+        population["age"] = np.floor(population["age"])
+        population["age_cat"] = np.floor(population["age"] / 10)
+        population.loc[population["age_cat"] > 7, "age_cat"] = 7
+        population["id"] = np.array(range(population.index.size))
+        population = population.sort_values("age")
+        population = population.set_index(["age_cat", "id"])
+        
+        return population
+    
+    def add_h1yy(self, population: pd.DataFrame) -> pd.DataFrame:
+        # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
+        for age_cat, grouped in population.groupby("age_cat"):
+            h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
+            population.loc[age_cat, "h1yy"] = self.random_state.choice(
+                h1yy_data["h1yy"], size=len(grouped), p=h1yy_data["pct"]
+            )
+            
+        # Reindex for group operation
+        population["h1yy"] = population["h1yy"].astype(int)
+        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
+
+        return population
+    
+    def add_init_sqrtcd4n(self, population: pd.DataFrame) -> pd.DataFrame:
+        # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
+        for h1yy, group in population.groupby(level=0):
+            mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "mu"), "estimate"]
+            sigma = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "sigma"), "estimate"]
+            size = group.shape[0]
+            sqrt_cd4n = draw_from_trunc_norm(
+                0, np.sqrt(2000.0), mu, sigma, size, self.random_state
+            )
+            population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
+        population = population.reset_index().set_index("id").sort_index()
+        
+        return population
+
     def make_user_pop_2009(self) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
@@ -189,38 +229,15 @@ class Pearl:
         population["age"] = simulate_ages(
             self.parameters.age_in_2009, n_initial_users, self.random_state
         )
-        population.loc[population["age"] < 18, "age"] = 18
-        population.loc[population["age"] > 85, "age"] = 85
 
         # Create age categories
-        population["age"] = np.floor(population["age"])
-        population["age_cat"] = np.floor(population["age"] / 10)
-        population.loc[population["age_cat"] > 7, "age_cat"] = 7
-        population["id"] = np.array(range(population.index.size))
-        population = population.sort_values("age")
-        population = population.set_index(["age_cat", "id"])
+        population = self.add_age_categories(population)
 
         # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
-        for age_cat, grouped in population.groupby("age_cat"):
-            h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
-            population.loc[age_cat, "h1yy"] = self.random_state.choice(
-                h1yy_data["h1yy"], size=len(grouped), p=h1yy_data["pct"]
-            )
-
-        # Reindex for group operation
-        population["h1yy"] = population["h1yy"].astype(int)
-        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
+        population = self.add_h1yy(population)
 
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
-        for h1yy, group in population.groupby(level=0):
-            mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "mu"), "estimate"]
-            sigma = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "sigma"), "estimate"]
-            size = group.shape[0]
-            sqrt_cd4n = draw_from_trunc_norm(
-                0, np.sqrt(2000.0), mu, sigma, size, self.random_state
-            )
-            population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
-        population = population.reset_index().set_index("id").sort_index()
+        population = self.add_init_sqrtcd4n(population)
 
         # Toss out age_cat < 2
         population.loc[population["age_cat"] < 2, "age_cat"] = 2
@@ -289,27 +306,12 @@ class Pearl:
         population["age"] = simulate_ages(
             self.parameters.age_in_2009, n_initial_nonusers, random_state
         )
-        population.loc[population["age"] < 18, "age"] = 18
-        population.loc[population["age"] > 85, "age"] = 85
 
         # Create age categories
-        population["age"] = np.floor(population["age"])
-        population["age_cat"] = np.floor(population["age"] / 10)
-        population.loc[population["age_cat"] > 7, "age_cat"] = 7
-        population["id"] = range(population.index.size)
-        population = population.sort_values("age")
-        population = population.set_index(["age_cat", "id"])
+        population = self.add_age_categories(population)
 
         # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
-        for age_cat, grouped in population.groupby("age_cat"):
-            h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
-            population.loc[age_cat, "h1yy"] = random_state.choice(
-                h1yy_data["h1yy"], size=len(grouped), p=h1yy_data["pct"]
-            )
-
-        # Reindex for group operation
-        population["h1yy"] = population["h1yy"].astype(int)
-        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
+        population = self.add_h1yy(population)
 
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
         for h1yy, group in population.groupby(level=0):
@@ -457,9 +459,6 @@ class Pearl:
             delayed = random_state.choice(a=len(grouped_pop.index), size=n_delayed, replace=False)
             grouped_pop.loc[delayed, "status"] = DELAYED
             population = pd.concat([population, grouped_pop])
-
-        population.loc[population["age"] < 18, "age"] = 18
-        population.loc[population["age"] > 85, "age"] = 85
 
         # Generate number of years for delayed initiators to wait before beginning care and modify 
         # their start year accordingly
