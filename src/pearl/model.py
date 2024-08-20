@@ -186,6 +186,23 @@ class Pearl:
         
         return population
     
+    @staticmethod
+    def add_default_columns(population: pd.DataFrame) -> pd.DataFrame:
+                # Add final columns used for calculations and output
+        population["last_h1yy"] = population["h1yy"]
+        population["last_init_sqrtcd4n"] = population["init_sqrtcd4n"]
+        population["init_age"] = population["age"] - (2009 - population["h1yy"])
+        population["n_lost"] = np.array(0, dtype="int32")
+        population["years_out"] = np.array(0, dtype="int16")
+        population["year_died"] = np.nan
+        population["sqrtcd4n_exit"] = 0
+        population["ltfu_year"] = np.array(0, dtype="int16")
+        population["return_year"] = np.array(0, dtype="int16")
+        population["intercept"] = 1.0
+        population["year"] = np.array(2009, dtype="int16")
+        
+        return population
+    
     def add_h1yy(self, population: pd.DataFrame) -> pd.DataFrame:
         # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
         for age_cat, grouped in population.groupby("age_cat"):
@@ -243,17 +260,7 @@ class Pearl:
         population.loc[population["age_cat"] < 2, "age_cat"] = 2
 
         # Add final columns used for calculations and output
-        population["last_h1yy"] = population["h1yy"]
-        population["last_init_sqrtcd4n"] = population["init_sqrtcd4n"]
-        population["init_age"] = population["age"] - (2009 - population["h1yy"])
-        population["n_lost"] = np.array(0, dtype="int32")
-        population["years_out"] = np.array(0, dtype="int16")
-        population["year_died"] = np.nan
-        population["sqrtcd4n_exit"] = 0
-        population["ltfu_year"] = np.array(0, dtype="int16")
-        population["return_year"] = np.array(0, dtype="int16")
-        population["intercept"] = 1.0
-        population["year"] = np.array(2009, dtype="int16")
+        population = self.add_default_columns(population)
 
         # Calculate time varying cd4 count
         population["time_varying_sqrtcd4n"] = calculate_cd4_increase(
@@ -314,29 +321,13 @@ class Pearl:
         population = self.add_h1yy(population)
 
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
-        for h1yy, group in population.groupby(level=0):
-            mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "mu"), "estimate"]
-            sigma = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "sigma"), "estimate"]
-            size = group.shape[0]
-            sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size, random_state)
-            population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
-        population = population.reset_index().set_index("id").sort_index()
+        population = self.add_init_sqrtcd4n(population)
 
         # Toss out age_cat < 2
         population.loc[population["age_cat"] < 2, "age_cat"] = 2
 
         # Add final columns used for calculations and output
-        population["last_h1yy"] = population["h1yy"]
-        population["last_init_sqrtcd4n"] = population["init_sqrtcd4n"]
-        population["init_age"] = population["age"] - (2009 - population["h1yy"])
-        population["n_lost"] = 0
-        population["years_out"] = 0
-        population["year_died"] = np.nan
-        population["sqrtcd4n_exit"] = 0
-        population["ltfu_year"] = 0
-        population["return_year"] = 0
-        population["intercept"] = 1.0
-        population["year"] = 2009
+        population = self.add_default_columns(population)
 
         # Calculate time varying cd4 count
         population["time_varying_sqrtcd4n"] = calculate_cd4_increase(
