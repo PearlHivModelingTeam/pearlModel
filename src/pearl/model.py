@@ -231,8 +231,8 @@ class Pearl:
         population = population.reset_index().set_index("id").sort_index()
         
         return population
-
-    def make_user_pop_2009(self, n_initial_users: int) -> pd.DataFrame:
+    
+    def make_base_population(self, n_population: int) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
         NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and 
@@ -244,7 +244,7 @@ class Pearl:
 
         # Draw ages from the truncated mixed gaussian
         population["age"] = simulate_ages(
-            self.parameters.age_in_2009, n_initial_users, self.random_state
+            self.parameters.age_in_2009, n_population, self.random_state
         )
 
         # Create age categories
@@ -266,6 +266,17 @@ class Pearl:
         population["time_varying_sqrtcd4n"] = calculate_cd4_increase(
             population.copy(), self.parameters
         )
+        
+        return population
+
+    def make_user_pop_2009(self, n_initial_users: int) -> pd.DataFrame:
+        """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
+        distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
+        NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and 
+        sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
+        using their respective models.
+        """
+        population = self.make_base_population(n_initial_users)
 
         # Set status and initiate out of care variables
         population["status"] = ART_USER
@@ -298,40 +309,14 @@ class Pearl:
         return population
 
     def make_nonuser_pop_2009(
-        self, n_initial_nonusers: pd.DataFrame) -> pd.DataFrame:
+        self, n_initial_nonusers: int) -> pd.DataFrame:
         """Create and return initial 2009 population dataframe. Draw ages from a mixed normal 
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from 
         NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and 
         sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
         using their respective models.
         """
-        # Create population dataframe
-        population = pd.DataFrame()
-
-        # Draw ages from the truncated mixed gaussian
-        population["age"] = simulate_ages(
-            self.parameters.age_in_2009, n_initial_nonusers, self.random_state
-        )
-
-        # Create age categories
-        population = self.add_age_categories(population)
-
-        # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
-        population = self.add_h1yy(population)
-
-        # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
-        population = self.add_init_sqrtcd4n(population)
-
-        # Toss out age_cat < 2
-        population.loc[population["age_cat"] < 2, "age_cat"] = 2
-
-        # Add final columns used for calculations and output
-        population = self.add_default_columns(population)
-
-        # Calculate time varying cd4 count
-        population["time_varying_sqrtcd4n"] = calculate_cd4_increase(
-            population.copy(), self.parameters
-        )
+        population = self.make_base_population(n_initial_nonusers)
 
         # Set status and initiate out of care variables
         years_out_of_care = self.random_state.choice(
