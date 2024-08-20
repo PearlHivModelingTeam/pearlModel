@@ -106,7 +106,10 @@ class Pearl:
         self.population = (
             pd.concat([self.population, art_pop])
             .fillna(0)
-            .astype(
+        )
+        
+        if self.parameters.bmi_intervention:
+            self.population = self.population.astype(
                 {
                     "become_obese_postART": "bool",
                     "bmiInt_eligible": "bool",
@@ -120,7 +123,6 @@ class Pearl:
                     "bmi_increase_postART_over5p": "bool",
                 }
             )
-        )
 
         # First recording of stats
         self.record_stats()
