@@ -23,11 +23,20 @@
 		"vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-					"ms-python.python",
-					"ms-azuretools.vscode-docker",
-					"ms-toolsai.jupyter",
-					"github.vscode-github-actions"
-					]
+		"ms-python.python",
+		"ms-azuretools.vscode-docker",
+		"ms-toolsai.jupyter",
+		"github.vscode-github-actions",
+		"charliermarsh.ruff",
+		"njpwerner.autodocstring",
+		"GitHub.vscode-pull-request-github",
+		"ms-toolsai.vscode-jupyter-cell-tags",
+		"ms-toolsai.jupyter-keymap",
+		"ms-python.vscode-pylance",
+		"ms-python.debugpy",
+		"donjayamanne.python-environment-manager",
+		"donjayamanne.python-extension-pack"
+	]
     }
 	}
 

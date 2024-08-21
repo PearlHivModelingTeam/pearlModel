@@ -17,8 +17,24 @@ from pearl.sample import draw_from_trunc_norm
 def simulate_ages(
     coeffs: pd.DataFrame, pop_size: int, random_state: np.random.RandomState
 ) -> NDArray[Any]:
-    """Return numpy array of ages with length pop_size drawn from a mixed gaussian of given
+    """
+    Return numpy array of ages with length pop_size drawn from a mixed gaussian of given
     coefficients truncated at 18 and 85.
+
+    Parameters
+    ----------
+    coeffs : pd.DataFrame
+        Coefficients from either Parameters.age_in_2009 or Parameters.age_by_h1yy
+    pop_size : int
+        Number of ages to simulate corresponding to the size of the population of interest.
+    random_state : np.random.RandomState
+        Random State object for random number sampling.
+
+    Returns
+    -------
+    NDArray[Any]
+        numpy array with pop_size number of entries corresponding to the simulated ages for the
+        population.
     """
     # Draw population size of each normal from the binomial distribution
     pop_size_1 = random_state.binomial(pop_size, coeffs.loc["lambda1", "estimate"])
@@ -52,7 +68,8 @@ def simulate_new_dx(
     linkage_to_care: pd.DataFrame,
     random_state: np.random.RandomState,
 ) -> Tuple[int, pd.DataFrame]:
-    """Return the number of ART non-users in 2009 as an integer and the number of agents entering
+    """
+    Return the number of ART non-users in 2009 as an integer and the number of agents entering
     the model each year as art users and non-users as a dataframe. Draw number of new diagnoses
     from a uniform distribution between upper and lower bounds. Calculate number of new art
     initiators by assuming a certain number link in the first year as estimated by a linear
@@ -60,6 +77,20 @@ def simulate_new_dx(
     care over the next 3 years. We assume that 70% of those linking to care begin ART, rising
     to 85% in 2011 and 97% afterwards. We take the number of people not initiating ART 2006 - 2009
     in this calculation to be the out of care population size in 2009 for our simulation.
+
+    Parameters
+    ----------
+    new_dx : pd.DataFrame
+        _description_
+    linkage_to_care : pd.DataFrame
+        _description_
+    random_state : np.random.RandomState
+        _description_
+
+    Returns
+    -------
+    Tuple[int, pd.DataFrame]
+        _description_
     """
 
     # Draw new dx from a uniform distribution between upper and lower for 2016-final_year

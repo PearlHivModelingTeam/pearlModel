@@ -1,15 +1,16 @@
 '''
 Functions pertraining to multimorbidity calculations
 '''
-import numpy as np
-import pandas as pd
-
-from numpy.typing import NDArray
 from typing import Any
 
-from pearl.definitions import (STAGE0, STAGE1, STAGE2, STAGE3, ART_NONUSER)
+import numpy as np
+from numpy.typing import NDArray
+import pandas as pd
+
+from pearl.definitions import ART_NONUSER, STAGE0, STAGE1, STAGE2, STAGE3
 from pearl.interpolate import restricted_cubic_spline_var
 from pearl.parameters import Parameters
+
 
 def create_mm_detail_stats(pop: pd.DataFrame) -> pd.DataFrame:
     all_comorbidities = STAGE0 + STAGE1 + STAGE2 + STAGE3

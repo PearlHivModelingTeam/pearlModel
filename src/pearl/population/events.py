@@ -1,3 +1,8 @@
+"""
+This module contains all code pertaining to events that occur after initialization, during
+the simulation run.
+"""
+
 from typing import Any, Optional
 
 import numpy as np
@@ -11,12 +16,26 @@ from pearl.parameters import Parameters
 
 def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
     """
-    Return the population matrix as a numpy array for calculating mortality in care. This log odds
-    of mortality are a linear function of calendar year, ART init year category modeled as two
-    binary variables, and age and sqrt initial cd4 count modeled as restricted cubic splines. If
-    using comorbidities, log odds of mortality are a linear function of calendar year, age
-    category, initial cd4 count, delta bmi and post art bmi modeled as restricted cubic
-    splines, and presence of each individual comorbidity modeled as binary variables.
+    Return the population matrix as a numpy array for calculating mortality in care. This log
+    odds of mortality are a linear function of calendar year, ART init year category modeled as two
+    binary variables, and age and sqrt initial cd4 count modeled as restricted cubic splines. Log
+    odds of mortality are a linear function of calendar year, age category, initial cd4 count,
+    delta bmi and post art bmi modeled as restricted cubic splines, and presence of each individual
+    comorbidity modeled as binary variables.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population Dataframe containing age_cat, anx, post_art_bmi, ckd, dm, dpr, esld, h1yy, hcv,
+        ht, intercept, lipid, malig, mi, smoking, init_sqrtcd4n, and year columns.
+    parameters : Parameters
+        Parameters object with mortality_in_care_post_art_bmi attribute.
+
+    Returns
+    -------
+    NDArray[Any]
+        A numpy representation of the population for feedining into Pearl.calculate_prob to
+        calculate death probability for in care mortality modeling.
     """
 
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
@@ -63,6 +82,21 @@ def create_mortality_out_care_pop_matrix(
     linear  function of calendar year, age category, sqrt cd4 count, delta bmi and post art bmi
     modeled as  restricted cubic splines, and presence of each individual comorbidity modeled as
     binary variables.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population Dataframe containing age_cat, anx, post_art_bmi, ckd, dm, dpr, esld, hcv,
+        ht, intercept, lipid, malig, mi, smoking, time_varying_sqrtcd4n, init_sqrtcd4n, and year
+        columns.
+    parameters : Parameters
+        Parameters object with mortality_out_care_post_art_bmi attribute.
+
+    Returns
+    -------
+    NDArray[Any]
+        A numpy representation of the population for feedining into Pearl.calculate_prob to
+        calculate death probability for out care mortality modeling.
     """
 
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
@@ -103,6 +137,19 @@ def calculate_cd4_increase(pop: pd.DataFrame, parameters: Parameters) -> NDArray
     Return new cd4 count of the given population as calculated via a linear function of time
     since art initiation modeled as a spline, initial cd4 count category, age category and
     cross terms.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population Dataframe containing age_cat, intercept, last_h1yy, last_init_sqrtcd4n, and year
+        columns.
+    parameters : Parameters
+        Parameters object with cd4_increase_knots and cd4_increase attributes.
+
+    Returns
+    -------
+    NDArray[Any]
+        numpy array representing the increased cd4 count values.
     """
     knots = parameters.cd4_increase_knots
     coeffs = parameters.cd4_increase.to_numpy(dtype=float)
@@ -173,8 +220,23 @@ def calculate_cd4_increase(pop: pd.DataFrame, parameters: Parameters) -> NDArray
 def calculate_cd4_decrease(
     pop: pd.DataFrame, parameters: Parameters, smearing: Optional[float] = SMEARING
 ) -> NDArray[Any]:
-    """Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4
+    """
+    Calculate out of care cd4 count via a linear function of years out of care and sqrt cd4
     count at exit from care.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population Dataframe containing intercept, ltfu_year, sqrtcd4n_exit, and year columns.
+    parameters : Parameters
+        Parameters object with cd4_decrease attribute.
+    smearing : Optional[float], optional
+        Smearing value, by default SMEARING value set in Pearl.definitions.
+
+    Returns
+    -------
+    NDArray[Any]
+        _description_
     """
 
     coeffs = parameters.cd4_decrease.to_numpy(dtype=float)
