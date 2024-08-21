@@ -96,7 +96,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
         Pearl(parameter, parameter.group_name, 1).run()
 
     result = []
-    for i in range(3):
+    for _ in range(3):
         result.append(run(parameter))
 
     dask.compute(result)
