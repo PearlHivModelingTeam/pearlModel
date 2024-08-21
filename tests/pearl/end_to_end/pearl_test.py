@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import shutil
 
@@ -40,7 +39,7 @@ def output_folder():
     out_dir = Path("tests/pearl/end_to_end/output")
     if out_dir.is_dir():
         shutil.rmtree(out_dir)
-    os.mkdir(out_dir)
+    Path.mkdir(out_dir)
     return out_dir
 
 

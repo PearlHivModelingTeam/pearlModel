@@ -1,6 +1,6 @@
 name: python
 
-on: [pull_request]
+on: [push, pull_request]
 
 jobs:
   build_and_test:
@@ -11,7 +11,7 @@ jobs:
      - name: Build Docker image 
        run: docker build -t pearl_model .
      - name: Run tests inside the container
-       run: docker run pearl_model pytest tests/pearl/unit
+       run: docker run pearl_model pytest tests/
      - name: mypy
        run: docker run pearl_model mypy src/
      - name: ruff
