@@ -175,7 +175,7 @@ class Pearl:
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
         population["id"] = np.array(range(population.index.size))
-        population = population.sort_values("age")
+        population = population.sort_values(["age", "id"])
         population = population.set_index(["age_cat", "id"])
 
         return population

@@ -79,6 +79,7 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
+        result_population.to_parquet(Path("tests/pearl/assets/pearl_test/population.parquet"))
         assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
