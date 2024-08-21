@@ -74,8 +74,9 @@ class Pearl:
         else:
             raise ValueError("Parameter should have a seed property")
 
-        with Path.open(self.parameters.output_folder / "random.state", "w") as state_file:
-            state_file.write(str(self.parameters.seed))
+        if self.parameters.output_folder:
+            with Path.open(self.parameters.output_folder / "random.state", "w") as state_file:
+                state_file.write(str(self.parameters.seed))
 
         # Initiate output class
         self.stats = Statistics(
