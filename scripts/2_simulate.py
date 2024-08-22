@@ -16,10 +16,8 @@ def run(group_name_run, replication_run, seed=None):
     replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
     out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"
     output_folder = output_root_path / out_path
-    rerun_folder = rerun_root_path / out_path if rerun_root_path is not None else None
     parameters = Parameters(
         path=param_file_path,
-        rerun_folder=rerun_folder,
         output_folder=output_folder,
         group_name=group_name_run,
         new_dx=config["new_dx"],
@@ -27,8 +25,6 @@ def run(group_name_run, replication_run, seed=None):
         mortality_model=config["mortality_model"],
         mortality_threshold_flag=config["mortality_threshold_flag"],
         idu_threshold=config["idu_threshold"],
-        verbose=config["verbose"],
-        bmi_intervention=config["bmi_intervention"],
         bmi_intervention_scenario=config["bmi_intervention_scenario"],
         bmi_intervention_start_year=config["bmi_intervention_start_year"],
         bmi_intervention_end_year=config["bmi_intervention_end_year"],
@@ -37,7 +33,7 @@ def run(group_name_run, replication_run, seed=None):
         seed=seed,
     )
     print(
-        f"""Initializing group {group_name_run}, rep {replication_run}: 
+        f"""Initializing group {group_name_run}, rep {replication_run}:
         output set to {parameters.output_folder}""",
         flush=True,
     )
@@ -64,7 +60,7 @@ if __name__ == "__main__":
     # Original run, rerun, or test run?
     rerun_root_path = None
     if args.config:
-        config_file_path = pearl_path / "config" / args.config
+        config_file_path = Path(args.config)
         output_root_path = pearl_path / f"out/{config_file_path.stem}_{date_string}"
         print(output_root_path.resolve(), flush=True)
     elif args.rerun:
