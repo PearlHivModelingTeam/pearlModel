@@ -1,6 +1,7 @@
 # Imports
 import argparse
 from datetime import datetime
+from pathlib import Path
 import subprocess
 
 from pearl.definitions import PROJECT_DIR
@@ -21,7 +22,7 @@ if args.createParam:
     print("Creating the parameter file ...")
     command = ["python3", f"{pearl_path}/scripts/1_create_param_file.py"]
     output_and_error_log = "1_out.log"
-    with open(output_and_error_log, "w") as log_file:
+    with Path.open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
     # Wait for the process to finish
     process.communicate()
@@ -47,7 +48,7 @@ for f in config_files:
     ]
     # Use subprocess to run the command and redirect both output and error to the same file
     output_and_error_log = f"2_out_{config_file_path.stem}.log"
-    with open(output_and_error_log, "w") as log_file:
+    with Path.open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
     # Wait for the process to finish
     process.communicate()
@@ -64,7 +65,7 @@ for f in config_files:
         f"{output_root_path}/parquet_output",
     ]
     output_and_error_log = f"3_out_{config_file_path.stem}.log"
-    with open(output_and_error_log, "w") as log_file:
+    with Path.open(output_and_error_log, "w") as log_file:
         process = subprocess.Popen(command, stdout=log_file, stderr=subprocess.STDOUT)
     # Wait for the process to finish
     process.communicate()

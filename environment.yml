@@ -12,8 +12,9 @@ dependencies:
   - ruff
   - mypy
   - sphinx
+  - pre-commit
   - pip:
-    - pip==24.0
-    - setuptools==70.3.0
-    - wheel==0.43.0
+    - pip
+    - setuptools
+    - wheel
 prefix: /opt/conda/envs/myenv

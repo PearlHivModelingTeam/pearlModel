@@ -1,6 +1,6 @@
 # Imports
 from datetime import datetime
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -539,7 +539,7 @@ mortality_threshold_idu_10x = pd.read_csv(
 # Save everything
 out_file = param_dir / "parameters.h5"
 if out_file.is_file():
-    os.remove(out_file)
+    Path.unlink(out_file)
 
 with pd.HDFStore(out_file) as store:
     store["on_art_2009"] = on_art_2009

@@ -1,6 +1,7 @@
 # Imports
 import argparse
 from datetime import datetime
+from pathlib import Path
 import shutil
 
 import dask
@@ -13,7 +14,7 @@ from pearl.model import Parameters, Pearl
 @dask.delayed
 def run(group_name_run, replication_run, seed=None):
     replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
-    out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"  # setting up the path name
+    out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"
     output_folder = output_root_path / out_path
     rerun_folder = rerun_root_path / out_path if rerun_root_path is not None else None
     parameters = Parameters(
@@ -36,7 +37,8 @@ def run(group_name_run, replication_run, seed=None):
         seed=seed,
     )
     print(
-        f"Initializing group {group_name_run}, rep {replication_run}: output set to {parameters.output_folder}",
+        f"""Initializing group {group_name_run}, rep {replication_run}: 
+        output set to {parameters.output_folder}""",
         flush=True,
     )
     Pearl(parameters, group_name_run, replication_run).run()
@@ -73,7 +75,7 @@ if __name__ == "__main__":
         config_file_path = pearl_path / "config/test.yaml"
         output_root_path = pearl_path / f"out/{config_file_path.stem}_{date_string}"
     # Load config_file
-    with open(config_file_path) as config_file:
+    with Path.open(config_file_path) as config_file:
         config = yaml.safe_load(config_file)
 
     print("2", flush=True)
@@ -90,12 +92,12 @@ if __name__ == "__main__":
     for group_name_run in config["group_names"]:
         for replication_run in range(config["replications"]):
             replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
-            out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"  # setting up the path name
+            out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"
             output_folder = output_root_path / out_path
             output_folder.mkdir(parents=True)
 
     # Copy config file to output dir
-    with open(output_root_path / "config.yaml", "w") as yaml_file:
+    with Path.open(output_root_path / "config.yaml", "w") as yaml_file:
         yaml.safe_dump(config, yaml_file)
 
     # Launching simulations
