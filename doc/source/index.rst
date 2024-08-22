@@ -15,4 +15,6 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
+   README <readme_link>
+   CHANGELOG <changelog_link>
    modules
