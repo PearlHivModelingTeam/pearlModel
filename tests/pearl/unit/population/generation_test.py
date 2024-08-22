@@ -333,7 +333,8 @@ def test_calculate_post_art_bmi_no_intervention(
     expected_post_art_bmi_no_intervention,
 ):
     """
-    It should return the same output, given the same input and a seeded RandomState with no intervention.
+    It should return the same output, given the same input and a seeded RandomState with no
+    intervention.
     """
     post_art_bmi = calculate_post_art_bmi(
         test_art_bmi_population,
@@ -364,7 +365,8 @@ def test_calculate_post_art_bmi_with_intervention(
     expected_post_art_bmi_with_intervention,
 ):
     """
-    It should return the same output, given the same input and a seeded RandomState with no intervention.
+    It should return the same output, given the same input and a seeded RandomState with no
+    intervention.
     """
     post_art_bmi = calculate_post_art_bmi(
         test_art_bmi_population,
@@ -395,7 +397,8 @@ def test_calculate_pre_art_bmi(
     expected_post_art_bmi_with_intervention,
 ):
     """
-    It should return the same output, given the same input and a seeded RandomState with no intervention.
+    It should return the same output, given the same input and a seeded RandomState with no
+    intervention.
     """
     pre_art_bmi = calculate_pre_art_bmi(
         test_art_bmi_population, test_art_bmi_parameters, random_state=random_state

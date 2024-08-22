@@ -2,13 +2,13 @@
 Test module for multimorbidity.py
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-
-from pathlib import Path
 from pytest import fixture
 
-from pearl.multimorbidity import create_comorbidity_pop_matrix, create_mm_detail_stats
+from pearl.multimorbidity import create_comorbidity_pop_matrix
 from pearl.parameters import Parameters
 
 

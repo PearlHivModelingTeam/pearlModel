@@ -3,6 +3,7 @@ Tests for model.py
 """
 
 from pathlib import Path
+
 from pytest import fixture
 
 from pearl.model import Pearl

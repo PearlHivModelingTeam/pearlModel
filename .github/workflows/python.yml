@@ -15,4 +15,4 @@ jobs:
      - name: mypy
        run: docker run pearl_model mypy src/
      - name: ruff
-       run: docker run pearl_model ruff check src/
+       run: docker run pearl_model ruff check src/ tests/
