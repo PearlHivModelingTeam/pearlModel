@@ -125,6 +125,14 @@ def test_linkage_to_care():
 
 
 @fixture
+def test_parameters(test_new_dx, test_linkage_to_care):
+    parameters = Mock()
+    parameters.new_dx = test_new_dx
+    parameters.linkage_to_care = test_linkage_to_care
+    return parameters
+
+
+@fixture
 def expected_n_initial_nonusers():
     return 9097
 
@@ -141,8 +149,7 @@ def expected_new_agents():
 
 
 def test_simulate_new_dx(
-    test_new_dx,
-    test_linkage_to_care,
+    test_parameters,
     random_state,
     expected_n_initial_nonusers,
     expected_new_agents,
@@ -150,9 +157,7 @@ def test_simulate_new_dx(
     """
     It should return the same numbers when passed a seeded RandomState
     """
-    initial_nonusers, new_agents = simulate_new_dx(
-        test_new_dx, test_linkage_to_care, random_state=random_state
-    )
+    initial_nonusers, new_agents = simulate_new_dx(test_parameters, random_state=random_state)
 
     assert expected_n_initial_nonusers == initial_nonusers
     assert_frame_equal(new_agents, expected_new_agents)
@@ -266,7 +271,6 @@ def param_file_path():
 def test_art_bmi_parameters(param_file_path):
     return Parameters(
         path=param_file_path,
-        rerun_folder=None,
         output_folder=None,
         group_name="msm_black_male",
         new_dx="base",
@@ -274,7 +278,6 @@ def test_art_bmi_parameters(param_file_path):
         mortality_model="by_sex_race_risk",
         mortality_threshold_flag=1,
         idu_threshold="2x",
-        verbose=False,
         seed=42,
     )
 

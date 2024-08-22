@@ -1,3 +1,8 @@
+"""
+Module containing the Pearl class for simulation and the Statitistics class for storing output
+values.
+"""
+
 # Imports
 import os
 
@@ -58,12 +63,29 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 class Pearl:
-    """The PEARL class runs a simulation when initialized."""
+    """
+    Class containing the pearl simulation engine.
+    """
 
     def __init__(self, parameters: Parameters, group_name: str, replication: int):
         """
         Takes an instance of the Parameters class, the group name and replication number and
         runs a simulation.
+
+        Parameters
+        ----------
+        parameters : Parameters
+            Parameters object which loads and stores all model values.
+        group_name : str
+            Name of subpopulation for the simulation. For example, msm_black_male representing
+            "Men who have sex with men black males".
+        replication : int
+            Replication number for use whne aggregating results across a batch of simulations.
+
+        Raises
+        ------
+        ValueError
+            If parameters are not seeded, the model will raise a ValueError.
         """
         self.group_name = group_name
         self.replication = replication
@@ -87,8 +109,7 @@ class Pearl:
 
         # Simulate number of new art initiators and initial nonusers
         n_initial_nonusers, n_new_agents = simulate_new_dx(
-            self.parameters.new_dx.copy(),
-            self.parameters.linkage_to_care,
+            self.parameters,
             self.random_state,
         )
 
@@ -108,7 +129,7 @@ class Pearl:
         # concat the art pop to population
         self.population = pd.concat([self.population, art_pop]).fillna(0)
 
-        if self.parameters.bmi_intervention:
+        if self.parameters.bmi_intervention_scenario:
             self.population = self.population.astype(
                 {
                     "become_obese_postART": "bool",
@@ -136,6 +157,22 @@ class Pearl:
         Calculate and return a numpy array of individual probabilities from logistic regression
         given the population and coefficient matrices.
         Used for multiple logistic regression functions.
+
+        Parameters
+        ----------
+        pop : pd.DataFrame
+            Population Dataframe that results from calling create_mortality_in_care_pop_matrix,
+            create_mortality_out_care_pop_matrix, create_ltfu_pop_matrix, or
+            create_comorbidity_pop_matrix.
+
+        coeffs : NDArray[Any]
+            Coefficients are stored in Parameters object with attribute names corresponding to
+            the above population preparation functions.
+
+        Returns
+        -------
+        NDArray[Any]
+            Result of multiplying the population by the coefficients and converting to probability.
         """
         # Calculate log odds using a matrix multiplication
         log_odds = np.matmul(pop, coeffs)
@@ -149,6 +186,18 @@ class Pearl:
         """
         Create and return the population matrix as a numpy array for use in calculating probability
         of loss to follow up.
+
+        Parameters
+        ----------
+        pop : pd.DataFrame
+            The population DataFrame that we wish to calculate loss to follow up on.
+        knots : pd.DataFrame
+            Quadratic spline knot values which are stored in Parameters.
+
+        Returns
+        -------
+        NDArray[Any]
+            numpy array for passing into Pearl.calculate_prob
         """
         # Create all needed intermediate variables
         pop["age_"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 1)
@@ -172,6 +221,20 @@ class Pearl:
 
     @staticmethod
     def add_age_categories(population: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add an age_cat column corresponding to the decade age of the agent, truncated at a maximum
+        age category of 7.
+
+        Parameters
+        ----------
+        population : pd.DataFrame
+            Population with an age column.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population with age_cat column added.
+        """
         population["age"] = np.floor(population["age"])
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
@@ -183,6 +246,19 @@ class Pearl:
 
     @staticmethod
     def add_default_columns(population: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add default values for columns necessary for simulation.
+
+        Parameters
+        ----------
+        population : pd.DataFrame
+            Population DataFrame to add default columns to.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population with added default columns
+        """
         # Add final columns used for calculations and output
         population["last_h1yy"] = population["h1yy"]
         population["last_init_sqrtcd4n"] = population["init_sqrtcd4n"]
@@ -199,6 +275,20 @@ class Pearl:
         return population
 
     def add_h1yy(self, population: pd.DataFrame) -> pd.DataFrame:
+        """
+        For each age category (age_cat), assign a value for ART initiation (h1yy) based on
+        NA-ACCORD data distribution in 2009 cohort.
+
+        Parameters
+        ----------
+        population : pd.DataFrame
+            Population to add h1yy column to.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population with added h1yy column.
+        """
         # Assign H1YY to match NA-ACCORD distribution from h1yy_by_age_2009
         for age_cat, grouped in population.groupby("age_cat"):
             h1yy_data = self.parameters.h1yy_by_age_2009.loc[age_cat].reset_index()
@@ -213,6 +303,21 @@ class Pearl:
         return population
 
     def add_init_sqrtcd4n(self, population: pd.DataFrame) -> pd.DataFrame:
+        """
+        For each unique h1yy value, sample from a truncated normal distribution between 0 and
+        sqrt(2000) with mu, and sigma values based on NA-ACCORD data distributions from 2009
+        cohort.
+
+        Parameters
+        ----------
+        population : pd.DataFrame
+            Population to add sqrtcd4n column to.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population with sqrtcd4n column added.
+        """
         # For each h1yy draw values of sqrt_cd4n from a normal truncated at 0 and sqrt 2000
         for h1yy, group in population.groupby(level=0):
             mu = self.parameters.cd4n_by_h1yy_2009.loc[(h1yy, "mu"), "estimate"]
@@ -227,6 +332,22 @@ class Pearl:
         return population
 
     def add_bmi(self, population: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add Pre ART BMI (pre_art_bmi), Post ART BMI (post_art_bmi), and Delta BMI (delta_bmi)
+        columns to population Dataframe based on the outputs of
+        Pearl.generation.calculate_pre_art_bmi, Pearl.generation.calculate_post_art_bmi, and the
+        difference between post_art_bmi and pre_art_bmi.
+
+        Parameters
+        ----------
+        population : pd.DataFrame
+            Population to add BMI data to.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population with added BMI columns.
+        """
         population["pre_art_bmi"] = calculate_pre_art_bmi(
             population.copy(), self.parameters, self.random_state
         )
@@ -238,11 +359,21 @@ class Pearl:
         return population
 
     def make_base_population(self, n_population: int) -> pd.DataFrame:
-        """Create and return initial 2009 population dataframe. Draw ages from a mixed normal
+        """
+        Create and return initial 2009 population dataframe. Draw ages from a mixed normal
         distribution truncated at 18 and 85. Assign ART initiation year using proportions from
         NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and
-        sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
-        using their respective models.
+        sqrt(2000).
+
+        Parameters
+        ----------
+        n_population : int
+            Number of agents to generate
+
+        Returns
+        -------
+        pd.DataFrame
+            Population Dataframe for simulation.
         """
         # Create population dataframe
         population = pd.DataFrame()
@@ -275,11 +406,19 @@ class Pearl:
         return population
 
     def make_user_pop_2009(self, n_initial_users: int) -> pd.DataFrame:
-        """Create and return initial 2009 population dataframe. Draw ages from a mixed normal
-        distribution truncated at 18 and 85. Assign ART initiation year using proportions from
-        NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and
-        sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
-        using their respective models.
+        """
+        Generate base population, assign bmi, comorbidities, and multimorbidity
+        using their respective models. Assign status column to ART_USER global value.
+
+        Parameters
+        ----------
+        n_initial_users : int
+            Number of agents to generate that will be counted as ART users in 2009.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population DataFrame representing all ART users in 2009 for the simulation.
         """
         population = self.make_base_population(n_initial_users)
 
@@ -308,11 +447,19 @@ class Pearl:
         return population
 
     def make_nonuser_pop_2009(self, n_initial_nonusers: int) -> pd.DataFrame:
-        """Create and return initial 2009 population dataframe. Draw ages from a mixed normal
-        distribution truncated at 18 and 85. Assign ART initiation year using proportions from
-        NA-ACCORD data. Draw sqrt CD4 count from a normal distribution truncated at 0 and
-        sqrt(2000). If doing an Aim 2 simulation, assign bmi, comorbidities, and multimorbidity
-        using their respective models.
+        """
+        Assign bmi, comorbidities, and multimorbidity using their respective models.
+        Assign status column to ART_NONUSER global value.
+
+        Parameters
+        ----------
+        n_initial_nonusers : int
+            Number of agents to generate that will be counted as NONART users in 2009.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population DataFrame representing all NONART users in 2009 for the simulation.
         """
         population = self.make_base_population(n_initial_nonusers)
 
@@ -362,7 +509,8 @@ class Pearl:
     def make_new_population(
         self, n_new_agents: pd.DataFrame, random_state: np.random.RandomState
     ) -> pd.DataFrame:
-        """Create and return the population initiating ART during the simulation. Age and CD4
+        """
+        Create and return the population initiating ART during the simulation. Age and CD4
         count distribution parameters are taken from a linear regression until 2018 and drawn from
         a uniform distribution between the 2018 values and the predicted values thereafter. Ages
         are drawn from the two-component mixed normal distribution truncated at 18 and 85 defined
@@ -372,6 +520,18 @@ class Pearl:
         at ART initiation for each agent is drawn from a normal distribution truncated at 0 and
         sqrt 2000 as defined by the generated parameters. If this is an Aim 2 simulation, generate
         bmi, comorbidities, and multimorbidity from their respective distributions.
+
+        Parameters
+        ----------
+        n_new_agents : pd.DataFrame
+            Number of new agents to generate.
+        random_state : np.random.RandomState
+            Random State object for random number sampling.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population DataFrame containing all agents initiating ART in the simulation.
         """
         # Draw a random value between predicted and 2018 predicted value for years greater than
         # 2018
@@ -507,7 +667,7 @@ class Pearl:
 
         # Apply post_art_bmi intervention
         # (eligibility may depend on current exisiting comorbidities)
-        if self.parameters.bmi_intervention:
+        if self.parameters.bmi_intervention_scenario:
             population[
                 [
                     "bmiInt_scenario",
@@ -562,10 +722,6 @@ class Pearl:
 
             # Append changed populations to their respective DataFrames
             self.append_new()
-
-            # Print population breakdown if verbose
-            if self.parameters.verbose:
-                print(self)
 
             # Increment year
             self.year += 1
@@ -1106,7 +1262,7 @@ class Pearl:
         simulation. A count of new initiators, those dying in care, and those dying out of care is
         recorded as well as the cd4 count of ART initiators.
         """
-        if self.parameters.bmi_intervention:
+        if self.parameters.bmi_intervention_scenario:
             """
             bmi_int_cascade: summary statistics on population receiving the intervention and their 
             characteristics
@@ -1311,10 +1467,21 @@ class Statistics:
         group_name: str,
         replication: int,
     ) -> None:
-        """The init function operates on two levels. If called with no out_list a new Statistics
+        """
+        The init function operates on two levels. If called with no out_list a new Statistics
         class is initialized, with empty dataframes to fill with data. Otherwise it concatenates
         the out_list dataframes so that the results of all replications and groups are stored in
         a single dataframe.
+
+        Parameters
+        ----------
+        output_folder : Path
+            Path to write outputs to.
+        group_name : str
+            Name of the subpopulation that was simulated, used for creating folder structure in
+            output folder.
+        replication : int
+            Replication number of simulation, user for creating folder struncture in output folder.
         """
 
         self.output_folder = output_folder
@@ -1322,8 +1489,13 @@ class Statistics:
         self.replication = replication
 
     def __getattr__(self, attr: str) -> None:
-        """
-        If an attribute is not present and it is called for, default to an empty pandas dataframe
+        """If an attribute is not present and it is called for, default to an empty pandas
+        dataframe
+
+        Parameters
+        ----------
+        attr : str
+            Name of attribute.
         """
         setattr(self, attr, pd.DataFrame())
 

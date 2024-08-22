@@ -64,8 +64,7 @@ def simulate_ages(
 
 
 def simulate_new_dx(
-    new_dx: pd.DataFrame,
-    linkage_to_care: pd.DataFrame,
+    parameters: Parameters,
     random_state: np.random.RandomState,
 ) -> Tuple[int, pd.DataFrame]:
     """
@@ -80,18 +79,19 @@ def simulate_new_dx(
 
     Parameters
     ----------
-    new_dx : pd.DataFrame
-        _description_
-    linkage_to_care : pd.DataFrame
-        _description_
+    parameters : Parameters
+        Parameter object with new_dx and linkage_to_care attributes.
     random_state : np.random.RandomState
-        _description_
+        Random State object for random number sampling.
 
     Returns
     -------
     Tuple[int, pd.DataFrame]
-        _description_
+        (number of ART non-users in 2009 as an integer, number of agents entering the model each
+        year as art users and non-users as a dataframe)
     """
+    new_dx = parameters.new_dx.copy()
+    linkage_to_care = parameters.linkage_to_care
 
     # Draw new dx from a uniform distribution between upper and lower for 2016-final_year
     new_dx["n_dx"] = new_dx["lower"] + (new_dx["upper"] - new_dx["lower"]) * random_state.uniform()
@@ -127,15 +127,54 @@ def simulate_new_dx(
 def apply_bmi_intervention(
     pop: pd.DataFrame, parameters: Parameters, random_state: np.random.RandomState
 ) -> pd.DataFrame:
-    if parameters.bmi_intervention == 0:
-        raise ValueError("Running apply_bmi_intervention despite bmi_intervention=0")
+    """
+    Apply the specified bmi intervention based on years of application onto the
+    eligible population based on the coverage and efficacy defined in parameters.
+
+    ===
+    Scenarios:
+    1) Based on BMI threshold:
+    Anyone gaining weight who pass the threshold of BMI=30 (obesity) will experience benefits
+    from this intervention by retaining their weight at a threshold of 29.9 (below obesity)
+
+    2) Based on % gain in BMI :
+    Anyone experiencing >5% increase in pre-ART BMI will experience benefits from this
+    intervention by retaining their BMI at 1.05 times the starting value. Those surpassing the
+    BMI of 30 (obesity threshold) will retain weights at a threshold of 29.9 (below obesity)
+
+    3) No BMI gain:
+    Anyone gaining BMI will experience benefits from this intervention by retaining their weight
+    at the level of pre-ART BMI. Those experiencing reductions in their weight are allowed to
+    follow the natural weight loss trajectory.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population Dataframe containing h1yy, dm, pre_art_bmi, and post_art_bmi columns.
+    parameters : Parameters
+        Parameters object containing bmi_intervention_scenario, bmi_intervention_start_year,
+        bmi_intervention_end_year, bmi_intervention_coverage, bmi_intervention_effectiveness
+        attributes
+    random_state : np.random.RandomState
+        Random State object for random number sampling.
+
+    Returns
+    -------
+    pd.DataFrame
+        Population dataframe with bmi columns: bmiInt_scenario, bmiInt_ineligible_dm,
+        bmiInt_ineligible_underweight, bmiInt_ineligible_obese, bmiInt_eligible,
+        bmiInt_received, bmi_increase_postART, bmi_increase_postART_over5p,
+        become_obese_postART, bmiInt_impacted, pre_art_bmi, post_art_bmi_without_bmiInt,
+        post_art_bmi,
+
+    """
     pop["bmiInt_scenario"] = np.array(parameters.bmi_intervention_scenario, dtype="int8")
     pop["bmiInt_year"] = pop["h1yy"].isin(
         range(
             parameters.bmi_intervention_start_year,
             parameters.bmi_intervention_end_year + 1,
         )
-    )  # this function doesnt capture the last value, so we do +1
+    )
     pop["bmiInt_coverage"] = np.array(
         random_state.choice(
             [1, 0],
@@ -240,9 +279,28 @@ def calculate_post_art_bmi(
     random_state: np.random.RandomState,
     intervention: Optional[bool] = False,
 ) -> NDArray[Any]:
-    """Calculate and return post art bmi for a population. Sqrt of post art bmi is modeled as a
+    """
+    Calculate and return post art bmi for a population. Sqrt of post art bmi is modeled as a
     linear function of ART initiation year and age, sqrt of pre art bmi, sqrt initial cd4 count,
     and sqrt of cd4 count 2 years after art initiation all modeled as restricted cubic splines.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population DataFrame with year, init_age, pre_art_bmi, init_sqrtcd4n, last_init_sqrtcd4n,
+        h1yy, last_h1yy, and intercept columns.
+    parameters : Parameters
+        _description_
+    random_state : np.random.RandomState
+        Parameters object with post_art_bmi, post_art_bmi_age_knots, post_art_pre_art_bmi_knots,
+        post_art_bmi_cd4_knots, post_art_bmi_cd4_post_knots, and post_art_bmi_rse attributes.
+    intervention : Optional[bool], optional
+        if True, truncate the sqrt_post_art_bmi at sqrt(30), else sqrt(65), by default False.
+
+    Returns
+    -------
+    NDArray[Any]
+        numpy array representing the population bmi after ART initiation.
     """
     # Copy coefficients and knots to more reasonable variable names
     coeffs = parameters.post_art_bmi

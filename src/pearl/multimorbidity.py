@@ -1,6 +1,7 @@
-'''
+"""
 Functions pertraining to multimorbidity calculations
-'''
+"""
+
 from typing import Any
 
 import numpy as np
@@ -19,13 +20,29 @@ def create_mm_detail_stats(pop: pd.DataFrame) -> pd.DataFrame:
     df = df.groupby(all_comorbidities).size().reset_index(name="n")
     return df
 
+
 def create_comorbidity_pop_matrix(
     pop: pd.DataFrame, condition: str, parameters: Parameters
 ) -> NDArray[Any]:
     """
-    Create and return the population matrix as a numpy array for calculating the probability of 
-    incidence of any of the 9 comorbidities. Each comorbidity has a unique set of variables as 
+    Create and return the population matrix as a numpy array for calculating the probability of
+    incidence of any of the 9 comorbidities. Each comorbidity has a unique set of variables as
     listed below.
+
+    Parameters
+    ----------
+    pop : pd.DataFrame
+        Population for use in preparation for Pearl.calculate_prob.
+    condition : str
+        Morbidity as a string value.
+    parameters : Parameters
+        Parameters object that contains spline knots for interpolation calculations for select
+        morbidities.
+
+    Returns
+    -------
+    NDArray[Any]
+        numpy array representing the population for use in Pearl.calculate_prob.
     """
     # Calculate some intermediate variables needed for the population matrix
     pop["time_since_art"] = pop["year"] - pop["h1yy"]

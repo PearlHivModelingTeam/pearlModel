@@ -50,7 +50,6 @@ def param_file_path():
 def test_parameters(param_file_path):
     return Parameters(
         path=param_file_path,
-        rerun_folder=None,
         output_folder=None,
         group_name="msm_black_male",
         new_dx="base",
@@ -58,7 +57,6 @@ def test_parameters(param_file_path):
         mortality_model="by_sex_race_risk",
         mortality_threshold_flag=1,
         idu_threshold="2x",
-        verbose=False,
         seed=42,
     )
 

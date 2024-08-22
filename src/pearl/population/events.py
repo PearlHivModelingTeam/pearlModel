@@ -236,7 +236,7 @@ def calculate_cd4_decrease(
     Returns
     -------
     NDArray[Any]
-        _description_
+        numpy array representing the decreased cd4 count values.
     """
 
     coeffs = parameters.cd4_decrease.to_numpy(dtype=float)

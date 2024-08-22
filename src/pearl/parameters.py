@@ -16,7 +16,6 @@ class Parameters:
     def __init__(
         self,
         path: Path,
-        rerun_folder: Path,
         output_folder: Path,
         group_name: str,
         new_dx: str,
@@ -24,31 +23,87 @@ class Parameters:
         mortality_model: str,
         mortality_threshold_flag: bool,
         idu_threshold: str,
-        verbose: bool,
         seed: int,
-        bmi_intervention: int = 0,
-        bmi_intervention_scenario: int = 1,
+        bmi_intervention_scenario: int = 0,
         bmi_intervention_start_year: int = 2020,
         bmi_intervention_end_year: int = 2030,
         bmi_intervention_coverage: float = 1.0,
         bmi_intervention_effectiveness: float = 1.0,
     ):
-        """Takes the path to the parameters.h5 file, the path to the folder containing rerun data 
-        if the run is a rerun, the output folder, the group name, a flag indicating if the 
-        simulation is for aim 2, a flag indicating whether to record detailed comorbidity 
-        information, the type of new_dx parameter to use, the final year of the model, the 
-        mortality model to use, whether to use a mortality threshold, verbosity, the sensitivity 
-        analysis dict, the classic sensitivity analysis dict, and the aim 2 sensitivity 
+        """
+        Takes the path to the parameters.h5 file, the path to the folder containing rerun data
+        if the run is a rerun, the output folder, the group name, a flag indicating if the
+        simulation is for aim 2, a flag indicating whether to record detailed comorbidity
+        information, the type of new_dx parameter to use, the final year of the model, the
+        mortality model to use, whether to use a mortality threshold, verbosity, the sensitivity
+        analysis dict, the classic sensitivity analysis dict, and the aim 2 sensitivity
         analysis dict.
+
+        Parameters
+        ----------
+        path : Path
+            Path to parameters.h5 files that contains all necessary coefficient values.
+        output_folder : Path
+            Folder to write simulation outputs to.
+        group_name : str
+            Subpopulation name from [msm_white_male, msm_black_male, msm_hisp_male, idu_white_male,
+            idu_black_male, idu_hisp_male, idu_white_female, idu_black_female, idu_hisp_female,
+            het_white_male, het_black_male, het_hisp_male, het_white_female, het_black_female,
+            het_hisp_female].
+        final_year : int
+            Final year of simulation. The simulation will run from 2009 until the final year.
+        mortality_model : str
+            Which mortality model to run from [by_sex_race_risk, by_sex_race, by_sex, overall]
+        mortality_threshold_flag : bool
+            To use the mortality threshold or not.
+        idu_threshold : str
+            IDU threshold from [2x, 5x, 10x]
+        seed : int
+            Value for random number generation seeding.
+        bmi_intervention_scenario : int, optional
+            BMI intervention to apply from [0 for no intervention, or 1, 2, 3], by default 0
+        bmi_intervention_start_year : int, optional
+            Year to start BMI intervention, by default 2020
+        bmi_intervention_end_year : int, optional
+            Year to end BMI intervention, by default 2030
+        bmi_intervention_coverage : float, optional
+            Probability of eligible population that receives BMI intervention between 0 and 1
+            , by default 1.0
+        bmi_intervention_effectiveness : float, optional
+            Efficacy of BMI intervention for those that do receive it between 0 and 1
+            , by default 1.0
+
+        Raises
+        ------
+        ValueError
+            Raises value error if inputs are outside of the described acceptable values.
         """
 
+        # check to ensure a proper group_name is provided
+        if group_name not in [
+            "msm_white_male",
+            "msm_black_male",
+            "msm_hisp_male",
+            "idu_white_male",
+            "idu_black_male",
+            "idu_hisp_male",
+            "idu_white_female",
+            "idu_black_female",
+            "idu_hisp_female",
+            "het_white_male",
+            "het_black_male",
+            "het_hisp_male",
+            "het_white_female",
+            "het_black_female",
+            "het_hisp_female",
+        ]:
+            raise ValueError("group_name not supported")
+
         # Save inputs as class attributes
-        self.rerun_folder = rerun_folder
         self.output_folder = output_folder
         self.group_name = group_name
         self.final_year = final_year
         self.mortality_threshold_flag = mortality_threshold_flag
-        self.verbose = verbose
         self.seed = seed
 
         # 2009 population
@@ -61,7 +116,6 @@ class Parameters:
         self.linkage_to_care = pd.read_hdf(path, "linkage_to_care").loc[group_name]
         self.age_by_h1yy = pd.read_hdf(path, "age_by_h1yy").loc[group_name]
         self.cd4n_by_h1yy = pd.read_hdf(path, "cd4n_by_h1yy").loc[group_name]
-
         # Choose new ART initiator model
         if new_dx == "base":
             self.new_dx = pd.read_hdf(path, "new_dx").loc[group_name]
@@ -69,7 +123,6 @@ class Parameters:
             self.new_dx = pd.read_hdf(path, "new_dx_ehe").loc[group_name]
         else:
             raise ValueError("Invalid new diagnosis file specified")
-
         # Choose mortality model
         if mortality_model == "by_sex_race_risk":
             mortality_model_str = ""
@@ -79,7 +132,7 @@ class Parameters:
         if (mortality_model != "by_sex_race_risk") and (
             mortality_model != "by_sex_race_risk_2015" and (idu_threshold != "2x")
         ):
-            raise NotImplementedError(
+            raise ValueError(
                 "Alternative mortality models with idu threshold changes is not implemented"
             )
 
@@ -151,12 +204,17 @@ class Parameters:
         ]
         self.post_art_bmi_rse = pd.read_hdf(path, "post_art_bmi_rse").loc[group_name].values[0]
 
-        # BMI Intervention Probability
-        self.bmi_intervention = bmi_intervention
+        # BMI Intervention parameters
+        if bmi_intervention_scenario not in [0, 1, 2, 3]:
+            raise ValueError("bmi_intervention_scenario values only supported for 0, 1, 2, and 3")
         self.bmi_intervention_scenario = bmi_intervention_scenario
         self.bmi_intervention_start_year = bmi_intervention_start_year
         self.bmi_intervention_end_year = bmi_intervention_end_year
+        if bmi_intervention_coverage < 0 or bmi_intervention_coverage > 1:
+            raise ValueError("bmi_intervention_coverage must be between 0 and 1 inclusive")
         self.bmi_intervention_coverage = bmi_intervention_coverage
+        if bmi_intervention_effectiveness < 0 or bmi_intervention_effectiveness > 1:
+            raise ValueError("bmi_intervention_effectiveness must be between 0 and 1 inclusive")
         self.bmi_intervention_effectiveness = bmi_intervention_effectiveness
 
         # Comorbidities

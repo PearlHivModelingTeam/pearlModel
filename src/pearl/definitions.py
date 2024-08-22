@@ -1,3 +1,5 @@
+"""Global Defintions"""
+
 # Django style root dir definition
 from pathlib import Path
 

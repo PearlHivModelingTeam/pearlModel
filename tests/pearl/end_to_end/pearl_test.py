@@ -47,7 +47,6 @@ def output_folder():
 def parameter(param_file_path, output_folder, config):
     return Parameters(
         path=param_file_path,
-        rerun_folder=None,
         output_folder=output_folder,
         group_name="msm_black_male",
         new_dx=config["new_dx"],
@@ -55,8 +54,6 @@ def parameter(param_file_path, output_folder, config):
         mortality_model=config["mortality_model"],
         mortality_threshold_flag=config["mortality_threshold_flag"],
         idu_threshold=config["idu_threshold"],
-        verbose=config["verbose"],
-        bmi_intervention=config["bmi_intervention"],
         bmi_intervention_scenario=config["bmi_intervention_scenario"],
         bmi_intervention_start_year=config["bmi_intervention_start_year"],
         bmi_intervention_end_year=config["bmi_intervention_end_year"],
