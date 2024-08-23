@@ -27,9 +27,9 @@ through 2030.
 **Aim 3:** To project the annual costs of non-HIV-related healthcare for PWH using ART in the US 
 through 2030.
 
---------------------------
+==========================
 Installation and First Run
---------------------------
+==========================
 
 Clone the repository onto your machine, enter the directory and install pearl::
 
@@ -53,9 +53,9 @@ in ``out/test_yyyy_mm_dd`` with the date corresponding to the initiation of the 
     python scripts/3_combine_parquet.py --in_dir path/to/out/dir/parquet_output
 
 
------------------------
+=======================
 Development Environment
------------------------
+=======================
 
 For development, and usage, we suggest using docker and vscode, with instructions outlined below:
 
@@ -120,9 +120,9 @@ To ensure that the package is working as intended, can run the test suit with:
 
 ``pytest tests``
 
--------------
+=============
 Configuration
--------------
+=============
 
 The simulation script can be called with a command line argument pointing to a config file in order 
 to run a simulation with different parameters or attributes. A template file lives 
@@ -192,22 +192,22 @@ for the idu population above other risk groups. ``2x``, ``5x``, ``10x``.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 BMI scenario to run from ``0``, ``1``, ``2``, or ``3``
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-bmi_intervention_start_year
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``bmi_intervention_start_year``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Year to begin BMI intervention in simulation
 
-^^^^^^^^^^^^^^^^^^^^^^^^^
-bmi_intervention_end_year
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``bmi_intervention_end_year``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Year to end BMI intervention in simulation
 
-^^^^^^^^^^^^^^^^^^^^^^^^^
-bmi_intervention_coverage
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``bmi_intervention_coverage``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Probability of an eligible agent receiving an intervention
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-bmi_intervention_effectiveness
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``bmi_intervention_effectiveness``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Efficacy of intervention received by agents receiving intervention.
