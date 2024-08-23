@@ -4,11 +4,17 @@ FROM condaforge/mambaforge:4.9.2-5 as conda
 RUN apt-get update && apt-get install make
 
 # Add environment lock file
-ADD environment.yml /tmp/environment.yml
+ADD conda-lock.yml /tmp/conda-lock.yml
+
+# install conda-lock
+RUN mamba install conda-lock
+
+# update mamba
+RUN mamba update -n base mamba
 
 # create a conda env
 ENV CONDA_ENV ./conda/bin
-RUN conda env create -f /tmp/environment.yml
+RUN conda-lock install --name myenv /tmp/conda-lock.yml
 
 RUN echo "source activate myenv" > ~/.bashrc
 ENV PATH /opt/conda/envs/myenv/bin:$PATH
