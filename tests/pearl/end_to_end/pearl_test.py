@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import shutil
 
@@ -40,7 +39,7 @@ def output_folder():
     out_dir = Path("tests/pearl/end_to_end/output")
     if out_dir.is_dir():
         shutil.rmtree(out_dir)
-    os.mkdir(out_dir)
+    Path.mkdir(out_dir)
     return out_dir
 
 
@@ -48,7 +47,6 @@ def output_folder():
 def parameter(param_file_path, output_folder, config):
     return Parameters(
         path=param_file_path,
-        rerun_folder=None,
         output_folder=output_folder,
         group_name="msm_black_male",
         new_dx=config["new_dx"],
@@ -56,8 +54,6 @@ def parameter(param_file_path, output_folder, config):
         mortality_model=config["mortality_model"],
         mortality_threshold_flag=config["mortality_threshold_flag"],
         idu_threshold=config["idu_threshold"],
-        verbose=config["verbose"],
-        bmi_intervention=config["bmi_intervention"],
         bmi_intervention_scenario=config["bmi_intervention_scenario"],
         bmi_intervention_start_year=config["bmi_intervention_start_year"],
         bmi_intervention_end_year=config["bmi_intervention_end_year"],
@@ -76,7 +72,7 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
     """
     Pearl should run identically when seeded in a single threaded environment.
     """
-    Pearl(parameter, parameter.group_name, 1)
+    Pearl(parameter, parameter.group_name, 1).run()
 
     try:
         result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
@@ -94,10 +90,10 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     @delayed
     def run(parameter):
-        Pearl(parameter, parameter.group_name, 1)
+        Pearl(parameter, parameter.group_name, 1).run()
 
     result = []
-    for i in range(3):
+    for _ in range(3):
         result.append(run(parameter))
 
     dask.compute(result)

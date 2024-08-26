@@ -2,7 +2,9 @@ name: myenv
 channels:
   - conda-forge
 dependencies:
-  - python=3.11.*
+  - python=3.11
+  - pandas
+  - numpy
   - bioconda::snakemake
   - dask
   - scipy
@@ -11,8 +13,11 @@ dependencies:
   - pyright
   - ruff
   - mypy
+  - sphinx
+  - pre-commit
+  - conda-lock
   - pip:
-    - pip==24.0
-    - setuptools==70.3.0
-    - wheel==0.43.0
+    - pip
+    - setuptools
+    - wheel
 prefix: /opt/conda/envs/myenv

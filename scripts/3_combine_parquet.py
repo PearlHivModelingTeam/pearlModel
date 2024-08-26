@@ -26,10 +26,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     in_dir = Path(args.in_dir)
-    if not args.out_dir:
-        out_dir = Path(args.in_dir).parent / "combined"
-    else:
-        out_dir = Path(args.out_dir)
+    out_dir = Path(args.in_dir).parent / "combined" if not args.out_dir else Path(args.out_dir)
 
     if out_dir.is_dir():  # creating output folders
         shutil.rmtree(out_dir)

@@ -11,8 +11,8 @@ jobs:
      - name: Build Docker image 
        run: docker build -t pearl_model .
      - name: Run tests inside the container
-       run: docker run pearl_model pytest tests/pearl/unit
+       run: docker run pearl_model pytest tests/
      - name: mypy
        run: docker run pearl_model mypy src/
      - name: ruff
-       run: docker run pearl_model ruff check src/
+       run: docker run pearl_model ruff check src/ tests/
