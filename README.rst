@@ -173,13 +173,9 @@ Flag indicating whether simulation should include the mortality threshold functi
 ^^^^^^^^^^^^^^
 Year to end the simulation. Integer between 2010 and 2035.
 
-^^^^^^^^^^^
-``sa_type``
-^^^^^^^^^^^
-For use when running groups of runs with certain parameters for various sensitivity analyses. 
-``none``, ``type1``, ``type2``, ``aim2_inc``, ``aim2_prev``, ``aim2_mort``. 
-Produces a slightly different output structure and may not work with certain 
-non-baseline parameters selected above.
+^^^^^^^^^^^^^^^
+``sa_variable``
+^^^^^^^^^^^^^^^
 
 ^^^^^^^^^^^^^^^^^
 ``idu_threshold``

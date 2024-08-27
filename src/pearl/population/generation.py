@@ -368,7 +368,8 @@ def calculate_post_art_bmi(
 def calculate_pre_art_bmi(
     pop: pd.DataFrame, parameters: Parameters, random_state: np.random.RandomState
 ) -> NDArray[Any]:
-    """Calculate and return pre art bmi for a given population dataframe.
+    """
+    Calculate and return pre art bmi for a given population dataframe.
     Each subpopulation can use a different model of pre art bmi.
     """
     # Calculate pre art bmi using one of 5 different models depending on subpopulation

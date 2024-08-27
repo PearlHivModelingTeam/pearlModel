@@ -3,6 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -29,6 +30,7 @@ class Parameters:
         bmi_intervention_end_year: int = 2030,
         bmi_intervention_coverage: float = 1.0,
         bmi_intervention_effectiveness: float = 1.0,
+        sa_variable: Optional[bool] = None,
     ):
         """
         Takes the path to the parameters.h5 file, the path to the folder containing rerun data
@@ -256,3 +258,6 @@ class Parameters:
         self.ALL_YEARS = np.arange(2000, final_year + 1)
         self.INITIAL_YEARS = np.arange(2000, 2010)
         self.CD4_BINS = np.arange(2001)
+
+        # Sensitivity Analysis
+        self.sa_variable = sa_variable
