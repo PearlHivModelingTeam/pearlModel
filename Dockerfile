@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install make
 ADD conda-lock.yml /tmp/conda-lock.yml
 
 # install conda-lock
-RUN mamba install conda-lock
+RUN mamba install conda-lock=2.5.7
 
 # update mamba
 RUN mamba update -n base mamba
