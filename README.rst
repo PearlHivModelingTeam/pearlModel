@@ -176,6 +176,7 @@ Year to end the simulation. Integer between 2010 and 2035.
 ^^^^^^^^^^^^^^^
 ``sa_variable``
 ^^^^^^^^^^^^^^^
+Supports all comorbidities
 
 ^^^^^^^^^^^^^^^^^
 ``idu_threshold``
