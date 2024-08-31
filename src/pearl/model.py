@@ -3,8 +3,8 @@ Module containing the Pearl class for simulation and the Statitistics class for 
 values.
 """
 
-# Imports
 import os
+from typing import Dict
 
 # TODO move this somewhere better, like into docker
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -350,7 +350,11 @@ class Pearl:
         return population
 
     def add_comorbidity(
-        self, condition: str, population: pd.DataFrame, codition_probabilities: dict, user: bool
+        self,
+        condition: str,
+        population: pd.DataFrame,
+        condition_probabilities: Dict[str, pd.Series],
+        user: bool,
     ) -> pd.DataFrame:
         """
         Add the selected condition based on the probability defined in self.parameters.
@@ -368,7 +372,7 @@ class Pearl:
             Population dataframe with condition added.
         """
 
-        morbidity_probability = self.parameters.prev_users_dict[condition].values
+        morbidity_probability = condition_probabilities[condition].values
 
         population[condition] = (
             self.random_state.rand(len(population.index)) < morbidity_probability
