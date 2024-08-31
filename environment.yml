@@ -10,7 +10,6 @@ dependencies:
   - scipy
   - pytables
   - pip
-  - pyright
   - ruff
   - mypy
   - sphinx

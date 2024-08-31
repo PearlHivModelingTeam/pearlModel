@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 import shutil
 
@@ -90,7 +91,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     @delayed
     def run(parameter):
-        Pearl(parameter, parameter.group_name, 1).run()
+        Pearl(copy.deepcopy(parameter), parameter.group_name, 1).run()
 
     result = []
     for _ in range(3):
