@@ -3,6 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -29,6 +30,7 @@ class Parameters:
         bmi_intervention_end_year: int = 2030,
         bmi_intervention_coverage: float = 1.0,
         bmi_intervention_effectiveness: float = 1.0,
+        sa_variables: Optional[list[str]] = None,
     ):
         """
         Takes the path to the parameters.h5 file, the path to the folder containing rerun data
@@ -105,6 +107,7 @@ class Parameters:
         self.final_year = final_year
         self.mortality_threshold_flag = mortality_threshold_flag
         self.seed = seed
+        self.random_state = np.random.RandomState(seed=seed)
 
         # 2009 population
         self.on_art_2009 = pd.read_hdf(path, "on_art_2009").loc[group_name]
@@ -256,3 +259,22 @@ class Parameters:
         self.ALL_YEARS = np.arange(2000, final_year + 1)
         self.INITIAL_YEARS = np.arange(2000, 2010)
         self.CD4_BINS = np.arange(2001)
+
+        # Sensitivity Analysis
+        self.sa_variables = sa_variables
+
+        if self.sa_variables:
+            for comorbidity in self.prev_users_dict:
+                if comorbidity in self.sa_variables:
+                    self.prev_users_dict[comorbidity] = self.random_state.uniform(
+                        self.prev_users_dict[comorbidity] * 0.5,
+                        self.prev_users_dict[comorbidity] * 1.5,
+                    )
+
+        if self.sa_variables:
+            for comorbidity in self.prev_users_dict:
+                if comorbidity in self.sa_variables:
+                    self.prev_inits_dict[comorbidity] = self.random_state.uniform(
+                        self.prev_inits_dict[comorbidity] * 0.5,
+                        self.prev_inits_dict[comorbidity] * 1.5,
+                    )

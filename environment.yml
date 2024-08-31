@@ -10,7 +10,6 @@ dependencies:
   - scipy
   - pytables
   - pip
-  - pyright
   - ruff
   - mypy
   - sphinx
@@ -21,3 +20,9 @@ dependencies:
     - setuptools
     - wheel
 prefix: /opt/conda/envs/myenv
+platforms:
+    - linux-aarch64
+    - linux-64
+    - osx-64
+    - osx-arm64
+    - win-64

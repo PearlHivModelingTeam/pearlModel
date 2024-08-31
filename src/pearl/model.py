@@ -3,8 +3,8 @@ Module containing the Pearl class for simulation and the Statitistics class for 
 values.
 """
 
-# Imports
 import os
+from typing import Dict
 
 # TODO move this somewhere better, like into docker
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -81,20 +81,12 @@ class Pearl:
             "Men who have sex with men black males".
         replication : int
             Replication number for use whne aggregating results across a batch of simulations.
-
-        Raises
-        ------
-        ValueError
-            If parameters are not seeded, the model will raise a ValueError.
         """
         self.group_name = group_name
         self.replication = replication
         self.year = 2009
         self.parameters = parameters
-        if self.parameters.seed is not None:
-            self.random_state = np.random.RandomState(seed=self.parameters.seed)
-        else:
-            raise ValueError("Parameter should have a seed property")
+        self.random_state = self.parameters.random_state
 
         if self.parameters.output_folder:
             with Path.open(self.parameters.output_folder / "random.state", "w") as state_file:
@@ -239,7 +231,6 @@ class Pearl:
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
         population["id"] = np.array(range(population.index.size))
-        population = population.sort_values(["age", "id"])
         population = population.set_index(["age_cat", "id"])
 
         return population
@@ -298,7 +289,7 @@ class Pearl:
 
         # Reindex for group operation
         population["h1yy"] = population["h1yy"].astype(int)
-        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
+        population = population.reset_index().set_index(["h1yy", "id"])
 
         return population
 
@@ -327,7 +318,7 @@ class Pearl:
                 0, np.sqrt(2000.0), mu, sigma, size, self.random_state
             )
             population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
-        population = population.reset_index().set_index("id").sort_index()
+        population = population.reset_index().set_index("id")
 
         return population
 
@@ -355,6 +346,41 @@ class Pearl:
             population.copy(), self.parameters, self.random_state
         )
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
+
+        return population
+
+    def add_comorbidity(
+        self,
+        condition: str,
+        population: pd.DataFrame,
+        condition_probabilities: Dict[str, pd.Series],
+        user: bool,
+    ) -> pd.DataFrame:
+        """
+        Add the selected condition based on the probability defined in self.parameters.
+
+        Parameters
+        ----------
+        condition : str
+            Condition to be added.
+        population : pd.DataFrame
+            Population to add condition to.
+
+        Returns
+        -------
+        pd.DataFrame
+            Population dataframe with condition added.
+        """
+
+        morbidity_probability = condition_probabilities[condition].values
+
+        population[condition] = (
+            self.random_state.rand(len(population.index)) < morbidity_probability
+        ).astype(int)
+        if user:
+            population[f"t_{condition}"] = np.array(0, dtype="int8")
+        else:
+            population[f"t_{condition}"] = population[condition]
 
         return population
 
@@ -432,11 +458,10 @@ class Pearl:
 
         # Apply comorbidities
         for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
-            population[condition] = (
-                self.random_state.rand(len(population.index))
-                < self.parameters.prev_users_dict[condition].values
-            ).astype(int)
-            population[f"t_{condition}"] = np.array(0, dtype="int8")
+            population = self.add_comorbidity(
+                condition, population, self.parameters.prev_users_dict, user=True
+            )
+
         population["mm"] = np.array(population[STAGE2 + STAGE3].sum(axis=1), dtype="int8")
 
         # Sort columns alphabetically
@@ -481,22 +506,11 @@ class Pearl:
         population = self.add_bmi(population)
 
         # Apply comorbidities
-        for condition in STAGE0:
-            population[condition] = (
-                self.random_state.rand(len(population.index))
-                < self.parameters.prev_users_dict[condition].values
-            ).astype(int)
-            population[f"t_{condition}"] = population[
-                condition
-            ]  # 0 if not having a condition, and 1 if they have it
-        for condition in STAGE1 + STAGE2 + STAGE3:
-            population[condition] = (
-                self.random_state.rand(len(population.index))
-                < (self.parameters.prev_users_dict[condition].values)
-            ).astype(int)
-            population[f"t_{condition}"] = population[
-                condition
-            ]  # 0 if not having a condition, and 1 if they have it
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+            population = self.add_comorbidity(
+                condition, population, self.parameters.prev_users_dict, user=False
+            )
+
         population["mm"] = population[STAGE2 + STAGE3].sum(axis=1)
 
         # Sort columns alphabetically
@@ -620,7 +634,7 @@ class Pearl:
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size, random_state)
             population.loc[population["h1yy"] == h1yy, "init_sqrtcd4n"] = sqrt_cd4n
 
-        population = population.reset_index().set_index("id").sort_index()
+        population = population.reset_index().set_index("id")
 
         # Calculate time varying cd4 count and other needed variables
         population["last_h1yy"] = population["h1yy"]
