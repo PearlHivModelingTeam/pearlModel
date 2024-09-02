@@ -140,6 +140,8 @@ class Pearl:
         # First recording of stats
         self.record_stats()
 
+        self.history = self.population.copy()
+
         # Move to 2010
         self.year += 1
 
@@ -739,6 +741,9 @@ class Pearl:
 
             # Increment year
             self.year += 1
+
+            # store history
+            self.history = pd.concat([self.history, self.population])
 
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
