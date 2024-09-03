@@ -48,28 +48,22 @@ if __name__ == "__main__":
     # Define the argument parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--config")
-    parser.add_argument("--rerun")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     pearl_path = PROJECT_DIR
-    date_string = datetime.today().strftime("%Y-%m-%d")
     param_file_path = pearl_path / "param_files/parameters.h5"
 
     # Original run, rerun, or test run?
     rerun_root_path = None
     if args.config:
         config_file_path = Path(args.config)
-        output_root_path = pearl_path / f"out/{config_file_path.stem}_{date_string}"
+        output_root_path = pearl_path / f"out/{config_file_path.stem}"
         print(output_root_path.resolve(), flush=True)
-    elif args.rerun:
-        rerun_root_path = pearl_path / "out" / args.rerun
-        config_file_path = rerun_root_path / "config.yaml"
-        output_root_path = pearl_path / f"out/{args.rerun}_rerun_{date_string}"
     else:
         config_file_path = pearl_path / "config/test.yaml"
-        output_root_path = pearl_path / f"out/{config_file_path.stem}_{date_string}"
+        output_root_path = pearl_path / f"out/{config_file_path.stem}"
     # Load config_file
     with Path.open(config_file_path) as config_file:
         config = yaml.safe_load(config_file)

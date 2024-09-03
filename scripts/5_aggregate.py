@@ -5,7 +5,6 @@ Script to run aggregators, this will be replaced by snakemake
 import argparse
 from datetime import datetime
 from pathlib import Path
-import shutil
 
 from dask import dataframe as dd
 
@@ -21,7 +20,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     in_dir = Path(args.in_dir)
-    parquet_path = in_dir / "*/*/population.parquet"
+    parquet_path = in_dir / "*/*/final_state.parquet"
     out_dir = Path(args.in_dir).parent / "combined" if not args.out_dir else Path(args.out_dir)
 
     population_df = dd.read_parquet(parquet_path)

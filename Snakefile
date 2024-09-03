@@ -1,34 +1,35 @@
-from datetime import datetime
+# type: ignore
 
-output_dir = directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/parquet_output")
+output_dir = directory(f"out/{config}/parquet_output")
 
-rule all:
-    input: 
-        directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/bmi_info.parquet"),
-        directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/bmi_int_cascade.parquet"),
-        directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/new_init_age.parquet")
+for config in ["S0_1000", "S3_1000"]:
+    rule:
+        input: 
+            directory(f"out/{config}/combined/bmi_info.parquet"),
+            directory(f"out/{config}/combined/bmi_int_cascade.parquet"),
+            directory(f"out/{config}/combined/new_init_age.parquet")
 
-rule create_params:
-    output: "param_files/parameters.h5"
-    script:
-        "scripts/1_create_param_file.py"
+    rule:
+        output: "param_files/parameters.h5"
+        script:
+            "scripts/1_create_param_file.py"
 
-rule simulate:
-    input: "param_files/parameters.h5"
-    output: output_dir
-    shell:
-        "python scripts/2_simulate.py --config config/test.yaml"
+    rule:
+        input: "param_files/parameters.h5"
+        output: output_dir
+        shell:
+            "python scripts/2_simulate.py --config config/{config}.yaml --overwrite"
 
-rule combine:
-    input: output_dir
-    output: 
-        directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/new_init_age.parquet"),
-        directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/bmi_int_cascade.parquet")
-    shell:
-        "python scripts/3_combine_parquet.py --in_dir {output_dir}"
+    rule:
+        input: output_dir
+        output: 
+            directory(f"out/{config}/combined/new_init_age.parquet"),
+            directory(f"out/{config}/combined/bmi_int_cascade.parquet")
+        shell:
+            "python scripts/3_combine_parquet.py --in_dir {output_dir}"
 
-rule aggregate:
-    input: output_dir
-    output: directory(f"out/test_{datetime.today().strftime('%Y-%m-%d')}/combined/bmi_info.parquet")
-    shell:
-        "python scripts/5_aggregate.py --in_dir {output_dir}"
+    rule:
+        input: output_dir
+        output: directory(f"out/{config}/combined/bmi_info.parquet")
+        shell:
+            "python scripts/5_aggregate.py --in_dir {output_dir}"

@@ -233,7 +233,7 @@ class Pearl:
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
         population["id"] = np.array(range(population.index.size))
-        population = population.set_index(["age_cat", "id"])
+        population = population.set_index(["age_cat", "id"]).sort_index()
 
         return population
 
@@ -291,7 +291,7 @@ class Pearl:
 
         # Reindex for group operation
         population["h1yy"] = population["h1yy"].astype(int)
-        population = population.reset_index().set_index(["h1yy", "id"])
+        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
 
         return population
 
@@ -320,7 +320,7 @@ class Pearl:
                 0, np.sqrt(2000.0), mu, sigma, size, self.random_state
             )
             population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
-        population = population.reset_index().set_index("id")
+        population = population.reset_index().set_index("id").sort_index()
 
         return population
 
@@ -636,7 +636,7 @@ class Pearl:
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size, random_state)
             population.loc[population["h1yy"] == h1yy, "init_sqrtcd4n"] = sqrt_cd4n
 
-        population = population.reset_index().set_index("id")
+        population = population.reset_index().set_index("id").sort_index()
 
         # Calculate time varying cd4 count and other needed variables
         population["last_h1yy"] = population["h1yy"]
