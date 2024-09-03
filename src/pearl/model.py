@@ -121,21 +121,20 @@ class Pearl:
         # concat the art pop to population
         self.population = pd.concat([self.population, art_pop]).fillna(0)
 
-        if self.parameters.bmi_intervention_scenario:
-            self.population = self.population.astype(
-                {
-                    "become_obese_postART": "bool",
-                    "bmiInt_eligible": "bool",
-                    "bmiInt_impacted": "bool",
-                    "bmiInt_ineligible_dm": "bool",
-                    "bmiInt_ineligible_obese": "bool",
-                    "bmiInt_ineligible_underweight": "bool",
-                    "bmiInt_received": "bool",
-                    "bmiInt_scenario": "int8",
-                    "bmi_increase_postART": "bool",
-                    "bmi_increase_postART_over5p": "bool",
-                }
-            )
+        self.population = self.population.astype(
+            {
+                "become_obese_postART": "bool",
+                "bmiInt_eligible": "bool",
+                "bmiInt_impacted": "bool",
+                "bmiInt_ineligible_dm": "bool",
+                "bmiInt_ineligible_obese": "bool",
+                "bmiInt_ineligible_underweight": "bool",
+                "bmiInt_received": "bool",
+                "bmiInt_scenario": "int8",
+                "bmi_increase_postART": "bool",
+                "bmi_increase_postART_over5p": "bool",
+            }
+        )
 
         # First recording of stats
         self.record_stats()
@@ -683,24 +682,24 @@ class Pearl:
 
         # Apply post_art_bmi intervention
         # (eligibility may depend on current exisiting comorbidities)
-        if self.parameters.bmi_intervention_scenario:
-            population[
-                [
-                    "bmiInt_scenario",
-                    "bmiInt_ineligible_dm",
-                    "bmiInt_ineligible_underweight",
-                    "bmiInt_ineligible_obese",
-                    "bmiInt_eligible",
-                    "bmiInt_received",
-                    "bmi_increase_postART",
-                    "bmi_increase_postART_over5p",
-                    "become_obese_postART",
-                    "bmiInt_impacted",
-                    "pre_art_bmi",
-                    "post_art_bmi_without_bmiInt",
-                    "post_art_bmi",
-                ]
-            ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
+
+        population[
+            [
+                "bmiInt_scenario",
+                "bmiInt_ineligible_dm",
+                "bmiInt_ineligible_underweight",
+                "bmiInt_ineligible_obese",
+                "bmiInt_eligible",
+                "bmiInt_received",
+                "bmi_increase_postART",
+                "bmi_increase_postART_over5p",
+                "become_obese_postART",
+                "bmiInt_impacted",
+                "pre_art_bmi",
+                "post_art_bmi_without_bmiInt",
+                "post_art_bmi",
+            ]
+        ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
 
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
@@ -1281,20 +1280,36 @@ class Pearl:
         column in the dataset is n. Record some stats that are better calculated at the end of the
         simulation. A count of new initiators, those dying in care, and those dying out of care is
         recorded as well as the cd4 count of ART initiators.
+
+        bmi_int_cascade: summary statistics on population receiving the intervention and their
+        characteristics
         """
-        if self.parameters.bmi_intervention_scenario:
-            """
-            bmi_int_cascade: summary statistics on population receiving the intervention and their 
-            characteristics
-            """
-            # record agegroup at art_initiation
-            bins = [0, 25, 35, 45, 55, 65, 75, float("inf")]
-            # labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
-            self.population["init_age_group"] = pd.cut(
-                self.population["init_age"], labels=False, bins=bins, right=False
-            ).astype("int8")
-            # choose columns, fill Na values with 0 and transform to integer
-            bmi_int_cascade = self.population[
+        # record agegroup at art_initiation
+        bins = [0, 25, 35, 45, 55, 65, 75, float("inf")]
+        # labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
+        self.population["init_age_group"] = pd.cut(
+            self.population["init_age"], labels=False, bins=bins, right=False
+        ).astype("int8")
+        # choose columns, fill Na values with 0 and transform to integer
+        bmi_int_cascade = self.population[
+            [
+                "bmiInt_scenario",
+                "h1yy",
+                "bmiInt_ineligible_dm",
+                "bmiInt_ineligible_underweight",
+                "bmiInt_ineligible_obese",
+                "bmiInt_eligible",
+                "bmiInt_received",
+                "bmi_increase_postART",
+                "bmi_increase_postART_over5p",
+                "become_obese_postART",
+                "bmiInt_impacted",
+            ]
+        ]
+
+        # Group by all categories and calculate the count in each one
+        bmi_int_cascade_count = (
+            bmi_int_cascade.groupby(
                 [
                     "bmiInt_scenario",
                     "h1yy",
@@ -1308,79 +1323,61 @@ class Pearl:
                     "become_obese_postART",
                     "bmiInt_impacted",
                 ]
-            ]
-
-            # Group by all categories and calculate the count in each one
-            bmi_int_cascade_count = (
-                bmi_int_cascade.groupby(
-                    [
-                        "bmiInt_scenario",
-                        "h1yy",
-                        "bmiInt_ineligible_dm",
-                        "bmiInt_ineligible_underweight",
-                        "bmiInt_ineligible_obese",
-                        "bmiInt_eligible",
-                        "bmiInt_received",
-                        "bmi_increase_postART",
-                        "bmi_increase_postART_over5p",
-                        "become_obese_postART",
-                        "bmiInt_impacted",
-                    ]
-                )
-                .size()
-                .reset_index(name="n")
-                .astype(
-                    {
-                        "bmiInt_scenario": "int8",
-                        "h1yy": "int16",
-                        "bmiInt_ineligible_dm": "bool",
-                        "bmiInt_ineligible_underweight": "bool",
-                        "bmiInt_ineligible_obese": "bool",
-                        "bmiInt_eligible": "bool",
-                        "bmiInt_received": "bool",
-                        "bmi_increase_postART": "bool",
-                        "bmi_increase_postART_over5p": "bool",
-                        "become_obese_postART": "bool",
-                        "bmiInt_impacted": "bool",
-                        "n": "int32",
-                    }
-                )
             )
-            self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
-
-            """
-            bmi_int_dm_prev: report the number of people with diabetes based on intervention status
-            """
-
-            dm_final_output = (
-                self.population.groupby(
-                    [
-                        "bmiInt_scenario",
-                        "h1yy",
-                        "bmiInt_eligible",
-                        "bmiInt_received",
-                        "bmiInt_impacted",
-                        "dm",
-                        "t_dm",
-                    ]
-                )
-                .size()
-                .reset_index(name="n")
-                .astype(
-                    {
-                        "bmiInt_scenario": "int8",
-                        "h1yy": "int16",
-                        "bmiInt_eligible": "bool",
-                        "bmiInt_received": "bool",
-                        "bmiInt_impacted": "bool",
-                        "dm": "bool",
-                        "t_dm": "int16",
-                        "n": "int32",
-                    }
-                )
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "bmiInt_ineligible_dm": "bool",
+                    "bmiInt_ineligible_underweight": "bool",
+                    "bmiInt_ineligible_obese": "bool",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmi_increase_postART": "bool",
+                    "bmi_increase_postART_over5p": "bool",
+                    "become_obese_postART": "bool",
+                    "bmiInt_impacted": "bool",
+                    "n": "int32",
+                }
             )
+        )
+        self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
 
-            self.stats.dm_final_output = dm_final_output  # type: ignore[attr-defined]
+        """
+        bmi_int_dm_prev: report the number of people with diabetes based on intervention status
+        """
+
+        dm_final_output = (
+            self.population.groupby(
+                [
+                    "bmiInt_scenario",
+                    "h1yy",
+                    "bmiInt_eligible",
+                    "bmiInt_received",
+                    "bmiInt_impacted",
+                    "dm",
+                    "t_dm",
+                ]
+            )
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmiInt_impacted": "bool",
+                    "dm": "bool",
+                    "t_dm": "int16",
+                    "n": "int32",
+                }
+            )
+        )
+
+        self.stats.dm_final_output = dm_final_output  # type: ignore[attr-defined]
 
         dead_in_care = self.population["status"] == DEAD_ART_USER
         dead_out_care = self.population["status"] == DEAD_ART_NONUSER
