@@ -4,7 +4,10 @@ rule all:
     input: 
         directory("out/S0_1000/combined/bmi_info.parquet"),
         directory("out/S0_1000/combined/bmi_int_cascade.parquet"),
-        directory("out/S0_1000/combined/new_init_age.parquet")
+        directory("out/S0_1000/combined/new_init_age.parquet"),
+        directory("out/S3_1000/combined/bmi_info.parquet"),
+        directory("out/S3_1000/combined/bmi_int_cascade.parquet"),
+        directory("out/S3_1000/combined/new_init_age.parquet"),
 
 rule create_params:
     output: 
