@@ -76,7 +76,7 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
     Pearl(parameter, parameter.group_name, 1).run()
 
     try:
-        result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
+        result_population = pd.read_parquet(Path(output_folder / "final_state.parquet"))
         assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
@@ -100,7 +100,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
     dask.compute(result)
 
     try:
-        result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
+        result_population = pd.read_parquet(Path(output_folder / "final_state.parquet"))
         assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
