@@ -271,14 +271,14 @@ class Parameters:
             for comorbidity in self.prev_users_dict:
                 if comorbidity in self.sa_variables:
                     self.prev_users_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_users_dict[comorbidity] * 0.5,
-                        self.prev_users_dict[comorbidity] * 1.5,
+                        self.prev_users_dict[comorbidity] - 0.05,
+                        self.prev_users_dict[comorbidity] + 0.05,
                     )
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
                 if comorbidity in self.sa_variables:
                     self.prev_inits_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_inits_dict[comorbidity] * 0.5,
-                        self.prev_inits_dict[comorbidity] * 1.5,
+                        self.prev_inits_dict[comorbidity] - 0.05,
+                        self.prev_inits_dict[comorbidity] + 0.05,
                     )
