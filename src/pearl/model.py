@@ -139,7 +139,8 @@ class Pearl:
         # First recording of stats
         self.record_stats()
 
-        self.history = self.population.copy()
+        if self.parameters.history:
+            self.population.to_parquet(self.parameters.output_folder / "history.parquet")
 
         # Move to 2010
         self.year += 1
@@ -742,13 +743,17 @@ class Pearl:
             self.year += 1
 
             # store history
-            self.history = pd.concat([self.history, self.population])
+            if self.parameters.history:
+                self.population.to_parquet(
+                    self.parameters.output_folder / "history.parquet",
+                    engine="fastparquet",
+                    append=True,
+                )
 
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
         self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
-        self.history.to_parquet(self.parameters.output_folder / "history.parquet")
 
         # Record output statistics for the end of the simulation
         self.record_final_stats()

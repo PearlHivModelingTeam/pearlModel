@@ -25,6 +25,7 @@ class Parameters:
         mortality_threshold_flag: bool,
         idu_threshold: str,
         seed: int,
+        history: bool = False,
         bmi_intervention_scenario: int = 0,
         bmi_intervention_start_year: int = 2020,
         bmi_intervention_end_year: int = 2030,
@@ -62,6 +63,8 @@ class Parameters:
             IDU threshold from [2x, 5x, 10x]
         seed : int
             Value for random number generation seeding.
+        history: bool
+            Whether or not to store history
         bmi_intervention_scenario : int, optional
             BMI intervention to apply from [0 for no intervention, or 1, 2, 3], by default 0
         bmi_intervention_start_year : int, optional
@@ -108,6 +111,7 @@ class Parameters:
         self.mortality_threshold_flag = mortality_threshold_flag
         self.seed = seed
         self.random_state = np.random.RandomState(seed=seed)
+        self.history = history
 
         # 2009 population
         self.on_art_2009 = pd.read_hdf(path, "on_art_2009").loc[group_name]

@@ -1,0 +1,30 @@
+group_names: ['msm_white_male',
+              'msm_black_male',
+              'msm_hisp_male',
+              'idu_white_male',
+              'idu_black_male',
+              'idu_hisp_male',
+              'idu_white_female',
+              'idu_black_female',
+              'idu_hisp_female',
+              'het_white_male',
+              'het_black_male',
+              'het_hisp_male',
+              'het_white_female',
+              'het_black_female',
+              'het_hisp_female'
+]
+num_cpus: 150
+replications: 10
+new_dx: 'base' # base, ehe, sa
+mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall
+mortality_threshold_flag: 1 # 0, 1:
+final_year: 2035 # [2010 - 2035]
+idu_threshold: '2x' # 2x, 5x, 10x
+
+bmi_intervention: 1  #0: skipping intervention and data collection, 1 data will be collected
+bmi_intervention_scenario: 3 # 0 placebo arm, 1 bmi maintenance at 29.9, 2 bmi gain restricted at 5%, 3 no bmi gain
+bmi_intervention_start_year: 2010
+bmi_intervention_end_year: 2017
+bmi_intervention_coverage: 1.0 # [0.0 - 1.0]
+bmi_intervention_effectiveness: 1.0 # [0.0 - 1.0]
