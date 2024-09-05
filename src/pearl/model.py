@@ -1353,6 +1353,35 @@ class Pearl:
         """
         bmi_int_dm_prev: report the number of people with diabetes based on intervention status
         """
+        self.stats.bmi_int_dm_prev = (
+            self.population.groupby(
+                [
+                    "bmiInt_scenario",
+                    "h1yy",
+                    "init_age_group",
+                    "bmiInt_eligible",
+                    "bmiInt_received",
+                    "bmiInt_impacted",
+                    "dm",
+                    "t_dm",
+                ]
+            )
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "init_age_group": "int8",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmiInt_impacted": "bool",
+                    "dm": "bool",
+                    "t_dm": "int16",
+                    "n": "int32",
+                }
+            )
+        )
 
         dm_final_output = (
             self.population.groupby(

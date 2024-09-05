@@ -37,7 +37,7 @@ if __name__ == "__main__":
     output_tables = [
         x
         for x in next(os.walk(in_dir / group_names[0] / replications[0]))[2]
-        if x != "random.state"
+        if x != "random.state" or x != "final_state.parquet"
     ]
 
     results = []
