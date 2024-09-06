@@ -60,14 +60,14 @@ rule aggregate:
 
 rule bmi_paper_outputs:
     input:
-        "out/S0_10/combined/bmi_info.parquet",
-        "out/S0_10/combined/bmi_int_cascade.parquet",
-        "out/S0_10/combined/new_init_age.parquet",
-        "out/S0_10/combined/bmi_int_dm_prev.parquet",
-        "out/S3_10/combined/bmi_info.parquet",
-        "out/S3_10/combined/bmi_int_cascade.parquet",
-        "out/S3_10/combined/new_init_age.parquet",
-        "out/S3_10/combined/bmi_int_dm_prev.parquet",
+        "out/S0_1000/combined/bmi_info.parquet",
+        "out/S0_1000/combined/bmi_int_cascade.parquet",
+        "out/S0_1000/combined/new_init_age.parquet",
+        "out/S0_1000/combined/bmi_int_dm_prev.parquet",
+        "out/S3_1000/combined/bmi_info.parquet",
+        "out/S3_1000/combined/bmi_int_cascade.parquet",
+        "out/S3_1000/combined/new_init_age.parquet",
+        "out/S3_1000/combined/bmi_int_dm_prev.parquet",
     output:
         "out/final_table.csv",
         "out/fig2a.png",
@@ -86,7 +86,7 @@ rule bmi_paper_outputs:
         "out/figure3d_table.csv",
     params:
         out_dir = directory("out"),
-        baseline = "out/S0_10/combined",
-        variable = "out/S3_10/combined",
+        baseline = "out/S0_1000/combined",
+        variable = "out/S3_1000/combined",
     shell:
         "python scripts/6_bmi_plots.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"
