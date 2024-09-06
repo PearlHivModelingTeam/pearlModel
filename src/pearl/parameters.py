@@ -18,6 +18,7 @@ class Parameters:
         self,
         path: Path,
         output_folder: Path,
+        replication: int,
         group_name: str,
         new_dx: str,
         final_year: int,
@@ -48,11 +49,15 @@ class Parameters:
             Path to parameters.h5 files that contains all necessary coefficient values.
         output_folder : Path
             Folder to write simulation outputs to.
+        replication : int
+            replication number
         group_name : str
             Subpopulation name from [msm_white_male, msm_black_male, msm_hisp_male, idu_white_male,
             idu_black_male, idu_hisp_male, idu_white_female, idu_black_female, idu_hisp_female,
             het_white_male, het_black_male, het_hisp_male, het_white_female, het_black_female,
             het_hisp_female].
+        new_dx : str
+            new diagnosis model from [base, ehe].
         final_year : int
             Final year of simulation. The simulation will run from 2009 until the final year.
         mortality_model : str
@@ -106,12 +111,22 @@ class Parameters:
 
         # Save inputs as class attributes
         self.output_folder = output_folder
+        self.replication = replication
         self.group_name = group_name
+        self.new_dx_val = new_dx
         self.final_year = final_year
+        self.mortality_model = mortality_model
         self.mortality_threshold_flag = mortality_threshold_flag
+        self.idu_threshold = idu_threshold
         self.seed = seed
         self.random_state = np.random.RandomState(seed=seed)
         self.history = history
+        self.bmi_intervention_scenario = bmi_intervention_scenario
+        self.bmi_intervention_start_year = bmi_intervention_start_year
+        self.bmi_intervention_end_year = bmi_intervention_end_year
+        self.bmi_intervention_coverage = bmi_intervention_coverage
+        self.bmi_intervention_effectiveness = bmi_intervention_effectiveness
+        self.sa_variables = sa_variables
 
         # 2009 population
         self.on_art_2009 = pd.read_hdf(path, "on_art_2009").loc[group_name]
@@ -266,6 +281,7 @@ class Parameters:
 
         # Sensitivity Analysis
         self.sa_variables = sa_variables
+        self.sa_values = {}
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
@@ -276,9 +292,44 @@ class Parameters:
                     )
 
         if self.sa_variables:
-            for comorbidity in self.prev_users_dict:
+            for comorbidity in self.prev_inits_dict:
                 if comorbidity in self.sa_variables:
                     self.prev_inits_dict[comorbidity] = self.random_state.uniform(
                         self.prev_inits_dict[comorbidity] - 0.05,
                         self.prev_inits_dict[comorbidity] + 0.05,
                     )
+
+        self.save_parameters()
+
+    def save_parameters(self):
+        """
+        Save all parameters as a dataframe.
+        """
+
+        param_dict = {
+            "replication": self.replication,
+            "group": self.group_name,
+            "new_dx": self.new_dx_val,
+            "final_year": self.final_year,
+            "mortality_model": self.mortality_model,
+            "mortality_threshold_flag": self.mortality_threshold_flag,
+            "idu_threshold": self.idu_threshold,
+            "seed": self.seed,
+            "bmi_intervention_scenario": self.bmi_intervention_scenario,
+            "bmi_intervention_start_year": self.bmi_intervention_start_year,
+            "bmi_intervention_end_year": self.bmi_intervention_end_year,
+            "bmi_intervention_coverage": self.bmi_intervention_coverage,
+            "bmi_intervention_effectiveness": self.bmi_intervention_effectiveness,
+            "sa_variables": self.sa_variables,
+        }
+
+        for comorbidity in self.prev_users_dict:
+            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_users_dict[comorbidity]
+
+        for comorbidity in self.prev_inits_dict:
+            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity]
+
+        param_dataframe = pd.DataFrame(param_dict)
+
+        if self.output_folder:
+            param_dataframe.to_parquet(self.output_folder / "params.parquet")

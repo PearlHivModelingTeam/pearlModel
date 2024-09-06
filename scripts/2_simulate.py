@@ -12,13 +12,14 @@ from pearl.model import Parameters, Pearl
 
 
 @dask.delayed
-def run(group_name_run, replication_run, seed=None):
+def run(group_name_run, replication_run, seed):
     replication_run_str = str(replication_run).zfill(len(str(config["replications"])))
     out_path = f"parquet_output/{group_name_run}/replication_{replication_run_str}"
     output_folder = output_root_path / out_path
     parameters = Parameters(
         path=param_file_path,
         output_folder=output_folder,
+        replication=replication_run,
         group_name=group_name_run,
         new_dx=config["new_dx"],
         final_year=config["final_year"],

@@ -67,7 +67,7 @@ class Pearl:
     Class containing the pearl simulation engine.
     """
 
-    def __init__(self, parameters: Parameters, group_name: str, replication: int):
+    def __init__(self, parameters: Parameters):
         """
         Takes an instance of the Parameters class, the group name and replication number and
         runs a simulation.
@@ -82,10 +82,10 @@ class Pearl:
         replication : int
             Replication number for use whne aggregating results across a batch of simulations.
         """
-        self.group_name = group_name
-        self.replication = replication
-        self.year = 2009
         self.parameters = parameters
+        self.group_name = self.parameters.group_name
+        self.replication = self.parameters.replication
+        self.year = 2009
         self.random_state = self.parameters.random_state
 
         if self.parameters.output_folder:
@@ -95,8 +95,8 @@ class Pearl:
         # Initiate output class
         self.stats = Statistics(
             output_folder=self.parameters.output_folder,
-            group_name=group_name,
-            replication=replication,
+            group_name=self.group_name,
+            replication=self.replication,
         )
 
         # Simulate number of new art initiators and initial nonusers
