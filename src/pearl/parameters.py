@@ -82,7 +82,8 @@ class Parameters:
         bmi_intervention_effectiveness : float, optional
             Efficacy of BMI intervention for those that do receive it between 0 and 1
             , by default 1.0
-
+        sa_variables : list[str]
+            variables for sensitivity analysis
         Raises
         ------
         ValueError
@@ -281,23 +282,29 @@ class Parameters:
 
         # Sensitivity Analysis
         self.sa_variables = sa_variables
-        self.sa_values = {}
+        self.sa_incidence_shift = {}
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
                 if comorbidity in self.sa_variables:
-                    self.prev_users_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_users_dict[comorbidity] - 0.05,
-                        self.prev_users_dict[comorbidity] + 0.05,
+                    self.prev_users_dict[comorbidity] = pd.Series(
+                        self.random_state.uniform(
+                            self.prev_users_dict[comorbidity] - 0.05,
+                            self.prev_users_dict[comorbidity] + 0.05,
+                        )
                     )
 
-        if self.sa_variables:
             for comorbidity in self.prev_inits_dict:
                 if comorbidity in self.sa_variables:
-                    self.prev_inits_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_inits_dict[comorbidity] - 0.05,
-                        self.prev_inits_dict[comorbidity] + 0.05,
+                    self.prev_inits_dict[comorbidity] = pd.Series(
+                        self.random_state.uniform(
+                            self.prev_inits_dict[comorbidity] - 0.05,
+                            self.prev_inits_dict[comorbidity] + 0.05,
+                        )
                     )
+
+            for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+                self.sa_incidence_shift[comorbidity] = self.random_state.uniform(-0.05, 0.05)
 
         self.save_parameters()
 
@@ -324,12 +331,15 @@ class Parameters:
         }
 
         for comorbidity in self.prev_users_dict:
-            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_users_dict[comorbidity]
+            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_users_dict[comorbidity].values
 
         for comorbidity in self.prev_inits_dict:
-            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity]
+            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity].values
+
+        for comorbidity in self.sa_incidence_shift:
+            param_dict[f"sa_incidence_shift_{comorbidity}"] = self.sa_incidence_shift[comorbidity]
 
         param_dataframe = pd.DataFrame(param_dict)
 
         if self.output_folder:
-            param_dataframe.to_parquet(self.output_folder / "params.parquet")
+            param_dataframe.to_parquet(self.output_folder / "parameters.parquet")

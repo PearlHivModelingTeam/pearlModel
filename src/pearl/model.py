@@ -373,7 +373,6 @@ class Pearl:
         pd.DataFrame
             Population dataframe with condition added.
         """
-
         morbidity_probability = condition_probabilities[condition].values
 
         population[condition] = (
@@ -988,6 +987,11 @@ class Pearl:
                 pop_matrix,
                 coeff_matrix,
             )
+
+            if condition in self.parameters.sa_variables:
+                prob = np.clip(
+                    a=prob + self.parameters.sa_incidence_shift[condition], a_min=0, a_max=1
+                )
 
             # Draw for incidence
             rand = prob > self.random_state.rand(len(self.population.index))

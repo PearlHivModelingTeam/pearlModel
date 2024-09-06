@@ -32,13 +32,14 @@ def run(group_name_run, replication_run, seed):
         bmi_intervention_coverage=config["bmi_intervention_coverage"],
         bmi_intervention_effectiveness=config["bmi_intervention_effectiveness"],
         seed=seed,
+        sa_variables=config["sa_variables"],
     )
     print(
         f"""Initializing group {group_name_run}, rep {replication_run}:
         output set to {parameters.output_folder}""",
         flush=True,
     )
-    Pearl(parameters, group_name_run, replication_run).run()
+    Pearl(parameters).run()
     print(f"simulation finished for {group_name_run},rep= {replication_run}", flush=True)
 
 
