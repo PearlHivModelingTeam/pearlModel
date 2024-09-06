@@ -39,7 +39,7 @@ if __name__ == "__main__":
         for x in next(os.walk(in_dir / group_names[0] / replications[0]))[2]
         if x != "random.state" or x != "final_state.parquet"
     ]
-
+    print(output_tables)
     results = []
     for output_table in output_tables:
         chunk_list = []
