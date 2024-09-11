@@ -17,6 +17,7 @@ rule all:
         "out/figure3c_table.csv",
         "out/fig3d.png",
         "out/figure3d_table.csv",
+        "out/tornado.png",
 
 rule create_params:
     output: 
@@ -47,6 +48,7 @@ rule combine:
         "out/{config}/combined/new_init_age.parquet",
         "out/{config}/combined/bmi_int_cascade.parquet",
         "out/{config}/combined/bmi_int_dm_prev.parquet",
+        "out/{config}/combined/parameters.parquet",
     shell:
         "python scripts/3_combine_parquet.py --in_dir {input.combine_dir}"
 
@@ -60,14 +62,15 @@ rule aggregate:
 
 rule bmi_paper_outputs:
     input:
-        "out/S0_1000/combined/bmi_info.parquet",
-        "out/S0_1000/combined/bmi_int_cascade.parquet",
-        "out/S0_1000/combined/new_init_age.parquet",
-        "out/S0_1000/combined/bmi_int_dm_prev.parquet",
-        "out/S3_1000/combined/bmi_info.parquet",
-        "out/S3_1000/combined/bmi_int_cascade.parquet",
-        "out/S3_1000/combined/new_init_age.parquet",
-        "out/S3_1000/combined/bmi_int_dm_prev.parquet",
+        "out/S0_10/combined/bmi_info.parquet",
+        "out/S0_10/combined/bmi_int_cascade.parquet",
+        "out/S0_10/combined/new_init_age.parquet",
+        "out/S0_10/combined/bmi_int_dm_prev.parquet",
+        "out/S3_10/combined/bmi_info.parquet",
+        "out/S3_10/combined/bmi_int_cascade.parquet",
+        "out/S3_10/combined/new_init_age.parquet",
+        "out/S3_10/combined/bmi_int_dm_prev.parquet",
+
     output:
         "out/final_table.csv",
         "out/fig2a.png",
@@ -86,7 +89,19 @@ rule bmi_paper_outputs:
         "out/figure3d_table.csv",
     params:
         out_dir = directory("out"),
-        baseline = "out/S0_1000/combined",
-        variable = "out/S3_1000/combined",
+        baseline = "out/S0_10/combined",
+        variable = "out/S3_10/combined",
     shell:
         "python scripts/6_bmi_plots.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"
+
+rule bmi_SA:
+    input:
+        "out/S3_SA_10/combined/bmi_info.parquet",
+        "out/S3_SA_10/combined/bmi_int_cascade.parquet",
+        "out/S3_SA_10/combined/new_init_age.parquet",
+        "out/S3_SA_10/combined/bmi_int_dm_prev.parquet",
+        "out/S3_SA_10/combined/parameters.parquet",
+    output:
+        "out/tornado.png"
+    shell:
+        "python scripts/7_bmi_sa.py"

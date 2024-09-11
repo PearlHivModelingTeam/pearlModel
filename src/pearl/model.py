@@ -69,18 +69,13 @@ class Pearl:
 
     def __init__(self, parameters: Parameters):
         """
-        Takes an instance of the Parameters class, the group name and replication number and
+        Takes an instance of the Parameters class and
         runs a simulation.
 
         Parameters
         ----------
         parameters : Parameters
             Parameters object which loads and stores all model values.
-        group_name : str
-            Name of subpopulation for the simulation. For example, msm_black_male representing
-            "Men who have sex with men black males".
-        replication : int
-            Replication number for use whne aggregating results across a batch of simulations.
         """
         self.parameters = parameters
         self.group_name = self.parameters.group_name
