@@ -283,6 +283,7 @@ class Parameters:
         # Sensitivity Analysis
         self.sa_variables = sa_variables
         self.sa_incidence_shift = {}
+        self.sa_scalars = {}
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
@@ -304,7 +305,14 @@ class Parameters:
                     )
 
             for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3:
-                self.sa_incidence_shift[comorbidity] = self.random_state.uniform(-0.05, 0.05)
+                if comorbidity in self.sa_variables:
+                    self.sa_incidence_shift[comorbidity] = self.random_state.uniform(-0.05, 0.05)
+
+            if "pre_art_bmi" in self.sa_variables:
+                self.sa_scalars["pre_art_bmi"] = self.random_state.uniform(0.95, 1.05)
+
+            if "post_art_bmi" in self.sa_variables:
+                self.sa_scalars["post_art_bmi"] = self.random_state.uniform(0.95, 1.05)
 
         self.save_parameters()
 
@@ -334,10 +342,13 @@ class Parameters:
             param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_users_dict[comorbidity].values
 
         for comorbidity in self.prev_inits_dict:
-            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity].values
+            param_dict[f"prev_inits_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity].values
 
         for comorbidity in self.sa_incidence_shift:
             param_dict[f"sa_incidence_shift_{comorbidity}"] = self.sa_incidence_shift[comorbidity]
+
+        for scalar in self.sa_scalars:
+            param_dict[scalar] = self.sa_scalars[scalar]
 
         param_dataframe = pd.DataFrame(param_dict)
 

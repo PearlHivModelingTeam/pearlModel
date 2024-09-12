@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime
 from pathlib import Path
+import random
 import shutil
 
 import dask
@@ -97,11 +98,12 @@ if __name__ == "__main__":
 
     print("running main analysis...", flush=True)
     results = []
-    seed = 0
+    seeds = random.shuffle(list(range(1, 100000000)))
+    seed_index = 0
     for group_name_run in config["group_names"]:
         for replication_run in range(config["replications"]):
-            results.append(run(group_name_run, replication_run, seed=seed))
-            seed += 1
+            results.append(run(group_name_run, replication_run, seed=seeds[seed_index]))
+            seed_index += 1
 
     if args.debug:
         dask.compute(results, scheduler="processes", num_workers=config["num_cpus"])
