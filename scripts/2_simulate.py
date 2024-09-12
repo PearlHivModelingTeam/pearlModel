@@ -97,13 +97,15 @@ if __name__ == "__main__":
     print("4", flush=True)
 
     print("running main analysis...", flush=True)
+    num_seeds = len(config["group_names"]) * config["replications"]
+    seeds = []
+    seed = random.randint(1, 100000000)
     results = []
-    seeds = random.shuffle(list(range(1, 100000000)))
-    seed_index = 0
     for group_name_run in config["group_names"]:
         for replication_run in range(config["replications"]):
-            results.append(run(group_name_run, replication_run, seed=seeds[seed_index]))
-            seed_index += 1
+            while seed in seeds:
+                seed = random.randint(1, 100000000)
+            results.append(run(group_name_run, replication_run, seed=seed))
 
     if args.debug:
         dask.compute(results, scheduler="processes", num_workers=config["num_cpus"])
