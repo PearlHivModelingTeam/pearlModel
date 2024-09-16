@@ -18,3 +18,4 @@ build/
 .mypy_cahse
 .coverage
 .snakemake/
+.yaml
