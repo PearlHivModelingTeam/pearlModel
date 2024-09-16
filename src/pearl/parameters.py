@@ -335,7 +335,6 @@ class Parameters:
             "bmi_intervention_end_year": self.bmi_intervention_end_year,
             "bmi_intervention_coverage": self.bmi_intervention_coverage,
             "bmi_intervention_effectiveness": self.bmi_intervention_effectiveness,
-            "sa_variables": self.sa_variables,
         }
 
         for comorbidity in self.prev_users_dict:
