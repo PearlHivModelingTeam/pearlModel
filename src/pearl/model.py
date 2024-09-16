@@ -67,25 +67,20 @@ class Pearl:
     Class containing the pearl simulation engine.
     """
 
-    def __init__(self, parameters: Parameters, group_name: str, replication: int):
+    def __init__(self, parameters: Parameters):
         """
-        Takes an instance of the Parameters class, the group name and replication number and
+        Takes an instance of the Parameters class and
         runs a simulation.
 
         Parameters
         ----------
         parameters : Parameters
             Parameters object which loads and stores all model values.
-        group_name : str
-            Name of subpopulation for the simulation. For example, msm_black_male representing
-            "Men who have sex with men black males".
-        replication : int
-            Replication number for use whne aggregating results across a batch of simulations.
         """
-        self.group_name = group_name
-        self.replication = replication
-        self.year = 2009
         self.parameters = parameters
+        self.group_name = self.parameters.group_name
+        self.replication = self.parameters.replication
+        self.year = 2009
         self.random_state = self.parameters.random_state
 
         if self.parameters.output_folder:
@@ -95,8 +90,8 @@ class Pearl:
         # Initiate output class
         self.stats = Statistics(
             output_folder=self.parameters.output_folder,
-            group_name=group_name,
-            replication=replication,
+            group_name=self.group_name,
+            replication=self.replication,
         )
 
         # Simulate number of new art initiators and initial nonusers
@@ -121,24 +116,26 @@ class Pearl:
         # concat the art pop to population
         self.population = pd.concat([self.population, art_pop]).fillna(0)
 
-        if self.parameters.bmi_intervention_scenario:
-            self.population = self.population.astype(
-                {
-                    "become_obese_postART": "bool",
-                    "bmiInt_eligible": "bool",
-                    "bmiInt_impacted": "bool",
-                    "bmiInt_ineligible_dm": "bool",
-                    "bmiInt_ineligible_obese": "bool",
-                    "bmiInt_ineligible_underweight": "bool",
-                    "bmiInt_received": "bool",
-                    "bmiInt_scenario": "int8",
-                    "bmi_increase_postART": "bool",
-                    "bmi_increase_postART_over5p": "bool",
-                }
-            )
+        self.population = self.population.astype(
+            {
+                "become_obese_postART": "bool",
+                "bmiInt_eligible": "bool",
+                "bmiInt_impacted": "bool",
+                "bmiInt_ineligible_dm": "bool",
+                "bmiInt_ineligible_obese": "bool",
+                "bmiInt_ineligible_underweight": "bool",
+                "bmiInt_received": "bool",
+                "bmiInt_scenario": "int8",
+                "bmi_increase_postART": "bool",
+                "bmi_increase_postART_over5p": "bool",
+            }
+        )
 
         # First recording of stats
         self.record_stats()
+
+        if self.parameters.history:
+            self.population.to_parquet(self.parameters.output_folder / "history.parquet")
 
         # Move to 2010
         self.year += 1
@@ -231,7 +228,7 @@ class Pearl:
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
         population["id"] = np.array(range(population.index.size))
-        population = population.set_index(["age_cat", "id"])
+        population = population.set_index(["age_cat", "id"]).sort_index()
 
         return population
 
@@ -289,7 +286,7 @@ class Pearl:
 
         # Reindex for group operation
         population["h1yy"] = population["h1yy"].astype(int)
-        population = population.reset_index().set_index(["h1yy", "id"])
+        population = population.reset_index().set_index(["h1yy", "id"]).sort_index()
 
         return population
 
@@ -318,7 +315,7 @@ class Pearl:
                 0, np.sqrt(2000.0), mu, sigma, size, self.random_state
             )
             population.loc[(h1yy,), "init_sqrtcd4n"] = sqrt_cd4n
-        population = population.reset_index().set_index("id")
+        population = population.reset_index().set_index("id").sort_index()
 
         return population
 
@@ -371,7 +368,6 @@ class Pearl:
         pd.DataFrame
             Population dataframe with condition added.
         """
-
         morbidity_probability = condition_probabilities[condition].values
 
         population[condition] = (
@@ -634,7 +630,7 @@ class Pearl:
             sqrt_cd4n = draw_from_trunc_norm(0, np.sqrt(2000.0), mu, sigma, size, random_state)
             population.loc[population["h1yy"] == h1yy, "init_sqrtcd4n"] = sqrt_cd4n
 
-        population = population.reset_index().set_index("id")
+        population = population.reset_index().set_index("id").sort_index()
 
         # Calculate time varying cd4 count and other needed variables
         population["last_h1yy"] = population["h1yy"]
@@ -681,24 +677,24 @@ class Pearl:
 
         # Apply post_art_bmi intervention
         # (eligibility may depend on current exisiting comorbidities)
-        if self.parameters.bmi_intervention_scenario:
-            population[
-                [
-                    "bmiInt_scenario",
-                    "bmiInt_ineligible_dm",
-                    "bmiInt_ineligible_underweight",
-                    "bmiInt_ineligible_obese",
-                    "bmiInt_eligible",
-                    "bmiInt_received",
-                    "bmi_increase_postART",
-                    "bmi_increase_postART_over5p",
-                    "become_obese_postART",
-                    "bmiInt_impacted",
-                    "pre_art_bmi",
-                    "post_art_bmi_without_bmiInt",
-                    "post_art_bmi",
-                ]
-            ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
+
+        population[
+            [
+                "bmiInt_scenario",
+                "bmiInt_ineligible_dm",
+                "bmiInt_ineligible_underweight",
+                "bmiInt_ineligible_obese",
+                "bmiInt_eligible",
+                "bmiInt_received",
+                "bmi_increase_postART",
+                "bmi_increase_postART_over5p",
+                "become_obese_postART",
+                "bmiInt_impacted",
+                "pre_art_bmi",
+                "post_art_bmi_without_bmiInt",
+                "post_art_bmi",
+            ]
+        ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
 
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
@@ -740,10 +736,18 @@ class Pearl:
             # Increment year
             self.year += 1
 
+            # store history
+            if self.parameters.history:
+                self.population.to_parquet(
+                    self.parameters.output_folder / "history.parquet",
+                    engine="fastparquet",
+                    append=True,
+                )
+
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
-        self.population.to_parquet(self.parameters.output_folder / "population.parquet")
+        self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
 
         # Record output statistics for the end of the simulation
         self.record_final_stats()
@@ -978,6 +982,11 @@ class Pearl:
                 pop_matrix,
                 coeff_matrix,
             )
+
+            if self.parameters.sa_variables and condition in self.parameters.sa_variables:
+                prob = np.clip(
+                    a=prob + self.parameters.sa_incidence_shift[condition], a_min=0, a_max=1
+                )
 
             # Draw for incidence
             rand = prob > self.random_state.rand(len(self.population.index))
@@ -1275,20 +1284,36 @@ class Pearl:
         column in the dataset is n. Record some stats that are better calculated at the end of the
         simulation. A count of new initiators, those dying in care, and those dying out of care is
         recorded as well as the cd4 count of ART initiators.
+
+        bmi_int_cascade: summary statistics on population receiving the intervention and their
+        characteristics
         """
-        if self.parameters.bmi_intervention_scenario:
-            """
-            bmi_int_cascade: summary statistics on population receiving the intervention and their 
-            characteristics
-            """
-            # record agegroup at art_initiation
-            bins = [0, 25, 35, 45, 55, 65, 75, float("inf")]
-            # labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
-            self.population["init_age_group"] = pd.cut(
-                self.population["init_age"], labels=False, bins=bins, right=False
-            ).astype("int8")
-            # choose columns, fill Na values with 0 and transform to integer
-            bmi_int_cascade = self.population[
+        # record agegroup at art_initiation
+        bins = [0, 25, 35, 45, 55, 65, 75, float("inf")]
+        # labels = ['<25', '25-34', '35-44', '45-54', '55-64', '65-74', '75+']
+        self.population["init_age_group"] = pd.cut(
+            self.population["init_age"], labels=False, bins=bins, right=False
+        ).astype("int8")
+        # choose columns, fill Na values with 0 and transform to integer
+        bmi_int_cascade = self.population[
+            [
+                "bmiInt_scenario",
+                "h1yy",
+                "bmiInt_ineligible_dm",
+                "bmiInt_ineligible_underweight",
+                "bmiInt_ineligible_obese",
+                "bmiInt_eligible",
+                "bmiInt_received",
+                "bmi_increase_postART",
+                "bmi_increase_postART_over5p",
+                "become_obese_postART",
+                "bmiInt_impacted",
+            ]
+        ]
+
+        # Group by all categories and calculate the count in each one
+        bmi_int_cascade_count = (
+            bmi_int_cascade.groupby(
                 [
                     "bmiInt_scenario",
                     "h1yy",
@@ -1302,44 +1327,8 @@ class Pearl:
                     "become_obese_postART",
                     "bmiInt_impacted",
                 ]
-            ]
-
-            # Group by all categories and calculate the count in each one
-            bmi_int_cascade_count = (
-                bmi_int_cascade.groupby(
-                    [
-                        "bmiInt_scenario",
-                        "h1yy",
-                        "bmiInt_ineligible_dm",
-                        "bmiInt_ineligible_underweight",
-                        "bmiInt_ineligible_obese",
-                        "bmiInt_eligible",
-                        "bmiInt_received",
-                        "bmi_increase_postART",
-                        "bmi_increase_postART_over5p",
-                        "become_obese_postART",
-                        "bmiInt_impacted",
-                    ]
-                )
-                .size()
-                .reset_index(name="n")
-                .astype(
-                    {
-                        "bmiInt_scenario": "int8",
-                        "h1yy": "int16",
-                        "bmiInt_ineligible_dm": "bool",
-                        "bmiInt_ineligible_underweight": "bool",
-                        "bmiInt_ineligible_obese": "bool",
-                        "bmiInt_eligible": "bool",
-                        "bmiInt_received": "bool",
-                        "bmi_increase_postART": "bool",
-                        "bmi_increase_postART_over5p": "bool",
-                        "become_obese_postART": "bool",
-                        "bmiInt_impacted": "bool",
-                        "n": "int32",
-                    }
-                )
             )
+<<<<<<< HEAD
             self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
 
             """
@@ -1374,9 +1363,91 @@ class Pearl:
                         'year_dead': 'int32',
                     }
                 )
+=======
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "bmiInt_ineligible_dm": "bool",
+                    "bmiInt_ineligible_underweight": "bool",
+                    "bmiInt_ineligible_obese": "bool",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmi_increase_postART": "bool",
+                    "bmi_increase_postART_over5p": "bool",
+                    "become_obese_postART": "bool",
+                    "bmiInt_impacted": "bool",
+                    "n": "int32",
+                }
+>>>>>>> f39b6cab7aa4a849de58bd350443654f90868859
             )
+        )
+        self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
 
-            self.stats.dm_final_output = dm_final_output  # type: ignore[attr-defined]
+        """
+        bmi_int_dm_prev: report the number of people with diabetes based on intervention status
+        """
+        self.stats.bmi_int_dm_prev = (
+            self.population.groupby(
+                [
+                    "bmiInt_scenario",
+                    "h1yy",
+                    "init_age_group",
+                    "bmiInt_eligible",
+                    "bmiInt_received",
+                    "bmiInt_impacted",
+                    "dm",
+                    "t_dm",
+                ]
+            )
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "init_age_group": "int8",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmiInt_impacted": "bool",
+                    "dm": "bool",
+                    "t_dm": "int16",
+                    "n": "int32",
+                }
+            )
+        )
+
+        dm_final_output = (
+            self.population.groupby(
+                [
+                    "bmiInt_scenario",
+                    "h1yy",
+                    "bmiInt_eligible",
+                    "bmiInt_received",
+                    "bmiInt_impacted",
+                    "dm",
+                    "t_dm",
+                ]
+            )
+            .size()
+            .reset_index(name="n")
+            .astype(
+                {
+                    "bmiInt_scenario": "int8",
+                    "h1yy": "int16",
+                    "bmiInt_eligible": "bool",
+                    "bmiInt_received": "bool",
+                    "bmiInt_impacted": "bool",
+                    "dm": "bool",
+                    "t_dm": "int16",
+                    "n": "int32",
+                }
+            )
+        )
+
+        self.stats.dm_final_output = dm_final_output  # type: ignore[attr-defined]
 
         dead_in_care = self.population["status"] == DEAD_ART_USER
         dead_out_care = self.population["status"] == DEAD_ART_NONUSER

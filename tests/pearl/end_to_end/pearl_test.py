@@ -49,6 +49,7 @@ def parameter(param_file_path, output_folder, config):
     return Parameters(
         path=param_file_path,
         output_folder=output_folder,
+        replication=1,
         group_name="msm_black_male",
         new_dx=config["new_dx"],
         final_year=config["final_year"],
@@ -73,10 +74,10 @@ def test_pearl_single_threaded(parameter, expected_population, output_folder):
     """
     Pearl should run identically when seeded in a single threaded environment.
     """
-    Pearl(parameter, parameter.group_name, 1).run()
+    Pearl(parameter).run()
 
     try:
-        result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
+        result_population = pd.read_parquet(Path(output_folder / "final_state.parquet"))
         assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e
@@ -91,7 +92,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
 
     @delayed
     def run(parameter):
-        Pearl(copy.deepcopy(parameter), parameter.group_name, 1).run()
+        Pearl(copy.deepcopy(parameter)).run()
 
     result = []
     for _ in range(3):
@@ -100,7 +101,7 @@ def test_pearl_multi_threaded(parameter, expected_population, output_folder):
     dask.compute(result)
 
     try:
-        result_population = pd.read_parquet(Path(output_folder / "population.parquet"))
+        result_population = pd.read_parquet(Path(output_folder / "final_state.parquet"))
         assert_frame_equal(result_population, expected_population)
     except Exception as e:
         raise e

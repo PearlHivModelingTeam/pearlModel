@@ -272,6 +272,7 @@ def test_art_bmi_parameters(param_file_path):
     return Parameters(
         path=param_file_path,
         output_folder=None,
+        replication=42,
         group_name="msm_black_male",
         new_dx="base",
         final_year=2015,

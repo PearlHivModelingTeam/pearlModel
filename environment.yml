@@ -15,6 +15,9 @@ dependencies:
   - sphinx
   - pre-commit
   - conda-lock
+  - fastparquet
+  - colorcet
+  - seaborn
   - pip:
     - pip
     - setuptools

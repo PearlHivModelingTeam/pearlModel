@@ -362,6 +362,9 @@ def calculate_post_art_bmi(
         )
     post_art_bmi = sqrt_post_art_bmi**2.0
 
+    if "post_art_bmi" in parameters.sa_variables:
+        post_art_bmi *= parameters.sa_scalars["post_art_bmi"]
+
     return np.array(post_art_bmi)
 
 
@@ -438,4 +441,8 @@ def calculate_pre_art_bmi(
         np.log10(10), np.log10(65), log_pre_art_bmi, np.sqrt(rse), 1, random_state
     )
     pre_art_bmi = 10.0**log_pre_art_bmi
+
+    if "pre_art_bmi" in parameters.sa_variables:
+        pre_art_bmi *= parameters.sa_scalars["pre_art_bmi"]
+
     return np.array(pre_art_bmi)
