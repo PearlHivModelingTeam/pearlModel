@@ -106,6 +106,7 @@ if __name__ == "__main__":
             while seed in seeds:
                 seed = random.randint(1, 100000000)
             results.append(run(group_name_run, replication_run, seed=seed))
+            seeds.append(seed)
 
     if args.debug:
         dask.compute(results, scheduler="processes", num_workers=config["num_cpus"])
