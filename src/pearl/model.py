@@ -1328,42 +1328,6 @@ class Pearl:
                     "bmiInt_impacted",
                 ]
             )
-<<<<<<< HEAD
-            self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
-
-            """
-            bmi_int_dm_prev: report the number of people with diabetes based on intervention status
-            """
-
-            dm_final_output = (
-                self.population.groupby(
-                    [
-                        "bmiInt_scenario",
-                        "h1yy",
-                        "bmiInt_eligible",
-                        "bmiInt_received",
-                        "bmiInt_impacted",
-                        "dm",
-                        "t_dm",
-                        "year_died",
-                    ]
-                )
-                .size()
-                .reset_index(name="n")
-                .astype(
-                    {
-                        "bmiInt_scenario": "int8",
-                        "h1yy": "int16",
-                        "bmiInt_eligible": "bool",
-                        "bmiInt_received": "bool",
-                        "bmiInt_impacted": "bool",
-                        "dm": "bool",
-                        "t_dm": "int16",
-                        "n": "int32",
-                        'year_dead': 'int32',
-                    }
-                )
-=======
             .size()
             .reset_index(name="n")
             .astype(
@@ -1381,7 +1345,6 @@ class Pearl:
                     "bmiInt_impacted": "bool",
                     "n": "int32",
                 }
->>>>>>> f39b6cab7aa4a849de58bd350443654f90868859
             )
         )
         self.stats.bmi_int_cascade = bmi_int_cascade_count  # type: ignore[attr-defined]
@@ -1429,6 +1392,7 @@ class Pearl:
                     "bmiInt_impacted",
                     "dm",
                     "t_dm",
+                    "year_deid",
                 ]
             )
             .size()
@@ -1442,6 +1406,7 @@ class Pearl:
                     "bmiInt_impacted": "bool",
                     "dm": "bool",
                     "t_dm": "int16",
+                    "year_died": "int16",
                     "n": "int32",
                 }
             )
