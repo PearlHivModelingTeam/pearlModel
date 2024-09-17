@@ -31,6 +31,7 @@ rule simulate:
     input: 
         "param_files/parameters.h5",
     output:
+        directory("out/{config}/parquet_output"),
         "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/new_init_age.parquet",
         "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_cascade.parquet",
         "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_dm_prev.parquet",
@@ -98,13 +99,11 @@ rule bmi_paper_outputs:
 
 rule bmi_SA:
     input:
-        f"out/S3_SA_{num_replications}/combined/bmi_info.parquet",
         f"out/S3_SA_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S3_SA_{num_replications}/combined/new_init_age.parquet",
         f"out/S3_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
         f"out/S3_SA_{num_replications}/combined/parameters.parquet",
         
-        f"out/S0_SA_{num_replications}/combined/bmi_info.parquet",
         f"out/S0_SA_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S0_SA_{num_replications}/combined/new_init_age.parquet",
         f"out/S0_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
