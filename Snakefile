@@ -89,9 +89,8 @@ rule bmi_paper_outputs:
         f"out/S0_{num_replications}/figure3c_table.csv",
         f"out/S0_{num_replications}/fig3d.png",
         f"out/S0_{num_replications}/figure3d_table.csv",
-        f"out/S0_{num_replications}/tornado.png",
     params:
-        out_dir = directory("out"),
+        out_dir = f"out/S0_{num_replications}",
         baseline = f"out/S0_{num_replications}/combined",
         variable = f"out/S3_{num_replications}/combined",
     shell:
@@ -111,8 +110,8 @@ rule bmi_SA:
     output:
         f"out/S0_{num_replications}/tornado.png",
     params:
-        out_dir = directory("out"),
-        baseline = f"out/S0_{num_replications}/combined",
-        variable = f"out/S3_{num_replications}/combined",
+        out_dir = f"out/S0_{num_replications}",
+        baseline = f"out/S0_SA_{num_replications}/combined",
+        variable = f"out/S3_SA_{num_replications}/combined",
     shell:
         "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"

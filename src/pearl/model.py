@@ -1392,7 +1392,7 @@ class Pearl:
                     "bmiInt_impacted",
                     "dm",
                     "t_dm",
-                    "year_deid",
+                    "year_died",
                 ]
             )
             .size()
