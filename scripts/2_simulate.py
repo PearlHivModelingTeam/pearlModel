@@ -27,13 +27,13 @@ def run(group_name_run, replication_run, seed):
         mortality_model=config["mortality_model"],
         mortality_threshold_flag=config["mortality_threshold_flag"],
         idu_threshold=config["idu_threshold"],
-        bmi_intervention_scenario=config["bmi_intervention_scenario"],
-        bmi_intervention_start_year=config["bmi_intervention_start_year"],
-        bmi_intervention_end_year=config["bmi_intervention_end_year"],
-        bmi_intervention_coverage=config["bmi_intervention_coverage"],
-        bmi_intervention_effectiveness=config["bmi_intervention_effectiveness"],
+        bmi_intervention_scenario=config.get("bmi_intervention_scenario", 0),
+        bmi_intervention_start_year=config.get("bmi_intervention_start_year", 2012),
+        bmi_intervention_end_year=config.get("bmi_intervention_end_year", 2017),
+        bmi_intervention_coverage=config.get("bmi_intervention_coverage", 1),
+        bmi_intervention_effectiveness=config.get("bmi_intervention_effectiveness", 1),
         seed=seed,
-        sa_variables=config["sa_variables"],
+        sa_variables=config.get("sa_variables", []),
     )
     print(
         f"""Initializing group {group_name_run}, rep {replication_run}:
