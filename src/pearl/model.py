@@ -1392,6 +1392,7 @@ class Pearl:
                     "bmiInt_impacted",
                     "dm",
                     "t_dm",
+                    "year_deid",
                 ]
             )
             .size()
@@ -1405,6 +1406,7 @@ class Pearl:
                     "bmiInt_impacted": "bool",
                     "dm": "bool",
                     "t_dm": "int16",
+                    "year_died": "int16",
                     "n": "int32",
                 }
             )
