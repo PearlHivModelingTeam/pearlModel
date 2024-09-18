@@ -1,6 +1,8 @@
 # type: ignore
 
 num_replications = 200
+zero_ = str(0).zfill(len(str(num_replications)))
+
 
 rule all:
     input: 
@@ -32,9 +34,9 @@ rule simulate:
         "param_files/parameters.h5",
     output:
         directory("out/{config}/parquet_output"),
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/new_init_age.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_cascade.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_dm_prev.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/new_init_age.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/bmi_int_cascade.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/bmi_int_dm_prev.parquet",
     params:
         config_file = "config/{config}.yaml"
     shell:
@@ -42,9 +44,9 @@ rule simulate:
 
 rule combine:
     input: 
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/new_init_age.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_cascade.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_dm_prev.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/new_init_age.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/bmi_int_cascade.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_" + f"{zero_}/bmi_int_dm_prev.parquet",
         combine_dir = "out/{config}/parquet_output",
     output: 
         directory("out/{config}/combined/new_init_age.parquet"),
