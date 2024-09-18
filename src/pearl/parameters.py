@@ -314,6 +314,9 @@ class Parameters:
             if "post_art_bmi" in self.sa_variables:
                 self.sa_scalars["post_art_bmi"] = self.random_state.uniform(0.95, 1.05)
 
+            if "art_initiators" in self.sa_variables:
+                self.sa_scalars["art_initiators"] = self.random_state.uniform(0.95, 1.05)
+
         self.save_parameters()
 
     def save_parameters(self):

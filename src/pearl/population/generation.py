@@ -121,6 +121,12 @@ def simulate_new_dx(
         np.arange(2010, new_dx.index.max() + 1), ["art_initiators", "art_delayed"]
     ]
 
+    if "art_initiators" in parameters.sa_variables:
+        new_agents["art_initiators"] *= parameters.sa_scalars["art_initiators"]
+        new_agents["art_delayed"] *= parameters.sa_scalars["art_initiators"]
+
+        new_agents = new_agents.astype({"art_initiators": int, "art_delayed": int})
+
     return n_initial_nonusers, new_agents
 
 

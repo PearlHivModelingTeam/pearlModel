@@ -1,23 +1,25 @@
 # type: ignore
 
+num_replications = 200
+
 rule all:
     input: 
-        "out/final_table.csv",
-        "out/fig2a.png",
-        "out/fig2b.png",
-        "out/fig2c.png",
-        "out/figure2c_table.csv",
-        "out/fig2d.png",
-        "out/figure2d_table.csv",
-        "out/fig3a.png",
-        "out/figure3a_table.csv",
-        "out/fig3b.png",
-        "out/figure3b_table.csv",
-        "out/fig3c.png",
-        "out/figure3c_table.csv",
-        "out/fig3d.png",
-        "out/figure3d_table.csv",
-        "out/tornado.png",
+        f"out/S0_{num_replications}/final_table.csv",
+        f"out/S0_{num_replications}/fig2a.png",
+        f"out/S0_{num_replications}/fig2b.png",
+        f"out/S0_{num_replications}/fig2c.png",
+        f"out/S0_{num_replications}/figure2c_table.csv",
+        f"out/S0_{num_replications}/fig2d.png",
+        f"out/S0_{num_replications}/figure2d_table.csv",
+        f"out/S0_{num_replications}/fig3a.png",
+        f"out/S0_{num_replications}/figure3a_table.csv",
+        f"out/S0_{num_replications}/fig3b.png",
+        f"out/S0_{num_replications}/figure3b_table.csv",
+        f"out/S0_{num_replications}/fig3c.png",
+        f"out/S0_{num_replications}/figure3c_table.csv",
+        f"out/S0_{num_replications}/fig3d.png",
+        f"out/S0_{num_replications}/figure3d_table.csv",
+        f"out/S0_{num_replications}/tornado.png",
 
 rule create_params:
     output: 
@@ -30,9 +32,9 @@ rule simulate:
         "param_files/parameters.h5",
     output:
         directory("out/{config}/parquet_output"),
-        "out/{config}/parquet_output/het_black_female/replication_00/new_init_age.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_00/bmi_int_cascade.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_00/bmi_int_dm_prev.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/new_init_age.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_cascade.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_dm_prev.parquet",
     params:
         config_file = "config/{config}.yaml"
     shell:
@@ -40,15 +42,15 @@ rule simulate:
 
 rule combine:
     input: 
-        "out/{config}/parquet_output/het_black_female/replication_00/new_init_age.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_00/bmi_int_cascade.parquet",
-        "out/{config}/parquet_output/het_black_female/replication_00/bmi_int_dm_prev.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/new_init_age.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_cascade.parquet",
+        "out/{config}/parquet_output/het_black_female/replication_0" + f"{num_replications-1}/bmi_int_dm_prev.parquet",
         combine_dir = "out/{config}/parquet_output",
     output: 
-        "out/{config}/combined/new_init_age.parquet",
-        "out/{config}/combined/bmi_int_cascade.parquet",
-        "out/{config}/combined/bmi_int_dm_prev.parquet",
-        "out/{config}/combined/parameters.parquet",
+        directory("out/{config}/combined/new_init_age.parquet"),
+        directory("out/{config}/combined/bmi_int_cascade.parquet"),
+        directory("out/{config}/combined/bmi_int_dm_prev.parquet"),
+        directory("out/{config}/combined/parameters.parquet"),
     shell:
         "python scripts/3_combine_parquet.py --in_dir {input.combine_dir}"
 
@@ -62,46 +64,54 @@ rule aggregate:
 
 rule bmi_paper_outputs:
     input:
-        "out/S0_10/combined/bmi_info.parquet",
-        "out/S0_10/combined/bmi_int_cascade.parquet",
-        "out/S0_10/combined/new_init_age.parquet",
-        "out/S0_10/combined/bmi_int_dm_prev.parquet",
-        "out/S3_10/combined/bmi_info.parquet",
-        "out/S3_10/combined/bmi_int_cascade.parquet",
-        "out/S3_10/combined/new_init_age.parquet",
-        "out/S3_10/combined/bmi_int_dm_prev.parquet",
+        f"out/S0_{num_replications}/combined/bmi_info.parquet",
+        f"out/S0_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S0_{num_replications}/combined/new_init_age.parquet",
+        f"out/S0_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        f"out/S3_{num_replications}/combined/bmi_info.parquet",
+        f"out/S3_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S3_{num_replications}/combined/new_init_age.parquet",
+        f"out/S3_{num_replications}/combined/bmi_int_dm_prev.parquet",
 
     output:
-        "out/final_table.csv",
-        "out/fig2a.png",
-        "out/fig2b.png",
-        "out/fig2c.png",
-        "out/figure2c_table.csv",
-        "out/fig2d.png",
-        "out/figure2d_table.csv",
-        "out/fig3a.png",
-        "out/figure3a_table.csv",
-        "out/fig3b.png",
-        "out/figure3b_table.csv",
-        "out/fig3c.png",
-        "out/figure3c_table.csv",
-        "out/fig3d.png",
-        "out/figure3d_table.csv",
+        f"out/S0_{num_replications}/final_table.csv",
+        f"out/S0_{num_replications}/fig2a.png",
+        f"out/S0_{num_replications}/fig2b.png",
+        f"out/S0_{num_replications}/fig2c.png",
+        f"out/S0_{num_replications}/figure2c_table.csv",
+        f"out/S0_{num_replications}/fig2d.png",
+        f"out/S0_{num_replications}/figure2d_table.csv",
+        f"out/S0_{num_replications}/fig3a.png",
+        f"out/S0_{num_replications}/figure3a_table.csv",
+        f"out/S0_{num_replications}/fig3b.png",
+        f"out/S0_{num_replications}/figure3b_table.csv",
+        f"out/S0_{num_replications}/fig3c.png",
+        f"out/S0_{num_replications}/figure3c_table.csv",
+        f"out/S0_{num_replications}/fig3d.png",
+        f"out/S0_{num_replications}/figure3d_table.csv",
     params:
-        out_dir = directory("out"),
-        baseline = "out/S0_10/combined",
-        variable = "out/S3_10/combined",
+        out_dir = f"out/S0_{num_replications}",
+        baseline = f"out/S0_{num_replications}/combined",
+        variable = f"out/S3_{num_replications}/combined",
     shell:
         "python scripts/6_bmi_plots.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"
 
 rule bmi_SA:
     input:
-        "out/S3_SA_10/combined/bmi_info.parquet",
-        "out/S3_SA_10/combined/bmi_int_cascade.parquet",
-        "out/S3_SA_10/combined/new_init_age.parquet",
-        "out/S3_SA_10/combined/bmi_int_dm_prev.parquet",
-        "out/S3_SA_10/combined/parameters.parquet",
+        f"out/S3_SA_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S3_SA_{num_replications}/combined/new_init_age.parquet",
+        f"out/S3_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        f"out/S3_SA_{num_replications}/combined/parameters.parquet",
+        
+        f"out/S0_SA_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S0_SA_{num_replications}/combined/new_init_age.parquet",
+        f"out/S0_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        f"out/S0_SA_{num_replications}/combined/parameters.parquet",
     output:
-        "out/tornado.png"
+        f"out/S0_{num_replications}/tornado.png",
+    params:
+        out_dir = f"out/S0_{num_replications}",
+        baseline = f"out/S0_SA_{num_replications}/combined",
+        variable = f"out/S3_SA_{num_replications}/combined",
     shell:
-        "python scripts/7_bmi_sa.py"
+        "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"
