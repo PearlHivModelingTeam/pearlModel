@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 10
+num_replications = 200
 
 rule all:
     input: 
