@@ -45,6 +45,8 @@ def run(group_name_run, replication_run, seed):
 
 
 if __name__ == "__main__":
+    # set a seed for the main thread
+    random.seed(42)
     print("1", flush=True)
 
     start_time = datetime.now()
