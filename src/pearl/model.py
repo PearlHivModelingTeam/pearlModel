@@ -1387,20 +1387,22 @@ class Pearl:
                 [
                     "bmiInt_scenario",
                     "h1yy",
+                    "init_age_group",
                     "bmiInt_eligible",
                     "bmiInt_received",
                     "bmiInt_impacted",
                     "dm",
                     "t_dm",
-                    "year_deid",
+                    "year_died",
                 ]
-            )
+            ) 
             .size()
             .reset_index(name="n")
             .astype(
                 {
                     "bmiInt_scenario": "int8",
                     "h1yy": "int16",
+                    "init_age_group": "int8",
                     "bmiInt_eligible": "bool",
                     "bmiInt_received": "bool",
                     "bmiInt_impacted": "bool",
