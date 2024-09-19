@@ -23,6 +23,7 @@ from pearl.post_processing.bmi import (
     palette,
     rearrange_group_order,
     round_thousand,
+    calc_dm_prop,
 )
 
 if __name__ == "__main__":
@@ -210,9 +211,10 @@ if __name__ == "__main__":
 
     # save table to csv
     final_table.to_csv(out_dir / "final_table.csv", index=False)
-
+    
+    ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
-    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "bmi_int_dm_prev.parquet").reset_index()
+    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
 
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
@@ -240,7 +242,7 @@ if __name__ == "__main__":
 
     # sum across replications, group, and years_after_h1yy
     control_bmi_int_dm_prev_agg = (
-        control_bmi_int_dm_prev.groupby(["group", "years_after_h1yy", "replication"])["n"]
+        control_bmi_int_dm_prev.groupby(["group", "years_after_h1yy", "replication", "time_exposure_to_risk"])["n"]
         .sum()
         .reset_index()
         .compute()
@@ -333,7 +335,6 @@ if __name__ == "__main__":
     plt.clf()
 
     # 2d
-
     group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev_agg, 7).compute()
 
     group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
@@ -352,8 +353,8 @@ if __name__ == "__main__":
     group_risk_ax.tick_params(axis="x", rotation=90)
 
     group_risk_ax.set_xlabel("")
-    group_risk_ax.set_ylabel("7-year Risk of DM Diagnosis Post-ART Initiation")
-    group_risk_ax.set_ylim(0, 0.24)
+    group_risk_ax.set_ylabel("7-year risk of DM diagnosis after ART initiation")
+    group_risk_ax.set_ylim(0, 30)
     plt.subplots_adjust(bottom=0.35)
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2d.png")
@@ -369,7 +370,7 @@ if __name__ == "__main__":
     )
     df.columns = ["group", 0.05, 0.5, 0.95]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50] * 100:.1f}% [{row[0.05] * 100:.1f}% - {row[0.95] * 100:.1f}%]",
+        lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]",
         axis=1,
     )
     df = rearrange_group_order(df)
@@ -396,7 +397,7 @@ if __name__ == "__main__":
     group_risk_ax.tick_params(axis="x", rotation=90)
 
     group_risk_ax.set_xlabel("")
-    group_risk_ax.set_ylabel("7-year Number of DM Diagnosis Post-ART Initiation")
+    group_risk_ax.set_ylabel("7-year number of DM diagnosis after ART initiation")
     # group_risk_ax.set_ylim(0, 0.24)
     plt.subplots_adjust(bottom=0.35)
     group_risk_fig = group_risk_ax.get_figure()
@@ -419,7 +420,7 @@ if __name__ == "__main__":
     num_samples = 2000
 
     # we will look at the "bmi_int_dm_prev.h5" for S1
-    bmi_int_dm_prev_s1 = dd.read_parquet(variable_dir / "bmi_int_dm_prev.parquet").reset_index()
+    bmi_int_dm_prev_s1 = dd.read_parquet(variable_dir / "dm_final_output.parquet").reset_index()
 
     bmi_int_dm_prev_s1 = bmi_int_dm_prev_s1.astype(
         {
@@ -459,7 +460,7 @@ if __name__ == "__main__":
     del bmi_int_dm_prev_s1, bmi_int_s1_eligible_risk
 
     # we will look at the "bmi_int_dm_prev.h5" for S0
-    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "bmi_int_dm_prev.parquet").reset_index()
+    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
 
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
@@ -509,7 +510,7 @@ if __name__ == "__main__":
 
     diff_ax = sns.boxplot(
         x=abs_sample_diff_plot["group"],
-        y=abs_sample_diff_plot["risk"],
+        y=-abs_sample_diff_plot["risk"],
         color="seagreen",
         showfliers=False,
         palette=palette,
@@ -522,7 +523,7 @@ if __name__ == "__main__":
 
     diff_ax.set_xlabel("")
     diff_ax.set_ylabel(
-        "Absolute risk reduction (ARR) of new DM diagnosis\n (intervention vs. control arm over 5-year follow up)",
+        "Absolute 5-year risk reduction in incident DM diagnoses\n with (vs. without) the intervention",
         fontsize=8.5,
     )
     diff_ax.axhline(y=0, color="r", linestyle="-")
@@ -530,7 +531,8 @@ if __name__ == "__main__":
     diff_fig = diff_ax.get_figure()
     diff_fig.savefig(out_dir / "fig3a.png")
     plt.clf()
-
+    
+    abs_sample_diff_plot['risk'] = -abs_sample_diff_plot['risk']
     df = (
         abs_sample_diff_plot.groupby("group")[["risk"]]
         .quantile([0.05, 0.5, 0.95])
@@ -539,14 +541,14 @@ if __name__ == "__main__":
     )
     df.columns = ["group", 0.05, 0.5, 0.95]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.3f} [{row[0.05]:.3f} - {row[0.95]:.3f}]", axis=1
+        lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3a_table.csv")
 
     # 3b
     # relative difference
-    rel_sample_diff = (s1_sample[["risk"]] - s0_sample[["risk"]]) / s0_sample[["risk"]]
+    rel_sample_diff = -(s1_sample[["risk"]] - s0_sample[["risk"]]) / s0_sample[["risk"]]
     rel_sample_diff["group"] = s0_sample["group"]
 
     rel_sample_diff_plot = rel_sample_diff.copy()
@@ -567,7 +569,7 @@ if __name__ == "__main__":
 
     rel_ax.set_xlabel("")
     rel_ax.set_ylabel(
-        "Relative risk reduction (RRR) of new DM diagnosis \n (intervention vs. control arm over 5-year follow up)",
+        "Relative 5-year risk reduction in incident DM diagnoses \n with (vs. without) the intervention",
         fontsize=8.5,
     )
     rel_ax.axhline(y=0, color="r", linestyle="-")
@@ -610,7 +612,7 @@ if __name__ == "__main__":
 
     dm_per_1000_ax.set_xlabel("")
     dm_per_1000_ax.set_ylabel(
-        "Number needed to treat (NNT) to avert one new DM case \n(intervention vs. control arm over 5-year follow up)",
+        "Number of people who must experience the intervention\n (NNT) to avert 1 incident DM diagnosis",
         fontsize=8,
     )
     dm_per_1000_ax.axhline(y=0, color="r", linestyle="-")
@@ -650,7 +652,7 @@ if __name__ == "__main__":
 
     dm_prevented_ax.set_xlabel("")
     dm_prevented_ax.set_ylabel(
-        "Number of DM cases averted\n(intervention vs. control arm (over 5-year follow up)",
+        "Number of incident DM diagnoses averted\n (per 1000 people) with (vs. without) the intervention",
         fontsize=8.5,
     )
     dm_prevented_ax.axhline(y=0, color="r", linestyle="-")
@@ -671,3 +673,96 @@ if __name__ == "__main__":
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3d_table.csv")
+    
+    ############################################################################################################################
+    # # Supplimental Figure 1
+    # # we will look at the "bmi_int_dm_prev.h5" for S0
+    # bmi_int_dm_prev = dd.read_parquet(baseline_dir /'dm_final_output.parquet').reset_index()
+
+    # # Add Overall
+    # all_but_group = list(bmi_int_dm_prev.columns[1:])
+    # bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    # bmi_int_dm_prev_overall['group'] = 'overall'
+    # bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
+
+    # # type the dataframe for space efficiency
+    # bmi_int_dm_prev = bmi_int_dm_prev.astype({'group':'str', 'replication':'int16', 'bmiInt_scenario':np.int8, 'h1yy': np.int16, 'bmiInt_impacted':bool, 'dm': bool, 't_dm': np.int16, 'n': np.int16})
+
+    # # clean to control specifications
+    # control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=False)
+
+    # # sum across replications, group, and years_after_h1yy
+    # control_bmi_int_dm_prev_agg = control_bmi_int_dm_prev.groupby(['group', 'years_after_h1yy','replication'])['n'].sum().reset_index().compute()
+    # death_df = control_bmi_int_dm_prev.groupby(['group', 'time_exposure_to_risk','replication'])['n'].sum().reset_index().compute()
+    
+    # dm_prop_df = calc_dm_prop(control_bmi_int_dm_prev_agg, death_df)
+    # dm_prop_df['group'] = dm_prop_df['group'].map(group_title_dict)
+    
+    # # Plot Set Up
+    # year_period = 7
+
+    # plot_groups_reordered = ['Black HET Women', 'White HET Women', 'Hispanic HET Women',
+    #                     'Black HET Men', 'White HET Men', 'Hispanic HET Men',
+    #                     'Black WWID', 'White WWID', 'Hispanic WWID',
+    #                     'Black MWID', 'White MWID', 'Hispanic MWID',
+    #                     'Black MSM', 'White MSM', 'Hispanic MSM']
+
+    # colors = ['r', 'b']
+
+    # column_names = ['Black', 'White', 'Hispanic']
+
+    # row_names = ['HET Women', 'HET Men', 'WWID', 'MWID', 'MSM']
+
+
+    # # Plotting Codes
+    # fig, axs = plt.subplots(5, 3, figsize=(16, 12))
+
+    # plot_groups = np.sort(dm_prop_df.group.unique())
+    # plot_groups = plot_groups[plot_groups != 'Overall']
+
+
+
+    # for i, group in enumerate(plot_groups_reordered):
+        
+    #     group_df = dm_prop_df[dm_prop_df.group == group]
+    #     real_group_df = real_DM_df[real_DM_df.group == group]
+    #     ax = axs.flatten()[i]
+        
+    #     if i < 3:
+    #         ax.set_title(column_names[i], fontweight='bold')
+            
+    #     if i % 3 == 0:
+    #         k = i // 3
+    #         ax.set_ylabel(row_names[k], fontweight='bold')
+
+    #     # Plot PEARL Projection
+    #     percentiles = group_df.groupby('years_after_h1yy')['proportion'].quantile([0.05, 0.5, 0.95]).unstack()
+    #     # print(percentiles)
+    #     ax.plot(percentiles.index[:year_period],
+    #             percentiles.loc[1:year_period,0.50],
+    #             marker='o',
+    #             linestyle='-',
+    #             color='r',
+    #             label='PEARL Projection Median Probability')
+        
+    #     # ax.fill_between(percentiles.index[:year_period],
+    #     #                 percentiles.loc[1:year_period, 0.05],
+    #     #                 percentiles.loc[1:year_period,0.95], 
+    #     #                 color='r', 
+    #     #                 alpha=0.4, 
+    #     #                 label='95% Uncertainty Range')
+
+    #     # Plot NA-ACCORD real Data
+    #     ax.plot(real_group_df['t'], real_group_df['prop'], marker='o', linestyle='-', color='b', label='NA-ACCORD')
+    #     ax.fill_between(real_group_df['t'], real_group_df['prop_lower_ci'], real_group_df['prop_upper_ci'], color='b', alpha=0.1, label='NA-ACCORD 95% Uncertainty Range')
+        
+    #     ax.set_xticks(range(1,year_period+1))
+
+
+    # plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust rect to leave space for the labels
+    # plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95)  # Adjust the subplots to leave space for the labels
+
+    # fig.supxlabel('Years Since ART Initiation', y = -0.02,fontsize=16)
+    # fig.supylabel('Annual risk of new DM diagnosis', x=-0.02,fontsize=16)
+
+    # fig.savefig(out_dir/"figS1.png",bbox_inches='tight')

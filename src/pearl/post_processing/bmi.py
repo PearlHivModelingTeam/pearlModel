@@ -161,97 +161,133 @@ def calc_percentage_and_add_summary(destination_df, source_df, name):
     return add_summary(destination_df, percentage_df, name)
 
 
-def clean_control(df, only_eligible=True):
+def clean_control(df, only_eligible = False, only_received = False):
+    
     # filter to only people who have initiated art from 2010 to 2017
-    df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2010)]
-
+    df_control = df[(df['h1yy'] <= 2017) & (df['h1yy'] >= 2010)]
+    
     if only_eligible:
         # Filter for only eligible
-        df_control = df_control[df_control["bmiInt_eligible"] == True]  # noqa: E712
-
+        df_control = df_control[df_control['bmiInt_eligible'] == True]
+        
+    if only_received:
+        df_control = df_control[df_control['bmiInt_received'] == True]
+    
     # Add column of t_dm_after_h1yy to keep trace of years after initiation
-    df_control["years_after_h1yy"] = df_control["t_dm"] - df_control["h1yy"]
+    df_control['years_after_h1yy'] = df_control['t_dm'] - df_control['h1yy']
 
+    # Add column to keep trace of years after initiation till death
+    df_control['time_exposure_to_risk'] = df_control['year_died'] - df_control['h1yy']
+    
     return df_control
 
 
-def calc_overall_risk(df, follow_up=7):
+def calc_overall_risk(df, years_follow_up=7):
+    
     # filter for only overall group
-    df_overall = df[df["group"] == "overall"]
-
+    df_overall = df[df['group']=='overall']
+    
     # filter for only follow_up-year follow up with dm
-    df_overall_follow_up = df_overall.loc[
-        (df_overall["years_after_h1yy"] > 0) & (df_overall["years_after_h1yy"] <= follow_up)
-    ]
-
+    df_overall_follow_up = df_overall.loc[(df_overall['years_after_h1yy'] > 0) & (df_overall['years_after_h1yy'] <= years_follow_up)]
+    
     # group by replication and age group and sum
-    df_overall_follow_up_sum = (
-        df_overall_follow_up.groupby(["init_age_group", "replication"])["n"].sum().reset_index()
-    )
-    df_overall_follow_up_sum = df_overall_follow_up_sum.rename(columns={"n": "dm_num"})
-
+    df_overall_follow_up_sum = df_overall_follow_up.groupby(['init_age_group', 'replication'])['n'].sum().reset_index()
+    df_overall_follow_up_sum = df_overall_follow_up_sum.rename(columns={'n': 'dm_num'})
+    
     # now for the denominator
+    # First adjust people died in the same year of art initiation
+    df_overall['time_exposure_to_risk'] = df_overall['time_exposure_to_risk'].where(df_overall['time_exposure_to_risk'] == 0, 1)
+
+    
+    # Second adjust people survive from simulation
+    df_overall['time_exposure_to_risk'] = df_overall['time_exposure_to_risk'].where(df_overall['time_exposure_to_risk'] < 0, years_follow_up)
+    
+    # Third adjust people survived through follow-up period
+    df_overall['time_exposure_to_risk'] = df_overall['time_exposure_to_risk'].where(df_overall['time_exposure_to_risk'] > years_follow_up, years_follow_up)
+    
+    # Calculate person-time variable
+    df_overall['person-time-contributed'] = df_overall['n'] * df_overall['time_exposure_to_risk']
+    
     # group by replication and age group and sum
-    df_overall_follow_up_sum_total = (
-        df_overall.groupby(["init_age_group", "replication"])["n"].sum().reset_index()
-    )
-    df_overall_follow_up_sum_total = df_overall_follow_up_sum_total.rename(columns={"n": "num"})
+    df_overall_follow_up_sum_total = df_overall.groupby(['init_age_group', 'replication'])[['person-time-contributed','n']].sum().reset_index()
+    df_overall_follow_up_sum_total = df_overall_follow_up_sum_total.rename(columns = {'n':'num'})
 
     # create risk table and calculate risk
-    dm_risk_table = dd.merge(df_overall_follow_up_sum, df_overall_follow_up_sum_total, how="left")
-    dm_risk_table["risk"] = dm_risk_table["dm_num"] / dm_risk_table["num"]
+    dm_risk_table = dd.merge(df_overall_follow_up_sum, df_overall_follow_up_sum_total, how='left')
+    dm_risk_table['risk'] = dm_risk_table['dm_num'] / dm_risk_table['person-time-contributed']
 
+    dm_risk_table['risk'] = dm_risk_table['risk'] * 1000
+    
     return dm_risk_table
 
 
 def calc_risk_by_group(df, years_follow_up):
+
     # filter for only x-year follow up with dm
-    df_follow_up = df.loc[
-        (df["years_after_h1yy"] > 0) & (df["years_after_h1yy"] <= years_follow_up)
-    ]
-
+    df_follow_up = df.loc[(df['years_after_h1yy'] > 0) & (df['years_after_h1yy'] <= years_follow_up)]
+    
     # group by replication and group and sum
-    df_follow_up_sum = df_follow_up.groupby(["group", "replication"])["n"].sum().reset_index()
-    df_follow_up_sum = df_follow_up_sum.rename(columns={"n": "dm_num"})
-
+    df_follow_up_sum = df_follow_up.groupby(['group', 'replication'])['n'].sum().reset_index()
+    df_follow_up_sum = df_follow_up_sum.rename(columns={'n': 'dm_num'})
+    
+    # now for the denominator
+    # First adjust people died in the same year of art initiation
+    df['time_exposure_to_risk'] = df['time_exposure_to_risk'].where(df['time_exposure_to_risk'] == 0, 1)
+    
+    # Second adjust people survive from simulation
+    df['time_exposure_to_risk'] = df['time_exposure_to_risk'].where(df['time_exposure_to_risk'] < 0, years_follow_up)
+    
+    # Third adjust people survived through follow-up period
+    df['time_exposure_to_risk'] = df['time_exposure_to_risk'].where(df['time_exposure_to_risk'] > years_follow_up, years_follow_up)
+    
+    # Calculate person-time variable
+    df['person-time-contributed'] = df['n'] * df['time_exposure_to_risk']
+    
     # group by replication and group and sum
-    df_all_sum = df.groupby(["group", "replication"])["n"].sum().reset_index()
-    df_all_sum = df_all_sum.rename(columns={"n": "num"})
-
+    df_all_sum = df.groupby(['group', 'replication'])[['person-time-contributed','n']].sum().reset_index()
+    df_all_sum = df_all_sum.rename(columns={'n': 'num'})
+    
     # merge dataframes
-    group_dm_risk_table = dd.merge(df_follow_up_sum, df_all_sum, how="left")
-
+    group_dm_risk_table = dd.merge(df_follow_up_sum, df_all_sum, how='left')
+    
     # calculate risk
-    group_dm_risk_table["risk"] = group_dm_risk_table["dm_num"] / group_dm_risk_table["num"]
+    group_dm_risk_table['risk'] = group_dm_risk_table['dm_num'] / group_dm_risk_table['person-time-contributed']
 
+    group_dm_risk_table['risk'] = group_dm_risk_table['risk']*1000
+    
+    # return group_dm_risk_table
     return group_dm_risk_table
 
 
-def calc_dm_prop(df):
+def calc_dm_prop(df, death_df):
+
     dm_prop_df = pd.DataFrame()
 
-    for i in range(df["replication"].max() + 1):
+    for i in range(df['replication'].max() + 1):
         for group in df.group.unique():
             # calcualte proportion of dm in each year after art initiation
-            rep_df = df[(df.replication == i) & (df.group == group)].copy().reset_index(drop=True)
-
+            rep_df = df[(df.replication == i)&(df.group == group)].copy().reset_index(drop = True)
+            rep_death_df = death_df[(death_df.replication == i)&(death_df.group == group)].copy().reset_index(drop = True)
+            
             # Get the total population
-            rep_df["total_pop"] = rep_df["n"].sum()
-
+            rep_df['total_pop'] = rep_df['n'].sum()
+            
             # Exclude people didn't develop DM duirng follow up years at all, with negative value of 'years_after_h1yy'
-            rep_df = rep_df[rep_df["years_after_h1yy"] > 0].reset_index(drop=True)
-
+            rep_df = rep_df[rep_df['years_after_h1yy'] > 0].reset_index(drop = True)
+    
+            # Exclude people survived till simulation period
+            rep_death_df = rep_death_df[rep_death_df['time_exposure_to_risk'] > 0].reset_index(drop = True)
+            
             # Get the eligible population size who can develop DM
-            rep_df["eligible_pop"] = (rep_df["total_pop"] - rep_df["n"].cumsum().shift(1)).fillna(
-                rep_df.loc[0, "total_pop"]
-            )
-
+            rep_df['eligible_pop'] = (rep_df['total_pop'] - rep_df['n'].cumsum().shift(1)).fillna(rep_df.loc[0,'total_pop'])
+            rep_df['eligible_pop'] = (rep_df['total_pop'] - rep_death_df['n'])
+            
             # Calculate Proportion of each year and cumulative rate
-
-            rep_df["proportion"] = rep_df["n"] / rep_df["eligible_pop"]
-
-            dm_prop_df = pd.concat([dm_prop_df, rep_df], axis=0, ignore_index=True)
-
+            
+            rep_df['proportion'] = rep_df['n'] / rep_df['eligible_pop']
+            
+            dm_prop_df = pd.concat([dm_prop_df, rep_df], axis = 0, ignore_index= True)
+            
     return dm_prop_df
 
 
