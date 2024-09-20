@@ -18,3 +18,5 @@ build/
 .mypy_cahse
 .coverage
 .snakemake/
+.spyproject
+.vs
