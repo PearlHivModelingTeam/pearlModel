@@ -1352,7 +1352,7 @@ class Pearl:
         """
         bmi_int_dm_prev: report the number of people with diabetes based on intervention status
         """
-        self.stats.bmi_int_dm_prev = (
+        self.stats.bmi_int_dm_prev = (  # type: ignore[attr-defined]
             self.population.groupby(
                 [
                     "bmiInt_scenario",
@@ -1395,7 +1395,7 @@ class Pearl:
                     "t_dm",
                     "year_died",
                 ]
-            ) 
+            )
             .size()
             .reset_index(name="n")
             .astype(

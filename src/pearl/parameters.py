@@ -319,7 +319,7 @@ class Parameters:
 
         self.save_parameters()
 
-    def save_parameters(self):
+    def save_parameters(self) -> None:
         """
         Save all parameters as a dataframe.
         """
