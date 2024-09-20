@@ -14,7 +14,7 @@ group_names: ['msm_white_male',
               'het_black_female',
               'het_hisp_female'
 ]
-num_cpus: 10
+num_cpus: 150
 replications: 10
 new_dx: 'base' # base, ehe, sa
 mortality_model: 'by_sex_race_risk' # by_sex_race_risk, by_sex_race, by_sex, overall
@@ -22,6 +22,7 @@ mortality_threshold_flag: 1 # 0, 1:
 final_year: 2035 # [2010 - 2035]
 verbose: 0 #0, 1
 idu_threshold: '2x' # 2x, 5x, 10x
+sa_variables: None
 
 bmi_intervention: 1  #0: skipping intervention and data collection, 1 data will be collected
 bmi_intervention_scenario: 0 # 0 placebo arm, 1 bmi maintenance at 29.9, 2 bmi gain restricted at 5%, 3 no bmi gain

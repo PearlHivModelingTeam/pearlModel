@@ -18,3 +18,6 @@ build/
 .mypy_cahse
 .coverage
 .snakemake/
+.spyproject
+.vs
+tests/pearl/end_to_end/output/
