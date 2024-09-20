@@ -121,7 +121,7 @@ def simulate_new_dx(
         np.arange(2010, new_dx.index.max() + 1), ["art_initiators", "art_delayed"]
     ]
 
-    if "art_initiators" in parameters.sa_variables:
+    if parameters.sa_variables and "art_initiators" in parameters.sa_variables:
         new_agents["art_initiators"] *= parameters.sa_scalars["art_initiators"]
         new_agents["art_delayed"] *= parameters.sa_scalars["art_initiators"]
 
@@ -368,7 +368,7 @@ def calculate_post_art_bmi(
         )
     post_art_bmi = sqrt_post_art_bmi**2.0
 
-    if "post_art_bmi" in parameters.sa_variables:
+    if parameters.sa_variables and "post_art_bmi" in parameters.sa_variables:
         post_art_bmi *= parameters.sa_scalars["post_art_bmi"]
 
     return np.array(post_art_bmi)
@@ -448,7 +448,7 @@ def calculate_pre_art_bmi(
     )
     pre_art_bmi = 10.0**log_pre_art_bmi
 
-    if "pre_art_bmi" in parameters.sa_variables:
+    if parameters.sa_variables and "pre_art_bmi" in parameters.sa_variables:
         pre_art_bmi *= parameters.sa_scalars["pre_art_bmi"]
 
     return np.array(pre_art_bmi)

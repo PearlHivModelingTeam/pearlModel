@@ -129,6 +129,7 @@ def test_parameters(test_new_dx, test_linkage_to_care):
     parameters = Mock()
     parameters.new_dx = test_new_dx
     parameters.linkage_to_care = test_linkage_to_care
+    parameters.sa_variables = []
     return parameters
 
 
