@@ -178,10 +178,10 @@ def clean_control(
 
     if only_eligible:
         # Filter for only eligible
-        df_control = df_control[df_control["bmiInt_eligible"] is True]
+        df_control = df_control[df_control["bmiInt_eligible"] == 1]
 
     if only_received:
-        df_control = df_control[df_control["bmiInt_received"] is True]
+        df_control = df_control[df_control["bmiInt_received"] == 1]
 
     # Add column of t_dm_after_h1yy to keep trace of years after initiation
     df_control["years_after_h1yy"] = df_control["t_dm"] - df_control["h1yy"]
