@@ -255,7 +255,7 @@ if __name__ == "__main__":
     )
 
     # clean to control specifications
-    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=False)
+    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True)
 
     # sum across replications, group, and years_after_h1yy
     control_bmi_int_dm_prev_agg = (
@@ -471,7 +471,7 @@ if __name__ == "__main__":
     )
 
     # clean to control specifications
-    control_bmi_int_dm_prev_s1 = clean_control(bmi_int_dm_prev_s1, only_eligible=True)
+    control_bmi_int_dm_prev_s1 = clean_control(bmi_int_dm_prev_s1, only_eligible=True, only_received=True)
 
     # filter for only people eligible for intervention
     bmi_int_s1_eligible_risk = calc_risk_by_group(control_bmi_int_dm_prev_s1, 7)
@@ -510,7 +510,7 @@ if __name__ == "__main__":
     )
 
     # clean to control specifications
-    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True)
+    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True)
 
     bmi_int_eligible_risk = calc_risk_by_group(control_bmi_int_dm_prev, 7)
 
