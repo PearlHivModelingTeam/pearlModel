@@ -320,7 +320,17 @@ if __name__ == "__main__":
     pop_fig.savefig(out_dir / "fig2a.png", bbox_inches="tight")
     # clear the plot
     plt.clf()
-
+    
+    df = dm_risk_table.groupby(['init_age_group'])[['num', 'risk']].quantile([0.025,0.5,0.975]).unstack()
+    final_df = pd.DataFrame()
+    for col in ['num', 'risk']:
+        col_df = df[col].reset_index()
+        if col == 'risk':
+            final_df[col] = col_df.apply(lambda row: '{:.1f}% [{:.1f}% - {:.1f}%]'.format(row[0.5]*100, row[0.025]*100, row[0.975]*100), axis=1)
+        else:
+            final_df[col] = col_df.apply(lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.5],-2), round(row[0.025],-2), round(row[0.975],-2)), axis=1)
+            
+    final_df.to_csv(out_dir/'figure2a_table.csv', index = False)
     # 2b
 
     # calculate group prevalence
