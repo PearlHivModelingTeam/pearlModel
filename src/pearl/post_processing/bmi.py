@@ -219,8 +219,8 @@ def calc_percentage_and_add_summary(
 def clean_control(
     df: pd.DataFrame, only_eligible: bool = False, only_received: bool = False
 ) -> pd.DataFrame:
-    # filter to only people who have initiated art from 2010 to 2017
-    df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2010)]
+    # filter to only people who have initiated art from 2013 to 2017
+    df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2013)]
 
     if only_eligible:
         # Filter for only eligible
