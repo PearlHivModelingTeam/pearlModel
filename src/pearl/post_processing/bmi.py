@@ -47,6 +47,30 @@ group_order = [
     "Overall",
 ]
 
+group_order_with_sub_total = [
+    "Black HET Women",
+    "White HET Women",
+    "Hispanic HET Women",
+    "All HET Women",
+    "Black HET Men",
+    "White HET Men",
+    "Hispanic HET Men",
+    "All HET Men",
+    "Black WWID",
+    "White WWID",
+    "Hispanic WWID",
+    "All WWID",
+    "Black MWID",
+    "White MWID",
+    "Hispanic MWID",
+    "All MWID",
+    "Black MSM",
+    "White MSM",
+    "Hispanic MSM",
+    "All MSM",
+    "Overall"
+]
+
 all_group_names_ov = [
     "msm_white_male",
     "msm_black_male",
@@ -85,18 +109,38 @@ all_group_titles_ov = [
     "Overall",
 ]
 
-group_title_dict = dict(zip(all_group_names_ov, all_group_titles_ov))
+# group_title_dict = dict(zip(all_group_names_ov, all_group_titles_ov))
+
+group_title_dict = {'msm_white_male': 'White MSM',
+    'msm_black_male': 'Black MSM',
+    'msm_hisp_male': 'Hispanic MSM',
+    'msm_male': 'All MSM',
+    'idu_white_male': 'White MWID',
+    'idu_black_male': 'Black MWID',
+    'idu_hisp_male': 'Hispanic MWID',
+    'idu_male': 'All MWID',
+    'idu_white_female': 'White WWID',
+    'idu_black_female': 'Black WWID',
+    'idu_hisp_female': 'Hispanic WWID',
+    'idu_female': 'All WWID',
+    'het_white_male': 'White HET Men',
+    'het_black_male': 'Black HET Men',
+    'het_hisp_male': 'Hispanic HET Men',
+    'het_male': 'All HET Men',
+    'het_white_female': 'White HET Women',
+    'het_black_female': 'Black HET Women',
+    'het_hisp_female': 'Hispanic HET Women',
+    'het_female': 'All HET Women',
+    'overall': 'Overall'}
 
 # define color pallete
 palette = sns.color_palette(cc.glasbey_light, n_colors=16)
 
 
-def calc_percentage(
-    df: pd.DataFrame, column_name: str, numerator: int = 1, percentage: bool = True
-) -> pd.DataFrame:
+def calc_percentage(df, column_name, numerator=1, percentage=True):
     # group by group and column_name and sum over 'n'
     df_binary = (
-        df.groupby(["group", "replication", column_name])["n"].sum().reset_index().compute()
+        df.groupby(["group", "replication", column_name])["n"].sum().reset_index()
     )
 
     # the above does not have the overall data, so we create it here
@@ -123,13 +167,11 @@ def calc_percentage(
     return df_ratio
 
 
-def round_thousand(x: float) -> float:
+def round_thousand(x):
     return int(math.ceil(x / 100.0)) * 100 if x > 1000 else x
 
 
-def create_summary_table(
-    df: pd.DataFrame, name: str, precision: float = 0, percent: bool = True
-) -> pd.DataFrame:
+def create_summary_table(df, name, precision=0, percent=True):
     df_quantile = df.groupby("group")["n"].quantile([0.05, 0.5, 0.95]).unstack().reset_index()
 
     if precision == 0:
@@ -150,9 +192,7 @@ def create_summary_table(
     return df_quantile[["group", name]]
 
 
-def add_summary(
-    destination_df: pd.DataFrame, source_df: pd.DataFrame, name: str, percent: bool = True
-) -> pd.DataFrame:
+def add_summary(destination_df, source_df, name, percent=True):
     # create summary table for df we want to add
     summary_table = create_summary_table(source_df, name, percent=percent)
 
@@ -160,9 +200,7 @@ def add_summary(
     return destination_df.merge(summary_table)
 
 
-def calc_percentage_and_add_summary(
-    destination_df: pd.DataFrame, source_df: pd.DataFrame, name: str
-) -> pd.DataFrame:
+def calc_percentage_and_add_summary(destination_df, source_df, name):
     # calculate the percentage of ineligible_dm
     percentage_df = calc_percentage(source_df, name)
 
@@ -170,35 +208,27 @@ def calc_percentage_and_add_summary(
     return add_summary(destination_df, percentage_df, name)
 
 
-def clean_control(
-    df: pd.DataFrame, only_eligible: bool = False, only_received: bool = False
-) -> pd.DataFrame:
-    # filter to only people who have initiated art from 2010 to 2017
-    df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2010)]
+def clean_control(df, only_eligible=True):
+    # filter to only people who have initiated art from 2013 to 2017
+    df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2013)]
 
     if only_eligible:
         # Filter for only eligible
-        df_control = df_control[df_control["bmiInt_eligible"] == 1]
-
-    if only_received:
-        df_control = df_control[df_control["bmiInt_received"] == 1]
+        df_control = df_control[df_control["bmiInt_eligible"] == True]  # noqa: E712
 
     # Add column of t_dm_after_h1yy to keep trace of years after initiation
     df_control["years_after_h1yy"] = df_control["t_dm"] - df_control["h1yy"]
 
-    # Add column to keep trace of years after initiation till death
-    df_control["time_exposure_to_risk"] = df_control["year_died"] - df_control["h1yy"]
-
     return df_control
 
 
-def calc_overall_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFrame:
+def calc_overall_risk(df, follow_up=7):
     # filter for only overall group
     df_overall = df[df["group"] == "overall"]
 
     # filter for only follow_up-year follow up with dm
     df_overall_follow_up = df_overall.loc[
-        (df_overall["years_after_h1yy"] > 0) & (df_overall["years_after_h1yy"] <= years_follow_up)
+        (df_overall["years_after_h1yy"] > 0) & (df_overall["years_after_h1yy"] <= follow_up)
     ]
 
     # group by replication and age group and sum
@@ -208,44 +238,20 @@ def calc_overall_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFram
     df_overall_follow_up_sum = df_overall_follow_up_sum.rename(columns={"n": "dm_num"})
 
     # now for the denominator
-    # First adjust people died in the same year of art initiation
-    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
-        df_overall["time_exposure_to_risk"] == 0, 1
-    )
-
-    # Second adjust people survive from simulation
-    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
-        df_overall["time_exposure_to_risk"] < 0, years_follow_up
-    )
-
-    # Third adjust people survived through follow-up period
-    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
-        df_overall["time_exposure_to_risk"] > years_follow_up, years_follow_up
-    )
-
-    # Calculate person-time variable
-    df_overall["person-time-contributed"] = df_overall["n"] * df_overall["time_exposure_to_risk"]
-
     # group by replication and age group and sum
     df_overall_follow_up_sum_total = (
-        df_overall.groupby(["init_age_group", "replication"])[["person-time-contributed", "n"]]
-        .sum()
-        .reset_index()
+        df_overall.groupby(["init_age_group", "replication"])["n"].sum().reset_index()
     )
     df_overall_follow_up_sum_total = df_overall_follow_up_sum_total.rename(columns={"n": "num"})
 
     # create risk table and calculate risk
-    dm_risk_table = dd.merge(  # type: ignore [attr-defined]
-        df_overall_follow_up_sum, df_overall_follow_up_sum_total, how="left"
-    )
-    dm_risk_table["risk"] = dm_risk_table["dm_num"] / dm_risk_table["person-time-contributed"]
-
-    dm_risk_table["risk"] = dm_risk_table["risk"] * 1000
+    dm_risk_table = dd.merge(df_overall_follow_up_sum, df_overall_follow_up_sum_total, how="left")
+    dm_risk_table["risk"] = dm_risk_table["dm_num"] / dm_risk_table["num"]
 
     return dm_risk_table
 
 
-def calc_risk_by_group(df: pd.DataFrame, years_follow_up: int) -> pd.DataFrame:
+def calc_risk_by_group(df, years_follow_up):
     # filter for only x-year follow up with dm
     df_follow_up = df.loc[
         (df["years_after_h1yy"] > 0) & (df["years_after_h1yy"] <= years_follow_up)
@@ -255,75 +261,37 @@ def calc_risk_by_group(df: pd.DataFrame, years_follow_up: int) -> pd.DataFrame:
     df_follow_up_sum = df_follow_up.groupby(["group", "replication"])["n"].sum().reset_index()
     df_follow_up_sum = df_follow_up_sum.rename(columns={"n": "dm_num"})
 
-    # now for the denominator
-    # First adjust people died in the same year of art initiation
-    df["time_exposure_to_risk"] = df["time_exposure_to_risk"].where(
-        df["time_exposure_to_risk"] == 0, 1
-    )
-
-    # Second adjust people survive from simulation
-    df["time_exposure_to_risk"] = df["time_exposure_to_risk"].where(
-        df["time_exposure_to_risk"] < 0, years_follow_up
-    )
-
-    # Third adjust people survived through follow-up period
-    df["time_exposure_to_risk"] = df["time_exposure_to_risk"].where(
-        df["time_exposure_to_risk"] > years_follow_up, years_follow_up
-    )
-
-    # Calculate person-time variable
-    df["person-time-contributed"] = df["n"] * df["time_exposure_to_risk"]
-
     # group by replication and group and sum
-    df_all_sum = (
-        df.groupby(["group", "replication"])[["person-time-contributed", "n"]].sum().reset_index()
-    )
+    df_all_sum = df.groupby(["group", "replication"])["n"].sum().reset_index()
     df_all_sum = df_all_sum.rename(columns={"n": "num"})
 
     # merge dataframes
-    group_dm_risk_table = dd.merge(df_follow_up_sum, df_all_sum, how="left")  # type: ignore [attr-defined]
+    group_dm_risk_table = dd.merge(df_follow_up_sum, df_all_sum, how="left")
 
     # calculate risk
-    group_dm_risk_table["risk"] = (
-        group_dm_risk_table["dm_num"] / group_dm_risk_table["person-time-contributed"]
-    )
+    group_dm_risk_table["risk"] = group_dm_risk_table["dm_num"] / group_dm_risk_table["num"]
 
-    group_dm_risk_table["risk"] = group_dm_risk_table["risk"] * 1000
-
-    # return group_dm_risk_table
     return group_dm_risk_table
 
 
-def calc_dm_prop(df: pd.DataFrame, death_df: pd.DataFrame) -> pd.DataFrame:
+def calc_dm_prop(df):
     dm_prop_df = pd.DataFrame()
 
     for i in range(df["replication"].max() + 1):
         for group in df.group.unique():
             # calcualte proportion of dm in each year after art initiation
             rep_df = df[(df.replication == i) & (df.group == group)].copy().reset_index(drop=True)
-            rep_death_df = (
-                death_df[(death_df.replication == i) & (death_df.group == group)]
-                .copy()
-                .reset_index(drop=True)
-            )
 
             # Get the total population
             rep_df["total_pop"] = rep_df["n"].sum()
 
-            # Exclude people didn't develop DM duirng follow up years at all, with negative value
-            # of 'years_after_h1yy'
+            # Exclude people didn't develop DM duirng follow up years at all, with negative value of 'years_after_h1yy'
             rep_df = rep_df[rep_df["years_after_h1yy"] > 0].reset_index(drop=True)
-
-            # Exclude people survived till simulation period
-            rep_death_df = rep_death_df[rep_death_df["time_exposure_to_risk"] > 0].reset_index(
-                drop=True
-            )
 
             # Get the eligible population size who can develop DM
             rep_df["eligible_pop"] = (rep_df["total_pop"] - rep_df["n"].cumsum().shift(1)).fillna(
                 rep_df.loc[0, "total_pop"]
             )
-            rep_df["eligible_pop"] = rep_df["total_pop"] - rep_death_df["n"]
 
             # Calculate Proportion of each year and cumulative rate
 
@@ -334,7 +302,7 @@ def calc_dm_prop(df: pd.DataFrame, death_df: pd.DataFrame) -> pd.DataFrame:
     return dm_prop_df
 
 
-def plot_dm_prop(df_list: List[pd.DataFrame], year_period: int = 15) -> Any:
+def plot_dm_prop(df_list, year_period=15):
     colors = [("r", "lightcoral"), ("b", "steelblue")]
 
     column_names = ["Black", "Hispanic", "White"]
@@ -386,9 +354,7 @@ def plot_dm_prop(df_list: List[pd.DataFrame], year_period: int = 15) -> Any:
 
             ax.set_ylim([0, 0.04])
 
-    # Adjust rect to leave space for the labels
-
-    plt.tight_layout(rect=(0, 0, 1, 0.96))
+    plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust rect to leave space for the labels
     plt.subplots_adjust(
         left=0.05, bottom=0.05, right=0.95, top=0.95
     )  # Adjust the subplots to leave space for the labels
@@ -399,7 +365,7 @@ def plot_dm_prop(df_list: List[pd.DataFrame], year_period: int = 15) -> Any:
     return fig
 
 
-def rearrange_group_order(df: pd.DataFrame) -> pd.DataFrame:
+def rearrange_group_order(df):
     group_order = [
         "Black HET Women",
         "White HET Women",
@@ -423,3 +389,19 @@ def rearrange_group_order(df: pd.DataFrame) -> pd.DataFrame:
     df["group"] = pd.Categorical(df["group"], categories=group_order, ordered=True)
     df_sorted = df.sort_values("group").reset_index(drop=True)
     return df_sorted
+
+def add_sub_total(df, groupby=None):
+    if 'index' in df.columns:
+        df = df.drop(columns = ['index'])
+    
+    if groupby is None:
+        groupby = ['replication']
+    
+    for risk_group in ['het_female','het_male','msm_male','idu_male','idu_female']:
+        
+        df_tmp = df[df.group.isin([f"{risk_group.split('_')[0]}_black_{risk_group.split('_')[1]}",f"{risk_group.split('_')[0]}_hisp_{risk_group.split('_')[1]}", f"{risk_group.split('_')[0]}_white_{risk_group.split('_')[1]}"] ) ].groupby(groupby)[['n']].sum().reset_index()
+        df_tmp['group'] = risk_group
+        df_tmp = df_tmp[df.columns]
+        df = pd.concat([df, df_tmp], axis = 0).reset_index(drop=True)
+
+    return df
