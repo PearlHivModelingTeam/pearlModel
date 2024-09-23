@@ -1,4 +1,6 @@
 out/*
+results/*
+results
 *.swp
 .idea/*
 *.pyc

@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # group by group and sum to get all initiating art in 2013-2017
     control_new_init_age_total_sum = control_new_init_age.groupby(['group', 'replication'])['n'].sum().reset_index().compute()
-
+    
     # Add sub total
     control_new_init_age_total_sum = add_sub_total(control_new_init_age_total_sum)
 
@@ -154,6 +154,7 @@ if __name__ == "__main__":
         final_table, control_bmi_int_cascade_dm_eligibility_normal_ratio, "normal_over_weight"
     )
 
+    
     # calulate the number of people eligibly for intervention
     control_bmi_int_cascade_eligible_population = control_bmi_int_cascade.loc[
         control_bmi_int_cascade["bmiInt_eligible"] == 1
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 
     # the above does not have the overall data, so we create it here
     control_bmi_int_cascade_eligible_population_sum_overall = (
-        control_bmi_int_cascade_eligible_population_sum.groupby(["replication"])["n"]
+        control_bmi_int_cascade_eligible_population_sum[~control_bmi_int_cascade_eligible_population_sum['group'].isin(['het_female','het_male','msm_male','idu_male','idu_female'])].groupby(["replication"])["n"]
         .sum()
         .reset_index()
     )
@@ -227,7 +228,7 @@ if __name__ == "__main__":
 
     # save table to csv
     final_table.to_csv(out_dir / "table1.csv", index=False)
-
+    print('Table 1 Finished.')
     ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
     bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
