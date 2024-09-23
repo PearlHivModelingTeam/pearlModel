@@ -19,11 +19,13 @@ from pearl.post_processing.bmi import (
     clean_control,
     create_summary_table,
     group_order,
+    group_order_with_sub_total,
     group_title_dict,
     palette,
     rearrange_group_order,
     round_thousand,
     calc_dm_prop,
+    add_sub_total
 )
 
 if __name__ == "__main__":
@@ -40,15 +42,25 @@ if __name__ == "__main__":
     variable_dir = Path(args.variable)
     out_dir = Path(args.out_dir)
 
+    start_year = 2013
+    end_year = 2017
+
     # Now we will work on the remaining percentage columns
     bmi_int_cascade = dd.read_parquet(baseline_dir / "bmi_int_cascade.parquet").reset_index()
 
-    # filter for only starting h1yy after 2010 and before 2017
+    # filter for only starting h1yy after 2013 and before 2017
     control_bmi_int_cascade = bmi_int_cascade.loc[
-        (bmi_int_cascade["h1yy"] >= 2010) & (bmi_int_cascade["h1yy"] <= 2017)
-    ]
+        (bmi_int_cascade["h1yy"] >= start_year) & (bmi_int_cascade["h1yy"] <= 2017)
+    ].compute()
+    
+    # Add subtotal for each risk category
+    control_bmi_int_cascade = add_sub_total(control_bmi_int_cascade, groupby = ['bmiInt_scenario', 'h1yy', 'bmiInt_ineligible_dm',
+       'bmiInt_ineligible_underweight', 'bmiInt_ineligible_obese',
+       'bmiInt_eligible', 'bmiInt_received', 'bmi_increase_postART',
+       'bmi_increase_postART_over5p', 'become_obese_postART',
+       'bmiInt_impacted', 'replication'])
 
-    # First lets get the "Number initiating ART (2010-2017)"
+    # First lets get the "Number initiating ART (2013-2017)"
     new_init_age = dd.read_parquet(baseline_dir / "new_init_age.parquet").reset_index()
 
     # Add Overall
@@ -57,25 +69,28 @@ if __name__ == "__main__":
 
     new_init_age = dd.concat([new_init_age, new_init_age_overall])
 
-    # filter for only years <= 2017 and years >= 2010
+    # filter for only years <= 2017 and years >= 2013
     control_new_init_age = new_init_age.loc[
-        (new_init_age["year"] <= 2017) & (new_init_age["year"] >= 2010)
+        (new_init_age["year"] <= 2017) & (new_init_age["year"] >= 2013)
     ]
 
-    # group by group and sum to get all initiating art in 2010-2017
-    control_new_init_age_total_sum = (
-        control_new_init_age.groupby(["group", "replication"])["n"].sum().reset_index().compute()
-    )
+    # group by group and sum to get all initiating art in 2013-2017
+    control_new_init_age_total_sum = control_new_init_age.groupby(['group', 'replication'])['n'].sum().reset_index().compute()
 
-    final_table = create_summary_table(
-        control_new_init_age_total_sum, "Population Size", percent=False
-    )
+    # Add sub total
+    control_new_init_age_total_sum = add_sub_total(control_new_init_age_total_sum)
+
+    final_table = create_summary_table(control_new_init_age_total_sum, 'Population Size', percent=False)
+    
 
     # We group by group, and age, but istead of taking the median, we sum over all 'n'
     control_new_init_age_simulation_sum = (
         control_new_init_age.groupby(["group", "age"])["n"].sum().reset_index().compute()
     )
-
+    
+    # Add subtotal
+    control_new_init_age_simulation_sum = add_sub_total(control_new_init_age_simulation_sum, groupby = ['age'])
+    
     # loop over each group and calculate the median age of initiation
     control_median_age_of_init_by_group = {}
 
@@ -98,11 +113,13 @@ if __name__ == "__main__":
     final_table = final_table.join(
         control_median_age_of_init_by_group.set_index("group"), on="group"
     )
-
+    
+    
     final_table = calc_percentage_and_add_summary(
         final_table, control_bmi_int_cascade, "bmiInt_ineligible_dm"
     )
 
+    
     to_add = [
         "bmiInt_ineligible_dm",
         "bmiInt_ineligible_underweight",
@@ -147,7 +164,6 @@ if __name__ == "__main__":
         control_bmi_int_cascade_eligible_population.groupby(["group", "replication"])["n"]
         .sum()
         .reset_index()
-        .compute()
     )
 
     # the above does not have the overall data, so we create it here
@@ -207,10 +223,10 @@ if __name__ == "__main__":
     # rearrange columns for presentation
     final_table = final_table[final_table.columns[[0, 1, 2, 3, 4, 7, 5, 6, 8, 9, 10]]]
 
-    final_table = final_table.set_index("Group").reindex(group_order).reset_index()
+    final_table = final_table.set_index("Group").reindex(group_order_with_sub_total).reset_index()
 
     # save table to csv
-    final_table.to_csv(out_dir / "final_table.csv", index=False)
+    final_table.to_csv(out_dir / "table1.csv", index=False)
 
     ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
