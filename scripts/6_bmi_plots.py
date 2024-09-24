@@ -400,7 +400,7 @@ if __name__ == "__main__":
     # clean to control specifications
     control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True).compute()
 
-    group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev, 7)
+    group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev, 7).compute()
 
     group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
 
