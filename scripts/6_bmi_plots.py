@@ -30,6 +30,7 @@ from pearl.post_processing.bmi import (
 
 if __name__ == "__main__":
     start_time = datetime.now()
+    df_summary_dict = {}
 
     # Define the argument parser
     parser = argparse.ArgumentParser()
@@ -267,6 +268,18 @@ if __name__ == "__main__":
         .compute()
     )
 
+    df = control_bmi_int_dm_prev_agg.groupby(['group', 'replication'])[['n']].sum().reset_index()
+    df['group'] = df['group'].map(group_title_dict)
+    df = df.groupby('group')[['n']].apply(lambda x: x.quantile([0.025,0.5,0.975])).unstack().reset_index()
+    df.columns = ['group',0.025, 0.5, 0.975]
+    df['formatted'] = df.apply(
+        lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.50], -2), round(row[0.025], -2), round(row[0.975], -2)), axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir/'number_receiving_intervention_table.csv')
+    df_summary_dict['group'] = df['group']
+    df_summary_dict['Control|Number Receiving Intervention'] = df['formatted']
+
     # 2a
     dm_risk_table = calc_overall_risk(control_bmi_int_dm_prev).compute()
 
@@ -314,7 +327,7 @@ if __name__ == "__main__":
 
     pop_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
     pop_ax.set_xlabel("Age Group at ART Initiation")
-    ax2.set_ylabel("7-year Risk of DM Diagnosis Post-ART Initiation")
+    ax2.set_ylabel("7-year Risk of DM Diagnosis after ART Initiation")
     ax2.set_ylim(0, 30)
 
     pop_fig = pop_ax.get_figure()
@@ -327,7 +340,7 @@ if __name__ == "__main__":
     for col in ['num', 'risk']:
         col_df = df[col].reset_index()
         if col == 'risk':
-            final_df[col] = col_df.apply(lambda row: '{:.1f}% [{:.1f}% - {:.1f}%]'.format(row[0.5]*100, row[0.025]*100, row[0.975]*100), axis=1)
+            final_df[col] = col_df.apply(lambda row: '{:.1f} [{:.1f} - {:.1f}]'.format(row[0.5], row[0.025], row[0.975]), axis=1)
         else:
             final_df[col] = col_df.apply(lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.5],-2), round(row[0.025],-2), round(row[0.975],-2)), axis=1)
             
@@ -363,8 +376,31 @@ if __name__ == "__main__":
     bar_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
     plt.clf()
 
+    df = group_prevalence.groupby('group')[['dm_per_1000']].quantile([0.025,0.5,0.975]).unstack().reset_index()
+    df.columns = ['group',0.025, 0.5, 0.975]
+    df['formatted'] = df.apply(
+        lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(row[0.50], row[0.025], row[0.975]), axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir/'figure2b_table.csv')
+    df_summary_dict['Control|Prevalence of Preexisting DM Diagnosis at ART Initiation (per 1,000 persons)'] = df['formatted']
+
     # 2d
-    group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev_agg, 7).compute()
+    bmi_int_dm_prev = dd.read_parquet(baseline_dir /'dm_final_output.parquet').reset_index()
+
+    # Add Overall
+    all_but_group = list(bmi_int_dm_prev.columns[1:])
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    bmi_int_dm_prev_overall['group'] = 'overall'
+    bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
+
+    # type the dataframe for space efficiency
+    bmi_int_dm_prev = bmi_int_dm_prev.astype({'group':'str', 'replication':'int16', 'bmiInt_scenario':np.int8, 'h1yy': np.int16, 'bmiInt_impacted':bool, 'dm': bool, 't_dm': np.int16, 'n': np.int16})
+
+    # clean to control specifications
+    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True).compute()
+
+    group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev, 7)
 
     group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
 
@@ -383,7 +419,7 @@ if __name__ == "__main__":
 
     group_risk_ax.set_xlabel("")
     group_risk_ax.set_ylabel("7-year risk of DM diagnosis after ART initiation")
-    group_risk_ax.set_ylim(0, 30)
+    group_risk_ax.set_ylim(0, 40)
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
     plt.clf()
@@ -403,6 +439,7 @@ if __name__ == "__main__":
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure2d_table.csv")
+    df_summary_dict['Control|7-year Risk of DM Diagnosis Post-ART Initiation'] = df['formatted']
 
     # 2c
 
@@ -442,7 +479,12 @@ if __name__ == "__main__":
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure2c_table.csv")
+    df_summary_dict['Control|7-year Number of DM Diagnosis Post-ART Initiation'] = df['formatted']
 
+    pd.DataFrame(df_summary_dict).to_csv(out_dir/'df_summary.csv', index = False)
+    
+    print("Figure 2 Finished.")
+    ##############################################################################################################################
     num_samples = 2000
 
     # we will look at the "bmi_int_dm_prev.h5" for S1
@@ -658,7 +700,6 @@ if __name__ == "__main__":
     df.to_csv(out_dir / "figure3c_table.csv")
 
     # 3d
-
     abs_sample_diff_plot["dm_num_prevented"] = abs_sample_diff_plot["dm_num"] * -1
     dm_prevented_ax = sns.boxplot(
         x=abs_sample_diff_plot["group"],
