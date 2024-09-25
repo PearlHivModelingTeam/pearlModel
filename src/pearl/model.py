@@ -988,7 +988,7 @@ class Pearl:
                 and f"{condition}_incidence" in self.parameters.sa_variables
             ):
                 prob = np.clip(
-                    a=prob + self.parameters.sa_incidence_shift[condition], a_min=0, a_max=1
+                    a=prob * self.parameters.sa_incidence_scalar[condition], a_min=0, a_max=1
                 )
 
             # Draw for incidence

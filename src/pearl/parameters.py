@@ -282,7 +282,7 @@ class Parameters:
 
         # Sensitivity Analysis
         self.sa_variables = sa_variables
-        self.sa_incidence_shift = {}
+        self.sa_incidence_scalar = {}
         self.sa_scalars = {}
 
         if self.sa_variables:
@@ -290,8 +290,8 @@ class Parameters:
                 if f"{comorbidity}_prevalence_prev" in self.sa_variables:
                     self.prev_users_dict[comorbidity] = pd.Series(
                         self.random_state.uniform(
-                            self.prev_users_dict[comorbidity] - 0.05,
-                            self.prev_users_dict[comorbidity] + 0.05,
+                            self.prev_users_dict[comorbidity] * 0.80,
+                            self.prev_users_dict[comorbidity] * 1.20,
                         )
                     )
 
@@ -299,23 +299,23 @@ class Parameters:
                 if f"{comorbidity}_prevalence" in self.sa_variables:
                     self.prev_inits_dict[comorbidity] = pd.Series(
                         self.random_state.uniform(
-                            self.prev_inits_dict[comorbidity] - 0.05,
-                            self.prev_inits_dict[comorbidity] + 0.05,
+                            self.prev_inits_dict[comorbidity] * 0.80,
+                            self.prev_inits_dict[comorbidity] * 1.20,
                         )
                     )
 
             for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3:
                 if f"{comorbidity}_incidence" in self.sa_variables:
-                    self.sa_incidence_shift[comorbidity] = self.random_state.uniform(-0.001, 0.001)
+                    self.sa_incidence_scalar[comorbidity] = self.random_state.uniform(0.8, 1.2)
 
             if "pre_art_bmi" in self.sa_variables:
-                self.sa_scalars["pre_art_bmi"] = self.random_state.uniform(0.95, 1.05)
+                self.sa_scalars["pre_art_bmi"] = self.random_state.uniform(0.8, 1.2)
 
             if "post_art_bmi" in self.sa_variables:
-                self.sa_scalars["post_art_bmi"] = self.random_state.uniform(0.95, 1.05)
+                self.sa_scalars["post_art_bmi"] = self.random_state.uniform(0.8, 1.2)
 
             if "art_initiators" in self.sa_variables:
-                self.sa_scalars["art_initiators"] = self.random_state.uniform(0.95, 1.05)
+                self.sa_scalars["art_initiators"] = self.random_state.uniform(0.8, 1.2)
 
         self.save_parameters()
 
@@ -346,8 +346,10 @@ class Parameters:
         for comorbidity in self.prev_inits_dict:
             param_dict[f"prev_inits_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity].values
 
-        for comorbidity in self.sa_incidence_shift:
-            param_dict[f"sa_incidence_shift_{comorbidity}"] = self.sa_incidence_shift[comorbidity]
+        for comorbidity in self.sa_incidence_scalar:
+            param_dict[f"sa_incidence_scalar_{comorbidity}"] = self.sa_incidence_scalar[
+                comorbidity
+            ]
 
         for scalar in self.sa_scalars:
             param_dict[scalar] = self.sa_scalars[scalar]
