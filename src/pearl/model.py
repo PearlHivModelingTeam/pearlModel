@@ -983,7 +983,10 @@ class Pearl:
                 coeff_matrix,
             )
 
-            if self.parameters.sa_variables and condition in self.parameters.sa_variables:
+            if (
+                self.parameters.sa_variables
+                and f"{condition}_incidence" in self.parameters.sa_variables
+            ):
                 prob = np.clip(
                     a=prob + self.parameters.sa_incidence_shift[condition], a_min=0, a_max=1
                 )
