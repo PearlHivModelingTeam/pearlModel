@@ -1,5 +1,5 @@
 import argparse
-import datetime
+from datetime import datetime
 from pathlib import Path
 
 from dask import dataframe as dd
