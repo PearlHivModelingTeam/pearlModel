@@ -280,7 +280,7 @@ if __name__ == "__main__":
     df_summary_dict['group'] = df['group']
     df_summary_dict['Control|Number Receiving Intervention'] = df['formatted']
 
-    # 2a
+    # Figure 2A
     dm_risk_table = calc_overall_risk(control_bmi_int_dm_prev).compute()
 
     # Graph Overall DM Probability and Population across ART initiation Groups
@@ -299,42 +299,40 @@ if __name__ == "__main__":
     pop_ax.bar_label(pop_ax.containers[0], labels=rounded_vals, padding=5)
 
     pop_ax.set_ylabel("Population Size")
-    pop_ax.set_xlabel("")
+    pop_ax.set_xlabel("Age Group at ART Initiation")
     pop_ax.set_xticks(range(0, 7))
     pop_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
     pop_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
-
-    ax2 = pop_ax.twinx()
-    percentiles = (
-        dm_risk_table.groupby("init_age_group")["risk"].quantile([0.05, 0.5, 0.95]).unstack()
-    )
-    ax2.plot(
-        percentiles.index,
-        percentiles.loc[:, 0.50],
-        marker="o",
-        linestyle="-",
-        color="r",
-        label="Median Risk",
-    )
-    ax2.fill_between(
-        percentiles.index,
-        percentiles.loc[:, 0.05],
-        percentiles.loc[:, 0.95],
-        color="lightcoral",
-        alpha=0.5,
-        label="95% CI",
-    )
-
-    pop_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
-    pop_ax.set_xlabel("Age Group at ART Initiation")
-    ax2.set_ylabel("7-year Risk of DM Diagnosis after ART Initiation")
-    ax2.set_ylim(0, 30)
 
     pop_fig = pop_ax.get_figure()
     pop_fig.savefig(out_dir / "fig2a.png", bbox_inches="tight")
     # clear the plot
     plt.clf()
-    
+
+    # Fig2B
+    bar_ax = sns.barplot(
+        x=dm_risk_table["init_age_group"],
+        y=dm_risk_table["risk"],
+        estimator="median",
+        color="steelblue",
+        errorbar=("pi", 95),
+    )
+
+    rounded_vals = [np.round(x,1) for x in bar_ax.containers[0].datavalues]
+
+    bar_ax.bar_label(bar_ax.containers[0], labels=rounded_vals, padding=5)
+
+    bar_ax.set_ylabel("7-year Risk of DM Diagnosis after ART Initiation")
+    bar_ax.set_xlabel("Age Group at ART Initiation")
+    bar_ax.set_xticks(range(0, 7))
+    bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
+    bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
+
+    pop_fig = bar_ax.get_figure()
+    pop_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
+    # clear the plot
+    plt.clf()
+
     df = dm_risk_table.groupby(['init_age_group'])[['num', 'risk']].quantile([0.025,0.5,0.975]).unstack()
     final_df = pd.DataFrame()
     for col in ['num', 'risk']:
@@ -343,10 +341,10 @@ if __name__ == "__main__":
             final_df[col] = col_df.apply(lambda row: '{:.1f} [{:.1f} - {:.1f}]'.format(row[0.5], row[0.025], row[0.975]), axis=1)
         else:
             final_df[col] = col_df.apply(lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.5],-2), round(row[0.025],-2), round(row[0.975],-2)), axis=1)
-            
-    final_df.to_csv(out_dir/'figure2a_table.csv', index = False)
-    # 2b
 
+    final_df.to_csv(out_dir/'figure2a&b_table.csv', index = False)
+
+    # Suppliment Figure 2
     # calculate group prevalence
     group_prevalence = calc_percentage(control_bmi_int_cascade, "bmiInt_ineligible_dm")
     group_prevalence["dm_per_1000"] = (group_prevalence["n"] / 100) * 1000
@@ -373,7 +371,7 @@ if __name__ == "__main__":
     bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
 
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "figS2.png", bbox_inches="tight")
     plt.clf()
 
     df = group_prevalence.groupby('group')[['dm_per_1000']].quantile([0.025,0.5,0.975]).unstack().reset_index()
@@ -382,10 +380,10 @@ if __name__ == "__main__":
         lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(row[0.50], row[0.025], row[0.975]), axis=1
     )
     df = rearrange_group_order(df)
-    df.to_csv(out_dir/'figure2b_table.csv')
+    df.to_csv(out_dir/'figureS2_table.csv')
     df_summary_dict['Control|Prevalence of Preexisting DM Diagnosis at ART Initiation (per 1,000 persons)'] = df['formatted']
 
-    # 2d
+    # 2c
     bmi_int_dm_prev = dd.read_parquet(baseline_dir /'dm_final_output.parquet').reset_index()
 
     # Add Overall
@@ -421,11 +419,10 @@ if __name__ == "__main__":
     group_risk_ax.set_ylabel("7-year risk of DM diagnosis after ART initiation")
     group_risk_ax.set_ylim(0, 40)
     group_risk_fig = group_risk_ax.get_figure()
-    group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
+    group_risk_fig.savefig(out_dir / "fig2c.png", bbox_inches="tight")
     plt.clf()
 
-    # table 2d
-
+    # table 2c
     df = (
         group_dm_risk_table.groupby("group")[["risk"]]
         .quantile([0.05, 0.5, 0.95])
@@ -438,12 +435,10 @@ if __name__ == "__main__":
         axis=1,
     )
     df = rearrange_group_order(df)
-    df.to_csv(out_dir / "figure2d_table.csv")
+    df.to_csv(out_dir / "figure2c_table.csv")
     df_summary_dict['Control|7-year Risk of DM Diagnosis Post-ART Initiation'] = df['formatted']
 
-    # 2c
-
-    # C. Projected 7-year risk of DM among persons initiating ART form 2010-2017 under the control arm (status que)
+    # 2D
     group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev_agg, 7).compute()
 
     group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
@@ -464,7 +459,7 @@ if __name__ == "__main__":
     group_risk_ax.set_xlabel("")
     group_risk_ax.set_ylabel("7-year number of DM diagnosis after ART initiation")
     group_risk_fig = group_risk_ax.get_figure()
-    group_risk_fig.savefig(out_dir / "fig2c.png", bbox_inches="tight")
+    group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
     plt.clf()
 
     df = (
@@ -478,11 +473,11 @@ if __name__ == "__main__":
         lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]", axis=1
     )
     df = rearrange_group_order(df)
-    df.to_csv(out_dir / "figure2c_table.csv")
+    df.to_csv(out_dir / "figure2d_table.csv")
     df_summary_dict['Control|7-year Number of DM Diagnosis Post-ART Initiation'] = df['formatted']
 
     pd.DataFrame(df_summary_dict).to_csv(out_dir/'df_summary.csv', index = False)
-    
+
     print("Figure 2 Finished.")
     ##############################################################################################################################
     num_samples = 2000
