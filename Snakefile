@@ -102,18 +102,30 @@ rule bmi_SA:
     input:
         f"out/S3_SA_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S3_SA_{num_replications}/combined/new_init_age.parquet",
-        f"out/S3_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        f"out/S3_SA_{num_replications}/combined/dm_final_output.parquet",
         f"out/S3_SA_{num_replications}/combined/parameters.parquet",
+
+        f"out/S3_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S3_{num_replications}/combined/new_init_age.parquet",
+        f"out/S3_{num_replications}/combined/dm_final_output.parquet",
+        f"out/S3_{num_replications}/combined/parameters.parquet",
         
         f"out/S0_SA_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S0_SA_{num_replications}/combined/new_init_age.parquet",
-        f"out/S0_SA_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        f"out/S0_SA_{num_replications}/combined/dm_final_output.parquet",
         f"out/S0_SA_{num_replications}/combined/parameters.parquet",
+
+        f"out/S0_{num_replications}/combined/bmi_int_cascade.parquet",
+        f"out/S0_{num_replications}/combined/new_init_age.parquet",
+        f"out/S0_{num_replications}/combined/dm_final_output.parquet",
+        f"out/S0_{num_replications}/combined/parameters.parquet",
     output:
         f"out/S0_{num_replications}/tornado.png",
     params:
         out_dir = f"out/S0_{num_replications}",
-        baseline = f"out/S0_SA_{num_replications}/combined",
-        variable = f"out/S3_SA_{num_replications}/combined",
+        baseline = f"out/S0_{num_replications}/combined",
+        variable = f"out/S3_{num_replications}/combined",
+        baseline_sa = f"out/S0_SA_{num_replications}/combined",
+        variable_sa = f"out/S3_SA_{num_replications}/combined",
     shell:
-        "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --out_dir {params.out_dir}"
+        "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --baseline_sa {params.baseline} --variable_sa {params.variable} --out_dir {params.out_dir}"
