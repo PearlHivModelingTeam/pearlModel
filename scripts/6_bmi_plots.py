@@ -230,9 +230,19 @@ if __name__ == "__main__":
     # save table to csv
     final_table.to_csv(out_dir / "table1.csv", index=False)
     print('Table 1 Finished.')
+
+
     ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
     bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
+
+    # Now we will work on the remaining percentage columns
+    bmi_int_cascade = dd.read_parquet(baseline_dir / "bmi_int_cascade.parquet").reset_index()
+
+    # filter for only starting h1yy after 2013 and before 2017
+    control_bmi_int_cascade = bmi_int_cascade.loc[
+        (bmi_int_cascade["h1yy"] >= start_year) & (bmi_int_cascade["h1yy"] <= 2017)
+    ].compute()
 
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
@@ -307,6 +317,7 @@ if __name__ == "__main__":
     pop_fig = pop_ax.get_figure()
     pop_fig.savefig(out_dir / "fig2a.png", bbox_inches="tight")
     # clear the plot
+    plt.show()
     plt.clf()
 
     # Fig2B
@@ -331,6 +342,7 @@ if __name__ == "__main__":
     pop_fig = bar_ax.get_figure()
     pop_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
     # clear the plot
+    plt.show()
     plt.clf()
 
     df = dm_risk_table.groupby(['init_age_group'])[['num', 'risk']].quantile([0.025,0.5,0.975]).unstack()
@@ -371,7 +383,8 @@ if __name__ == "__main__":
     bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
 
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "figS2.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     df = group_prevalence.groupby('group')[['dm_per_1000']].quantile([0.025,0.5,0.975]).unstack().reset_index()
@@ -409,17 +422,43 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=group_dm_risk_table["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order,
     )
 
     group_risk_ax.tick_params(axis="x", rotation=90)
+
+    ########################################################
+    last_group = group_order[-1]
+    secondary_ax = group_risk_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=group_dm_risk_table[group_dm_risk_table["group"] == last_group]["group"],
+        y=group_dm_risk_table[group_dm_risk_table["group"] == last_group]["risk"],
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    group_risk_ax.tick_params(axis='y', labelsize=8.5)
+
+    group_risk_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
 
     group_risk_ax.set_xlabel("")
     group_risk_ax.set_ylabel("7-year risk of DM diagnosis after ART initiation")
     group_risk_ax.set_ylim(0, 40)
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2c.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     # table 2c
@@ -450,16 +489,43 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=group_dm_risk_table["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order,
     )
 
     group_risk_ax.tick_params(axis="x", rotation=90)
 
+    ########################################################
+    last_group = group_order[-1]
+    secondary_ax = group_risk_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=group_dm_risk_table[group_dm_risk_table["group"] == last_group]["group"],
+        y=group_dm_risk_table[group_dm_risk_table["group"] == last_group]["dm_num"],
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    group_risk_ax.tick_params(axis='y', labelsize=8.5)
+
+    group_risk_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
+
+
     group_risk_ax.set_xlabel("")
     group_risk_ax.set_ylabel("7-year number of DM diagnosis after ART initiation")
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     df = (
@@ -479,6 +545,8 @@ if __name__ == "__main__":
     pd.DataFrame(df_summary_dict).to_csv(out_dir/'df_summary.csv', index = False)
 
     print("Figure 2 Finished.")
+
+    # Figure 3
     ##############################################################################################################################
     num_samples = 2000
 
@@ -562,7 +630,8 @@ if __name__ == "__main__":
 
     s0_sample = s0_sample.sort_values(by="group").reset_index(drop=True)
     s1_sample = s1_sample.sort_values(by="group").reset_index(drop=True)
-
+    #######################################################################################################
+    # Fig 3A
     # absolute difference
     abs_sample_diff = s1_sample[["dm_num", "risk"]] - s0_sample[["dm_num", "risk"]]
     abs_sample_diff["group"] = s0_sample["group"]
@@ -578,20 +647,48 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=abs_sample_diff_plot["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order,
     )
 
     diff_ax.tick_params(axis="x", rotation=90)
 
+    ########################################################
+    last_group = group_order[-1]
+    secondary_ax = diff_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["group"],
+        y=-abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["risk"],
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    diff_ax.tick_params(axis='y', labelsize=8.5)
+
+    diff_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
+
     diff_ax.set_xlabel("")
     diff_ax.set_ylabel(
-        "Absolute 5-year risk reduction in incident DM diagnoses\n with (vs. without) the intervention",
+        "Absolute percentage point risk reduction in incident diabetes\n diagnosis (per 1,000 pys) with vs. without the intervention",
         fontsize=8.5,
     )
+
     diff_ax.axhline(y=0, color="r", linestyle="-")
+
     diff_fig = diff_ax.get_figure()
     diff_fig.savefig(out_dir / "fig3a.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     abs_sample_diff_plot["risk"] = -abs_sample_diff_plot["risk"]
@@ -618,16 +715,43 @@ if __name__ == "__main__":
 
     rel_ax = sns.boxplot(
         x=rel_sample_diff_plot["group"],
-        y=rel_sample_diff_plot["risk"],
+        y=rel_sample_diff_plot["risk"]*100,
         color="seagreen",
         showfliers=False,
         palette=palette,
         hue=rel_sample_diff_plot["group"],
         order=group_order,
-        hue_order=group_order,
+        hue_order=group_order[:-1],
     )
 
     rel_ax.tick_params(axis="x", rotation=90)
+
+    ########################################################
+    #Plot Overall Group
+    last_group = group_order[-1]
+    secondary_ax = rel_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=rel_sample_diff_plot[rel_sample_diff_plot["group"] == last_group]["group"],
+        y=-rel_sample_diff_plot[rel_sample_diff_plot["group"] == last_group]["risk"]*100,
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    rel_ax.tick_params(axis='y', labelsize=8.5)
+
+    # add dashed vertical line to seperate overall group
+    rel_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
 
     rel_ax.set_xlabel("")
     rel_ax.set_ylabel(
@@ -637,6 +761,7 @@ if __name__ == "__main__":
     rel_ax.axhline(y=0, color="r", linestyle="-")
     rel_fig = rel_ax.get_figure()
     rel_fig.savefig(out_dir / "fig3b.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     df = (
@@ -652,6 +777,7 @@ if __name__ == "__main__":
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3b_table.csv")
 
+    #######################################################################################################
     # 3c
     abs_sample_diff_plot["dm_per_1000"] = abs_sample_diff_plot["risk"] * (-1000)
     abs_sample_diff_plot["NNT"] = -np.round(
@@ -665,11 +791,38 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=abs_sample_diff_plot["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order,
     )
 
     dm_per_1000_ax.tick_params(axis="x", rotation=90)
+
+    ########################################################
+    #Plot Overall Group
+    last_group = group_order[-1]
+    secondary_ax = dm_per_1000_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["group"],
+        y=abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["NNT"],
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    dm_per_1000_ax.tick_params(axis='y', labelsize=8.5)
+
+    # add dashed vertical line to seperate overall group
+    dm_per_1000_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
 
     dm_per_1000_ax.set_xlabel("")
     dm_per_1000_ax.set_ylabel(
@@ -679,6 +832,7 @@ if __name__ == "__main__":
     dm_per_1000_ax.axhline(y=0, color="r", linestyle="-")
     dm_per_1000_fig = dm_per_1000_ax.get_figure()
     dm_per_1000_fig.savefig(out_dir / "fig3c.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     df = (
@@ -694,6 +848,7 @@ if __name__ == "__main__":
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3c_table.csv")
 
+    #######################################################################################################
     # 3d
     abs_sample_diff_plot["dm_num_prevented"] = abs_sample_diff_plot["dm_num"] * -1
     dm_prevented_ax = sns.boxplot(
@@ -703,11 +858,38 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=abs_sample_diff_plot["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order,
     )
 
     dm_prevented_ax.tick_params(axis="x", rotation=90)
+
+    ########################################################
+    #Plot Overall Group
+    last_group = group_order[-1]
+    secondary_ax = dm_prevented_ax.twinx()  # Create secondary y-axis
+
+    # Plot the last group's data on the secondary axis
+    sns.boxplot(
+        x=abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["group"],
+        y=abs_sample_diff_plot[abs_sample_diff_plot["group"] == last_group]["dm_num_prevented"],
+        ax=secondary_ax,
+        color="skyblue",
+        showfliers=False,
+        width=0.5,
+        order=group_order,
+    )
+
+    # Make the secondary y-axis labels visible
+    secondary_ax.set_ylabel("* Overall", fontsize=8.5)
+
+    # Set y-labels to same font size for clarity
+    secondary_ax.tick_params(axis='y', labelsize=8.5)
+    dm_prevented_ax.tick_params(axis='y', labelsize=8.5)
+
+    # add dashed vertical line to seperate overall group
+    dm_prevented_ax.axvline(x=len(group_order)-1.5, color="red", linestyle="--")
+    ########################################################
 
     dm_prevented_ax.set_xlabel("")
     dm_prevented_ax.set_ylabel(
@@ -717,6 +899,7 @@ if __name__ == "__main__":
     dm_prevented_ax.axhline(y=0, color="r", linestyle="-")
     dm_prevented_fig = dm_prevented_ax.get_figure()
     dm_prevented_fig.savefig(out_dir / "fig3d.png", bbox_inches="tight")
+    plt.show()
     plt.clf()
 
     df = (
