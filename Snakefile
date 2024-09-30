@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 200
+num_replications = 1000
 zero_ = str(0).zfill(len(str(num_replications)))
 
 
@@ -128,4 +128,4 @@ rule bmi_SA:
         baseline_sa = f"out/S0_SA_{num_replications}/combined",
         variable_sa = f"out/S3_SA_{num_replications}/combined",
     shell:
-        "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --baseline_sa {params.baseline} --variable_sa {params.variable} --out_dir {params.out_dir}"
+        "python scripts/7_bmi_sa.py --baseline {params.baseline} --variable {params.variable} --baseline_sa {params.baseline_sa} --variable_sa {params.variable_sa} --out_dir {params.out_dir}"
