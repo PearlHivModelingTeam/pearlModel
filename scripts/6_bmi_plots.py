@@ -383,7 +383,7 @@ if __name__ == "__main__":
     bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
 
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "figS2.png", bbox_inches="tight")
     plt.show()
     plt.clf()
 
@@ -454,7 +454,7 @@ if __name__ == "__main__":
     ########################################################
 
     group_risk_ax.set_xlabel("")
-    group_risk_ax.set_ylabel("7-year risk of DM diagnosis after ART initiation")
+    group_risk_ax.set_ylabel("Risk of incident diabetes diagnosis (per 1,000 pys) among subgroups of PAH")
     group_risk_ax.set_ylim(0, 40)
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2c.png", bbox_inches="tight")
@@ -522,7 +522,7 @@ if __name__ == "__main__":
 
 
     group_risk_ax.set_xlabel("")
-    group_risk_ax.set_ylabel("7-year number of DM diagnosis after ART initiation")
+    group_risk_ax.set_ylabel("Number of incident diabetes diagnosis among subgroups of PAH")
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
     plt.show()
@@ -893,7 +893,7 @@ if __name__ == "__main__":
 
     dm_prevented_ax.set_xlabel("")
     dm_prevented_ax.set_ylabel(
-        "Number of incident DM diagnoses averted\n (per 1000 people) with (vs. without) the intervention",
+        "Number of incident DM diagnoses averted\n with (vs. without) the intervention",
         fontsize=8.5,
     )
     dm_prevented_ax.axhline(y=0, color="r", linestyle="-")
