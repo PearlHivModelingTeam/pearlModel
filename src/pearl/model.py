@@ -1297,6 +1297,13 @@ class Pearl:
         self.population["init_age_group"] = pd.cut(
             self.population["init_age"], labels=False, bins=bins, right=False
         ).astype("int8")
+        
+        # record bmi group at art_initiation
+        pre_art_bmi_bins = [0,18.5,21.5,25,27.5,30,float("inf")]
+        self.population["init_bmi_group"] = pd.cut(
+            self.population["pre_art_bmi"], labels=False, bins=pre_art_bmi_bins, right=False
+        ).astype("int8")
+        
         # choose columns, fill Na values with 0 and transform to integer
         bmi_int_cascade = self.population[
             [
@@ -1391,6 +1398,7 @@ class Pearl:
                     "bmiInt_scenario",
                     "h1yy",
                     "init_age_group",
+                    "init_bmi_group",
                     "bmiInt_eligible",
                     "bmiInt_received",
                     "bmiInt_impacted",
@@ -1406,6 +1414,7 @@ class Pearl:
                     "bmiInt_scenario": "int8",
                     "h1yy": "int16",
                     "init_age_group": "int8",
+                    "init_bmi_group": "int8",
                     "bmiInt_eligible": "bool",
                     "bmiInt_received": "bool",
                     "bmiInt_impacted": "bool",
