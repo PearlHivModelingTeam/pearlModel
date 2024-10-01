@@ -146,10 +146,9 @@ if __name__ == "__main__":
     rel_sample_diff_plot = rel_sample_diff.copy()
     rel_sample_diff_plot["group"] = rel_sample_diff_plot["group"].map(group_title_dict)
 
-    
     # Create the subplots with a 2x1 grid, adjusting the figure size to 4x4 inches
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4, 4))
-    
+
     # Plot 1: Relative risk reduction (top plot)
     sns.boxplot(
         x=rel_sample_diff_plot["group"],
@@ -162,14 +161,15 @@ if __name__ == "__main__":
         hue_order=group_order,
         ax=ax1  # Specify the first axis (top panel)
     )
-    
+
     ax1.tick_params(axis="x", bottom=False, labelbottom=False)  # Hide x-axis labels and ticks for the top plot
     ax1.set_xlabel("")  
-    ax1.set_ylabel("(A)")  
+    ax1.set_ylabel("%Risk reduction in\n diabetes diagnoses",fontsize = 8) 
     ax1.axhline(y=0, color="r", linestyle="-")
+    # ax1.set_title("%Risk reduction in diabetes diagnoses",fontsize = 6) 
     # ax1.text(-0.05, 0.5, '(A)', transform=ax1.transAxes, fontsize=12, verticalalignment='center')
-    
-    
+
+
     # Plot 2: Number of DM diagnoses averted (bottom plot)
     sns.boxplot(
         x=abs_sample_diff_plot["group"],
@@ -183,21 +183,21 @@ if __name__ == "__main__":
         ax=ax2  # Specify the second axis (bottom panel)
     )
     # ax2.text(-0.05, 0.5, '(B)', transform=ax2.transAxes, fontsize=12, verticalalignment='center')
-    
-    ax2.tick_params(axis="x", rotation=45, labeltop=False, labelbottom=True, labelsize = 6)
+
+    ax2.tick_params(axis="x", rotation=45, labeltop=False, labelbottom=True, labelsize = 8)
     for label in ax2.get_xticklabels():
         label.set_ha('right')  # Horizontal alignment to right
         label.set_va('top')    # Vertical alignment to top
         
     ax2.set_xlabel("")
-    ax2.set_ylabel("(B)")
+    ax2.set_ylabel("Number of diagnoses\n averted",fontsize = 8)
     ax2.axhline(y=0, color="r", linestyle="-")
-    
+    # ax2.set_title("Number of diagnoses averted",fontsize = 6)
+
     # Adjust layout to ensure labels and titles don't overlap
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.text(0.5, -0.07, 'Figure1: Projected impact of a 2-year BMI maintenance intervention on diabetes diagnosis\n among PAH. Outcomes include (A) percentage risk reduction in new diabetes diagnoses and\n (B) the total number of diagnoses averted over 7 years post-ART initiation. HET: Heterosexual,\n MWID/WWID: Men/Women Who Inject Drug, MSM: Men who have Sex with Men', ha='center', fontsize=7)
-    
+    fig.text(0.5, -0.12, 'Figure: Projected impact of a 2-year BMI maintenance intervention\n on diabetes diagnosis among PAH over 7 years post-ART initiation.\n HET: Heterosexual, MWID/WWID: Men/Women Who Inject Drug,\n MSM: Men who have Sex with Men.', ha='center', fontsize=10)
+
     # Display the figure
     plt.show()
-    
-    fig.savefig(out_dir/'CORI_figure.png', bbox_inches = 'tight')
+    fig.savefig(out_dir/'CORI_figure.png', bbox_inches = 'tight', dpi=1000)
