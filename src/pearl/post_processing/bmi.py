@@ -68,7 +68,7 @@ group_order_with_sub_total = [
     "White MSM",
     "Hispanic MSM",
     "All MSM",
-    "Overall"
+    "Overall",
 ]
 
 all_group_names_ov = [
@@ -111,27 +111,29 @@ all_group_titles_ov = [
 
 # group_title_dict = dict(zip(all_group_names_ov, all_group_titles_ov))
 
-group_title_dict = {'msm_white_male': 'White MSM',
-    'msm_black_male': 'Black MSM',
-    'msm_hisp_male': 'Hispanic MSM',
-    'msm_male': 'All MSM',
-    'idu_white_male': 'White MWID',
-    'idu_black_male': 'Black MWID',
-    'idu_hisp_male': 'Hispanic MWID',
-    'idu_male': 'All MWID',
-    'idu_white_female': 'White WWID',
-    'idu_black_female': 'Black WWID',
-    'idu_hisp_female': 'Hispanic WWID',
-    'idu_female': 'All WWID',
-    'het_white_male': 'White HET Men',
-    'het_black_male': 'Black HET Men',
-    'het_hisp_male': 'Hispanic HET Men',
-    'het_male': 'All HET Men',
-    'het_white_female': 'White HET Women',
-    'het_black_female': 'Black HET Women',
-    'het_hisp_female': 'Hispanic HET Women',
-    'het_female': 'All HET Women',
-    'overall': 'Overall'}
+group_title_dict = {
+    "msm_white_male": "White MSM",
+    "msm_black_male": "Black MSM",
+    "msm_hisp_male": "Hispanic MSM",
+    "msm_male": "All MSM",
+    "idu_white_male": "White MWID",
+    "idu_black_male": "Black MWID",
+    "idu_hisp_male": "Hispanic MWID",
+    "idu_male": "All MWID",
+    "idu_white_female": "White WWID",
+    "idu_black_female": "Black WWID",
+    "idu_hisp_female": "Hispanic WWID",
+    "idu_female": "All WWID",
+    "het_white_male": "White HET Men",
+    "het_black_male": "Black HET Men",
+    "het_hisp_male": "Hispanic HET Men",
+    "het_male": "All HET Men",
+    "het_white_female": "White HET Women",
+    "het_black_female": "Black HET Women",
+    "het_hisp_female": "Hispanic HET Women",
+    "het_female": "All HET Women",
+    "overall": "Overall",
+}
 
 # define color pallete
 palette = sns.color_palette(cc.glasbey_light, n_colors=16)
@@ -141,9 +143,7 @@ def calc_percentage(
     df: pd.DataFrame, column_name: str, numerator: int = 1, percentage: bool = True
 ) -> pd.DataFrame:
     # group by group and column_name and sum over 'n'
-    df_binary = (
-        df.groupby(["group", "replication", column_name])["n"].sum().reset_index()
-    )
+    df_binary = df.groupby(["group", "replication", column_name])["n"].sum().reset_index()
 
     # the above does not have the overall data, so we create it here
     overall = df_binary.groupby(["replication", column_name])["n"].sum().reset_index()
@@ -214,6 +214,16 @@ def calc_percentage_and_add_summary(
 
     # merge to destination and return
     return add_summary(destination_df, percentage_df, name)
+
+
+def add_overall(bmi_int_dm_prev: dd.DataFrame):
+    # Add Overall
+    all_but_group = list(bmi_int_dm_prev.columns[1:])
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    bmi_int_dm_prev_overall["group"] = "overall"
+    bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
+
+    return bmi_int_dm_prev
 
 
 def clean_control(
@@ -470,18 +480,31 @@ def rearrange_group_order(df: pd.DataFrame) -> pd.DataFrame:
     df_sorted = df.sort_values("group").reset_index(drop=True)
     return df_sorted
 
+
 def add_sub_total(df, groupby=None):
-    if 'index' in df.columns:
-        df = df.drop(columns = ['index'])
-    
+    if "index" in df.columns:
+        df = df.drop(columns=["index"])
+
     if groupby is None:
-        groupby = ['replication']
-    
-    for risk_group in ['het_female','het_male','msm_male','idu_male','idu_female']:
-        
-        df_tmp = df[df.group.isin([f"{risk_group.split('_')[0]}_black_{risk_group.split('_')[1]}",f"{risk_group.split('_')[0]}_hisp_{risk_group.split('_')[1]}", f"{risk_group.split('_')[0]}_white_{risk_group.split('_')[1]}"] ) ].groupby(groupby)[['n']].sum().reset_index()
-        df_tmp['group'] = risk_group
+        groupby = ["replication"]
+
+    for risk_group in ["het_female", "het_male", "msm_male", "idu_male", "idu_female"]:
+        df_tmp = (
+            df[
+                df.group.isin(
+                    [
+                        f"{risk_group.split('_')[0]}_black_{risk_group.split('_')[1]}",
+                        f"{risk_group.split('_')[0]}_hisp_{risk_group.split('_')[1]}",
+                        f"{risk_group.split('_')[0]}_white_{risk_group.split('_')[1]}",
+                    ]
+                )
+            ]
+            .groupby(groupby)[["n"]]
+            .sum()
+            .reset_index()
+        )
+        df_tmp["group"] = risk_group
         df_tmp = df_tmp[df.columns]
-        df = pd.concat([df, df_tmp], axis = 0).reset_index(drop=True)
+        df = pd.concat([df, df_tmp], axis=0).reset_index(drop=True)
 
     return df
