@@ -315,8 +315,8 @@ if __name__ == "__main__":
     baseline_risk_difference_df_sa = risk_df_sa.groupby("group").median().reset_index()
 
     target_columns = [
-        "prev_users_dict_dm",
-        "prev_inits_dict_dm",
+        "dm_prevalence",
+        "dm_prevalence_prev",
         "dm_incidence",
         "pre_art_bmi",
         "post_art_bmi",
