@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 1000
+num_replications = 10
 zero_ = str(0).zfill(len(str(num_replications)))
 
 
@@ -51,6 +51,7 @@ rule combine:
     output: 
         directory("out/{config}/combined/new_init_age.parquet"),
         directory("out/{config}/combined/bmi_int_cascade.parquet"),
+        directory("out/{config}/combined/dm_final_output.parquet"),
         directory("out/{config}/combined/bmi_int_dm_prev.parquet"),
         directory("out/{config}/combined/parameters.parquet"),
     shell:
