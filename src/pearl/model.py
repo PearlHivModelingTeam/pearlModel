@@ -988,7 +988,9 @@ class Pearl:
                 and f"{condition}_incidence" in self.parameters.sa_variables
             ):
                 prob = np.clip(
-                    a=prob * self.parameters.sa_incidence_scalar[condition], a_min=0, a_max=1
+                    a=prob * self.parameters.sa_scalars[f"{condition}_incidence"],
+                    a_min=0,
+                    a_max=1,
                 )
 
             # Draw for incidence
@@ -1297,13 +1299,13 @@ class Pearl:
         self.population["init_age_group"] = pd.cut(
             self.population["init_age"], labels=False, bins=bins, right=False
         ).astype("int8")
-        
+
         # record bmi group at art_initiation
-        pre_art_bmi_bins = [0,18.5,21.5,25,27.5,30,float("inf")]
+        pre_art_bmi_bins = [0, 18.5, 21.5, 25, 27.5, 30, float("inf")]
         self.population["init_bmi_group"] = pd.cut(
             self.population["pre_art_bmi"], labels=False, bins=pre_art_bmi_bins, right=False
         ).astype("int8")
-        
+
         # choose columns, fill Na values with 0 and transform to integer
         bmi_int_cascade = self.population[
             [

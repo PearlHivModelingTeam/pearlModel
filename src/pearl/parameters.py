@@ -121,6 +121,7 @@ class Parameters:
         self.idu_threshold = idu_threshold
         self.seed = seed
         self.random_state = np.random.RandomState(seed=seed)
+        self.init_random_state = np.random.RandomState(seed=replication)
         self.history = history
         self.bmi_intervention_scenario = bmi_intervention_scenario
         self.bmi_intervention_start_year = bmi_intervention_start_year
@@ -282,40 +283,41 @@ class Parameters:
 
         # Sensitivity Analysis
         self.sa_variables = sa_variables
-        self.sa_incidence_scalar = {}
         self.sa_scalars = {}
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
                 if f"{comorbidity}_prevalence_prev" in self.sa_variables:
-                    self.prev_users_dict[comorbidity] = pd.Series(
-                        self.random_state.uniform(
-                            self.prev_users_dict[comorbidity] * 0.80,
-                            self.prev_users_dict[comorbidity] * 1.20,
-                        )
+                    self.sa_scalars[f"{comorbidity}_prevalence_prev"] = (
+                        self.init_random_state.uniform(0.8, 1.2)
                     )
+                    self.prev_users_dict[comorbidity] *= self.sa_scalars[
+                        f"{comorbidity}_prevalence_prev"
+                    ]
 
             for comorbidity in self.prev_inits_dict:
                 if f"{comorbidity}_prevalence" in self.sa_variables:
-                    self.prev_inits_dict[comorbidity] = pd.Series(
-                        self.random_state.uniform(
-                            self.prev_inits_dict[comorbidity] * 0.80,
-                            self.prev_inits_dict[comorbidity] * 1.20,
-                        )
+                    self.sa_scalars[f"{comorbidity}_prevalence"] = self.init_random_state.uniform(
+                        0.8, 1.2
                     )
+                    self.prev_inits_dict[comorbidity] *= self.sa_scalars[
+                        f"{comorbidity}_prevalence"
+                    ]
 
             for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3:
                 if f"{comorbidity}_incidence" in self.sa_variables:
-                    self.sa_incidence_scalar[comorbidity] = self.random_state.uniform(0.8, 1.2)
+                    self.sa_scalars[f"{comorbidity}_incidence"] = self.init_random_state.uniform(
+                        0.8, 1.2
+                    )
 
             if "pre_art_bmi" in self.sa_variables:
-                self.sa_scalars["pre_art_bmi"] = self.random_state.uniform(0.8, 1.2)
+                self.sa_scalars["pre_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
 
             if "post_art_bmi" in self.sa_variables:
-                self.sa_scalars["post_art_bmi"] = self.random_state.uniform(0.8, 1.2)
+                self.sa_scalars["post_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
 
             if "art_initiators" in self.sa_variables:
-                self.sa_scalars["art_initiators"] = self.random_state.uniform(0.8, 1.2)
+                self.sa_scalars["art_initiators"] = self.init_random_state.uniform(0.8, 1.2)
 
         self.save_parameters()
 
@@ -340,21 +342,10 @@ class Parameters:
             "bmi_intervention_effectiveness": self.bmi_intervention_effectiveness,
         }
 
-        for comorbidity in self.prev_users_dict:
-            param_dict[f"prev_users_dict_{comorbidity}"] = self.prev_users_dict[comorbidity].values
-
-        for comorbidity in self.prev_inits_dict:
-            param_dict[f"prev_inits_dict_{comorbidity}"] = self.prev_inits_dict[comorbidity].values
-
-        for comorbidity in self.sa_incidence_scalar:
-            param_dict[f"sa_incidence_scalar_{comorbidity}"] = self.sa_incidence_scalar[
-                comorbidity
-            ]
-
         for scalar in self.sa_scalars:
             param_dict[scalar] = self.sa_scalars[scalar]
 
-        param_dataframe = pd.DataFrame(param_dict)
+        self.param_dataframe = pd.DataFrame(param_dict, index=[0])
 
         if self.output_folder:
-            param_dataframe.to_parquet(self.output_folder / "parameters.parquet")
+            self.param_dataframe.to_parquet(self.output_folder / "parameters.parquet")

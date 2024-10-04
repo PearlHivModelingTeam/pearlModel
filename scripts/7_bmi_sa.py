@@ -317,7 +317,7 @@ if __name__ == "__main__":
     target_columns = [
         "prev_users_dict_dm",
         "prev_inits_dict_dm",
-        "sa_incidence_scalar_dm",
+        "dm_incidence",
         "pre_art_bmi",
         "post_art_bmi",
         "art_initiators",
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     variable_name_map = {
         "prev_users_dict_dm": "DM Prevalence at 2009",
         "prev_inits_dict_dm": "DM Prevalence 2009-end",
-        "sa_incidence_scalar_dm": "DM Incidence",
+        "dm_incidence": "DM Incidence",
         "pre_art_bmi": "Pre ART BMI",
         "post_art_bmi": "Post ART BMI",
         "art_initiators": "# ART Initiators",
