@@ -1,18 +1,33 @@
 name: python
 
-on: [pull_request]
+on: [push, pull_request]
 
 jobs:
   build_and_test:
-   runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
   
-   steps:
-     - uses: actions/checkout@v4
-     - name: Build Docker image 
-       run: docker build -t pearl_model .
-     - name: Run tests inside the container
-       run: docker run pearl_model pytest tests/
-     - name: mypy
-       run: docker run pearl_model mypy src/
-     - name: ruff
-       run: docker run pearl_model ruff check src/ tests/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image 
+        run: docker build . -t pearl_model:latest
+
+      - name: Run tests inside the container
+        run: docker run pearl_model pytest tests/
+
+      - name: mypy
+        run: docker run pearl_model mypy src/
+
+      - name: ruff
+        run: docker run pearl_model ruff check src/ tests/
+     
+      - name: Push Docker image
+        run: docker push pearl_model:latest
+       
