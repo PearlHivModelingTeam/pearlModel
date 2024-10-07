@@ -17,17 +17,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image 
-        run: docker build . -t pearl_model:latest
+        run: docker build . -t ghcr.io/${{ github.repository_owner }}/pearl_model:latest
 
       - name: Run tests inside the container
-        run: docker run pearl_model pytest tests/
+        run: docker run ghcr.io/${{ github.repository_owner }}/pearl_model:latest pytest tests/
 
       - name: mypy
-        run: docker run pearl_model mypy src/
+        run: docker run ghcr.io/${{ github.repository_owner }}/pearl_model:latest mypy src/
 
       - name: ruff
-        run: docker run pearl_model ruff check src/ tests/
+        run: docker run ghcr.io/${{ github.repository_owner }}/pearl_model:latest ruff check src/ tests/
      
       - name: Push Docker image
-        run: docker push pearl_model:latest
+        run: docker push ghcr.io/${{ github.repository_owner }}/pearl_model:latest
        
