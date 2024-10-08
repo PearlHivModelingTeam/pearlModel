@@ -158,7 +158,7 @@ if __name__ == "__main__":
     bar_ax.set_xticks(range(0, 7))
     bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "age_group_abs_reduction.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "age_group_abs_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
     
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     bar_ax.set_xlabel("Age Group at ART Initiation")
     bar_ax.tick_params(axis="x", rotation=90)
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "age_group_rel_reduction.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "age_group_rel_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
     
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     pre_art_bmi_bins = [0, 18.5, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
     # Create a label map
     bmi_group_map = {i: f"{pre_art_bmi_bins[i]}-{pre_art_bmi_bins[i+1]}" for i in range(len(pre_art_bmi_bins) - 1)}
-    bmi_group_map[13] = '> 30'
+    bmi_group_map[12] = '> 30'
     group_order = list(bmi_group_map.values())
 
     # bmi_group_map = {1:'[18.5-21.6]', 2:'[21.7-24.9]',3:'[25-27.4]',4:'[27.5-29.9]'}
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     bar_ax.set_xlabel("BMI Group at ART Initiation")
     bar_ax.tick_params(axis="x", rotation=90)
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "bmi_group_abs_reduction.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "bmi_group_abs_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
     
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     bar_ax.set_xlabel("BMI Group at ART Initiation")
     bar_ax.tick_params(axis="x", rotation=90)
     bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "bmi_group_rel_reduction.png", bbox_inches="tight")
+    bar_fig.savefig(out_dir / "bmi_group_rel_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
     
