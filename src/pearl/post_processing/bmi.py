@@ -1,5 +1,5 @@
 import math
-from typing import Any, List
+from typing import Any, List, Optional
 
 import colorcet as cc
 import dask.dataframe as dd
@@ -216,12 +216,12 @@ def calc_percentage_and_add_summary(
     return add_summary(destination_df, percentage_df, name)
 
 
-def add_overall(bmi_int_dm_prev: dd.DataFrame):
+def add_overall(bmi_int_dm_prev: pd.DataFrame) -> pd.DataFrame:
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
     bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
     bmi_int_dm_prev_overall["group"] = "overall"
-    bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
+    bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)  # type: ignore
 
     return bmi_int_dm_prev
 
@@ -481,7 +481,7 @@ def rearrange_group_order(df: pd.DataFrame) -> pd.DataFrame:
     return df_sorted
 
 
-def add_sub_total(df, groupby=None):
+def add_sub_total(df: pd.DataFrame, groupby: Optional[List[str]] = None) -> pd.DataFrame:
     if "index" in df.columns:
         df = df.drop(columns=["index"])
 

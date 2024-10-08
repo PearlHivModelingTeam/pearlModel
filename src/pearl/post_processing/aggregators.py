@@ -25,7 +25,8 @@ def bmi_info(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
         .rename(columns={0: "n"})
     )
     bmi_info_df.to_parquet(out_dir / "bmi_info.parquet")
-    
+
+
 def bmi_cat(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
     """_summary_
 
