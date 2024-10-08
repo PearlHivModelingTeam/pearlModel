@@ -508,3 +508,56 @@ def add_sub_total(df, groupby=None):
         df = pd.concat([df, df_tmp], axis=0).reset_index(drop=True)
 
     return df
+
+
+def calc_overall_bmi_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFrame:
+    # filter for only overall group
+    df_overall = df[df["group"] == "overall"]
+
+    # filter for only follow_up-year follow up with dm
+    df_overall_follow_up = df_overall.loc[
+        (df_overall["years_after_h1yy"] > 0) & (df_overall["years_after_h1yy"] <= years_follow_up)
+    ]
+
+    # group by replication and age group and sum
+    df_overall_follow_up_sum = (
+        df_overall_follow_up.groupby(["init_bmi_group", "replication"])["n"].sum().reset_index()
+    )
+    df_overall_follow_up_sum = df_overall_follow_up_sum.rename(columns={"n": "dm_num"})
+
+    # now for the denominator
+    # First adjust people died in the same year of art initiation
+    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
+        df_overall["time_exposure_to_risk"] == 0, 1
+    )
+
+    # Second adjust people survive from simulation
+    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
+        df_overall["time_exposure_to_risk"] < 0, years_follow_up
+    )
+
+    # Third adjust people survived through follow-up period
+    df_overall["time_exposure_to_risk"] = df_overall["time_exposure_to_risk"].where(
+        df_overall["time_exposure_to_risk"] > years_follow_up, years_follow_up
+    )
+
+    # Calculate person-time variable
+    df_overall["person-time-contributed"] = df_overall["n"] * df_overall["time_exposure_to_risk"]
+
+    # group by replication and age group and sum
+    df_overall_follow_up_sum_total = (
+        df_overall.groupby(["init_bmi_group", "replication"])[["person-time-contributed", "n"]]
+        .sum()
+        .reset_index()
+    )
+    df_overall_follow_up_sum_total = df_overall_follow_up_sum_total.rename(columns={"n": "num"})
+
+    # create risk table and calculate risk
+    dm_risk_table = dd.merge(  # type: ignore [attr-defined]
+        df_overall_follow_up_sum, df_overall_follow_up_sum_total, how="left"
+    )
+    dm_risk_table["risk"] = dm_risk_table["dm_num"] / dm_risk_table["person-time-contributed"]
+
+    dm_risk_table["risk"] = dm_risk_table["risk"] * 1000
+
+    return dm_risk_table
