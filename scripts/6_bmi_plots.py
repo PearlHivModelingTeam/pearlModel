@@ -100,9 +100,9 @@ if __name__ == "__main__":
         temp_df = control_new_init_age_simulation_sum[
             control_new_init_age_simulation_sum["group"] == group
         ]
-        group_quantile = temp_df["age"].repeat(temp_df["n"]).quantile([0.05, 0.5, 0.95])
+        group_quantile = temp_df["age"].repeat(temp_df["n"]).quantile([0.025, 0.5, 0.975])
         control_median_age_of_init_by_group[group] = (
-            f"{int(group_quantile[0.5])} [{int(group_quantile[0.05])} - {int(group_quantile[0.95])}]"
+            f"{int(group_quantile[0.5])} [{int(group_quantile[0.025])} - {int(group_quantile[0.975])}]"
         )
 
     # convert to pandas dataframe
@@ -464,13 +464,13 @@ if __name__ == "__main__":
     # table 2c
     df = (
         group_dm_risk_table.groupby("group")[["risk"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]",
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]",
         axis=1,
     )
     df = rearrange_group_order(df)
@@ -530,13 +530,13 @@ if __name__ == "__main__":
 
     df = (
         group_dm_risk_table.groupby("group")[["dm_num"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]", axis=1
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure2d_table.csv")
@@ -694,13 +694,13 @@ if __name__ == "__main__":
     abs_sample_diff_plot["risk"] = -abs_sample_diff_plot["risk"]
     df = (
         abs_sample_diff_plot.groupby("group")[["risk"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.1f} [{row[0.05]:.1f} - {row[0.95]:.1f}]", axis=1
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3a_table.csv")
@@ -766,13 +766,13 @@ if __name__ == "__main__":
 
     df = (
         rel_sample_diff_plot.groupby("group")[["risk"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.3f} [{row[0.05]:.3f} - {row[0.95]:.3f}]", axis=1
+        lambda row: f"{row[0.50]:.3f} [{row[0.025]:.3f} - {row[0.975]:.3f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3b_table.csv")
@@ -837,13 +837,13 @@ if __name__ == "__main__":
 
     df = (
         abs_sample_diff_plot.groupby("group")[["NNT"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.0f} [{row[0.05]:.0f} - {row[0.95]:.0f}]", axis=1
+        lambda row: f"{row[0.50]:.0f} [{row[0.025]:.0f} - {row[0.975]:.0f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3c_table.csv")
@@ -904,13 +904,13 @@ if __name__ == "__main__":
 
     df = (
         abs_sample_diff_plot.groupby("group")[["dm_num_prevented"]]
-        .quantile([0.05, 0.5, 0.95])
+        .quantile([0.025, 0.5, 0.975])
         .unstack()
         .reset_index()
     )
-    df.columns = ["group", 0.05, 0.5, 0.95]
+    df.columns = ["group", 0.025, 0.5, 0.975]
     df["formatted"] = df.apply(
-        lambda row: f"{row[0.50]:.0f} [{row[0.05]:.0f} - {row[0.95]:.0f}]", axis=1
+        lambda row: f"{row[0.50]:.0f} [{row[0.025]:.0f} - {row[0.975]:.0f}]", axis=1
     )
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3d_table.csv")
@@ -974,7 +974,7 @@ if __name__ == "__main__":
     #         ax.set_ylabel(row_names[k], fontweight='bold')
 
     #     # Plot PEARL Projection
-    #     percentiles = group_df.groupby('years_after_h1yy')['proportion'].quantile([0.05, 0.5, 0.95]).unstack()
+    #     percentiles = group_df.groupby('years_after_h1yy')['proportion'].quantile([0.025, 0.5, 0.975]).unstack()
     #     # print(percentiles)
     #     ax.plot(percentiles.index[:year_period],
     #             percentiles.loc[1:year_period,0.50],
@@ -984,8 +984,8 @@ if __name__ == "__main__":
     #             label='PEARL Projection Median Probability')
 
     #     # ax.fill_between(percentiles.index[:year_period],
-    #     #                 percentiles.loc[1:year_period, 0.05],
-    #     #                 percentiles.loc[1:year_period,0.95],
+    #     #                 percentiles.loc[1:year_period, 0.025],
+    #     #                 percentiles.loc[1:year_period,0.975],
     #     #                 color='r',
     #     #                 alpha=0.4,
     #     #                 label='95% Uncertainty Range')

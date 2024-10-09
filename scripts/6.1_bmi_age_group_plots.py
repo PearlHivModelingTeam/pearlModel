@@ -77,9 +77,7 @@ if __name__ == "__main__":
     # clean to control specifications
     control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True)
 
-    # Figure 2A
     dm_risk_table = calc_overall_risk(control_bmi_int_dm_prev).compute()
-    
     
     ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
@@ -154,13 +152,27 @@ if __name__ == "__main__":
         fontsize=8.5,
     )
     bar_ax.set_xlabel("Age Group at ART Initiation")
-    # bar_ax.tick_params(axis="x", rotation=90)
     bar_ax.set_xticks(range(0, 7))
     bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
+    
+    bar_ax.get_legend().remove()
     bar_fig = bar_ax.get_figure()
     bar_fig.savefig(out_dir / "age_group_abs_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
+    
+    df = (
+        risk_df.groupby("init_age_group")[["abs_reduction"]]
+        .quantile([0.025, 0.5, 0.975])
+        .unstack()
+        .reset_index()
+    )
+    df.columns = ["group", 0.025, 0.5, 0.975]
+    df["formatted"] = df.apply(
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir / "age_group_abs_risk_reduction_table.csv")
     
     # Age Rel Reduction
     ##########################################################################################
@@ -175,11 +187,27 @@ if __name__ == "__main__":
         fontsize=8.5,
     )
     bar_ax.set_xlabel("Age Group at ART Initiation")
-    bar_ax.tick_params(axis="x", rotation=90)
+    bar_ax.set_xticks(range(0, 7))
+    bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
+    
+    bar_ax.get_legend().remove()
     bar_fig = bar_ax.get_figure()
     bar_fig.savefig(out_dir / "age_group_rel_reduction.png", bbox_inches="tight", dpi=1000)
     plt.show()
     plt.clf()
+    
+    df = (
+        risk_df.groupby("init_age_group")[["rel_reduction"]]
+        .quantile([0.025, 0.5, 0.975])
+        .unstack()
+        .reset_index()
+    )
+    df.columns = ["group", 0.025, 0.5, 0.975]
+    df["formatted"] = df.apply(
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir / "age_group_rel_risk_reduction_table.csv")
     
 
     ##################################################################################################################################
@@ -266,7 +294,6 @@ if __name__ == "__main__":
     risk_df['abs_reduction'] = risk_df['risk'] - risk_df['risk_S1']
     risk_df['rel_reduction'] = (risk_df['risk'] - risk_df['risk_S1'])/risk_df['risk'] * 100
     
-    
     pre_art_bmi_bins = [0, 18.5, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
     # Create a label map
     bmi_group_map = {i: f"{pre_art_bmi_bins[i]}-{pre_art_bmi_bins[i+1]}" for i in range(len(pre_art_bmi_bins) - 1)}
@@ -297,6 +324,19 @@ if __name__ == "__main__":
     plt.show()
     plt.clf()
     
+    df = (
+        risk_df.groupby("init_bmi_group")[["abs_reduction"]]
+        .quantile([0.025, 0.5, 0.975])
+        .unstack()
+        .reset_index()
+    )
+    df.columns = ["group", 0.025, 0.5, 0.975]
+    df["formatted"] = df.apply(
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir / "bmi_group_abs_risk_reduction_table.csv")
+    
     # BMI Group Rel Reduction
     #########################################################################################################################
     bar_ax = sns.boxplot(
@@ -317,4 +357,16 @@ if __name__ == "__main__":
     plt.show()
     plt.clf()
     
+    df = (
+        risk_df.groupby("init_bmi_group")[["rel_reduction"]]
+        .quantile([0.025, 0.5, 0.975])
+        .unstack()
+        .reset_index()
+    )
+    df.columns = ["group", 0.025, 0.5, 0.975]
+    df["formatted"] = df.apply(
+        lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
+    )
+    df = rearrange_group_order(df)
+    df.to_csv(out_dir / "bmi_group_rel_risk_reduction_table.csv")
     
