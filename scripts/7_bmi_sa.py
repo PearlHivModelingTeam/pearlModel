@@ -24,8 +24,8 @@ target_columns = [
 ]
 
 variable_name_map = {
-    "prev_users_dict_dm": "DM Prevalence at 2009",
-    "prev_inits_dict_dm": "DM Prevalence 2009-end",
+    "dm_prevalence_prev": "DM Prevalence at 2009",
+    "dm_prevalence": "DM Prevalence 2009-end",
     "dm_incidence": "DM Incidence",
     "pre_art_bmi": "Pre ART BMI",
     "post_art_bmi": "Post ART BMI",
