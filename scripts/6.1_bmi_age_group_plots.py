@@ -368,5 +368,6 @@ if __name__ == "__main__":
         lambda row: f"{row[0.50]:.1f} [{row[0.025]:.1f} - {row[0.975]:.1f}]", axis=1
     )
     df = rearrange_group_order(df)
+    # to save output
     df.to_csv(out_dir / "bmi_group_rel_risk_reduction_table.csv")
     
