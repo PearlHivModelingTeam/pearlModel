@@ -456,7 +456,7 @@ if __name__ == "__main__":
     ########################################################
 
     group_risk_ax.set_xlabel("")
-    group_risk_ax.set_ylabel("Risk of incident diabetes diagnosis (per 1,000 pys) among subgroups of PAH")
+    group_risk_ax.set_ylabel("Risk of incident diabetes diagnosis (per 1,000 pys) among subgroups of PLWH")
     group_risk_ax.set_ylim(0, 40)
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2c.png", bbox_inches="tight")
