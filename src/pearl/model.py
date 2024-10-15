@@ -747,13 +747,15 @@ class Pearl:
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
-        self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
+        if self.parameters.output_folder:
+            self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
 
         # Record output statistics for the end of the simulation
         self.record_final_stats()
 
         # Save output
-        self.stats.save()
+        if self.parameters.output_folder:
+            self.stats.save()
 
     def increment_years(self) -> None:
         """
