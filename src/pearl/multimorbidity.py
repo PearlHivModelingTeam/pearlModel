@@ -62,21 +62,18 @@ def create_comorbidity_pop_matrix(
         )
 
     if condition == "anx":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "init_sqrtcd4n",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "intercept",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "init_sqrtcd4n",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "intercept",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition == "dpr":
         return pop[
             [

@@ -131,11 +131,10 @@ class Pearl:
             }
         )
 
-        # First recording of stats
-        self.record_stats()
-
         if self.parameters.history:
             self.population.to_parquet(self.parameters.output_folder / "history.parquet")
+            # First recording of stats
+            self.record_stats()
 
         # Move to 2010
         self.year += 1
@@ -726,9 +725,6 @@ class Pearl:
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
-            # Record output statistics
-            self.record_stats()
-
             # Append changed populations to their respective DataFrames
             self.append_new()
 
@@ -737,6 +733,8 @@ class Pearl:
 
             # store history
             if self.parameters.history:
+                # Record output statistics
+                self.record_stats()
                 self.population.to_parquet(
                     self.parameters.output_folder / "history.parquet",
                     engine="fastparquet",

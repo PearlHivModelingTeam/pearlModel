@@ -363,21 +363,21 @@ def calculate_post_art_bmi(
     sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs)
     sqrt_post_art_bmi = sqrt_post_art_bmi.T[0]
     if intervention:
-        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(
+        sqrt_post_art_bmi = draw_from_trunc_norm(
             np.sqrt(10),
             np.sqrt(30),
             sqrt_post_art_bmi,
             np.sqrt(rse),
-            1,
+            len(sqrt_post_art_bmi),
             random_state,
         )
     else:
-        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(
+        sqrt_post_art_bmi = draw_from_trunc_norm(
             np.sqrt(10),
             np.sqrt(65),
             sqrt_post_art_bmi,
             np.sqrt(rse),
-            1,
+            len(sqrt_post_art_bmi),
             random_state,
         )
     post_art_bmi = sqrt_post_art_bmi**2.0
@@ -458,12 +458,12 @@ def calculate_pre_art_bmi(
 
     log_pre_art_bmi = log_pre_art_bmi.T[0]
 
-    log_pre_art_bmi = np.vectorize(draw_from_trunc_norm)(
+    log_pre_art_bmi = draw_from_trunc_norm(
         np.log10(10),
         np.log10(65),
         log_pre_art_bmi,
         np.sqrt(rse),
-        1,
+        len(log_pre_art_bmi),
         random_state,
     )
 
