@@ -189,24 +189,23 @@ class Pearl:
             numpy array for passing into Pearl.calculate_prob
         """
         # Create all needed intermediate variables
-        pop["age_"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 1)
-        pop["age__"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 2)
-        pop["age___"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 3)
+        knots = knots.to_numpy()
+        pop["age_"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 1)
+        pop["age__"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 2)
+        pop["age___"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 3)
         pop["haart_period"] = (pop["h1yy"].values > 2010).astype(int)
-        return np.array(
-            pop[
-                [
-                    "intercept",
-                    "age",
-                    "age_",
-                    "age__",
-                    "age___",
-                    "year",
-                    "init_sqrtcd4n",
-                    "haart_period",
-                ]
+        return pop[
+            [
+                "intercept",
+                "age",
+                "age_",
+                "age__",
+                "age___",
+                "year",
+                "init_sqrtcd4n",
+                "haart_period",
             ]
-        )
+        ].to_numpy()
 
     @staticmethod
     def add_age_categories(population: pd.DataFrame) -> pd.DataFrame:

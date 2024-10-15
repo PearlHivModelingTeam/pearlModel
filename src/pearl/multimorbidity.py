@@ -49,16 +49,16 @@ def create_comorbidity_pop_matrix(
     pop["out_care"] = (pop["status"] == ART_NONUSER).astype(int)
     if condition in STAGE2 + STAGE3:
         pop["delta_bmi_"] = restricted_cubic_spline_var(
-            pop["delta_bmi"], parameters.delta_bmi_dict[condition], 1
+            pop["delta_bmi"].to_numpy(), parameters.delta_bmi_dict[condition].to_numpy(), 1
         )
         pop["delta_bmi__"] = restricted_cubic_spline_var(
-            pop["delta_bmi"], parameters.delta_bmi_dict[condition], 2
+            pop["delta_bmi"].to_numpy(), parameters.delta_bmi_dict[condition].to_numpy(), 2
         )
         pop["post_art_bmi_"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.post_art_bmi_dict[condition], 1
+            pop["post_art_bmi"].to_numpy(), parameters.post_art_bmi_dict[condition].to_numpy(), 1
         )
         pop["post_art_bmi__"] = restricted_cubic_spline_var(
-            pop["post_art_bmi"], parameters.post_art_bmi_dict[condition], 2
+            pop["post_art_bmi"].to_numpy(), parameters.post_art_bmi_dict[condition].to_numpy(), 2
         )
 
     if condition == "anx":
@@ -78,151 +78,133 @@ def create_comorbidity_pop_matrix(
             dtype=float,
         )
     elif condition == "dpr":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "init_sqrtcd4n",
-                    "time_since_art",
-                    "hcv",
-                    "intercept",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "init_sqrtcd4n",
+                "time_since_art",
+                "hcv",
+                "intercept",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition == "ckd":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "delta_bmi_",
-                    "delta_bmi__",
-                    "delta_bmi",
-                    "post_art_bmi",
-                    "post_art_bmi_",
-                    "post_art_bmi__",
-                    "init_sqrtcd4n",
-                    "dm",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "ht",
-                    "intercept",
-                    "lipid",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "delta_bmi_",
+                "delta_bmi__",
+                "delta_bmi",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "init_sqrtcd4n",
+                "dm",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "ht",
+                "intercept",
+                "lipid",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition == "lipid":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "delta_bmi_",
-                    "delta_bmi__",
-                    "delta_bmi",
-                    "post_art_bmi",
-                    "post_art_bmi_",
-                    "post_art_bmi__",
-                    "init_sqrtcd4n",
-                    "ckd",
-                    "dm",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "ht",
-                    "intercept",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "delta_bmi_",
+                "delta_bmi__",
+                "delta_bmi",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "init_sqrtcd4n",
+                "ckd",
+                "dm",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "ht",
+                "intercept",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition == "dm":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "delta_bmi_",
-                    "delta_bmi__",
-                    "delta_bmi",
-                    "post_art_bmi",
-                    "post_art_bmi_",
-                    "post_art_bmi__",
-                    "init_sqrtcd4n",
-                    "ckd",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "ht",
-                    "intercept",
-                    "lipid",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "delta_bmi_",
+                "delta_bmi__",
+                "delta_bmi",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "init_sqrtcd4n",
+                "ckd",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "ht",
+                "intercept",
+                "lipid",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition == "ht":
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "delta_bmi_",
-                    "delta_bmi__",
-                    "delta_bmi",
-                    "post_art_bmi",
-                    "post_art_bmi_",
-                    "post_art_bmi__",
-                    "init_sqrtcd4n",
-                    "ckd",
-                    "dm",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "intercept",
-                    "lipid",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "delta_bmi_",
+                "delta_bmi__",
+                "delta_bmi",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "init_sqrtcd4n",
+                "ckd",
+                "dm",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "intercept",
+                "lipid",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     elif condition in ["malig", "esld", "mi"]:
-        return np.array(
-            pop[
-                [
-                    "age",
-                    "anx",
-                    "delta_bmi_",
-                    "delta_bmi__",
-                    "delta_bmi",
-                    "post_art_bmi",
-                    "post_art_bmi_",
-                    "post_art_bmi__",
-                    "init_sqrtcd4n",
-                    "ckd",
-                    "dm",
-                    "dpr",
-                    "time_since_art",
-                    "hcv",
-                    "ht",
-                    "intercept",
-                    "lipid",
-                    "smoking",
-                    "year",
-                ]
-            ],
-            dtype=float,
-        )
+        return pop[
+            [
+                "age",
+                "anx",
+                "delta_bmi_",
+                "delta_bmi__",
+                "delta_bmi",
+                "post_art_bmi",
+                "post_art_bmi_",
+                "post_art_bmi__",
+                "init_sqrtcd4n",
+                "ckd",
+                "dm",
+                "dpr",
+                "time_since_art",
+                "hcv",
+                "ht",
+                "intercept",
+                "lipid",
+                "smoking",
+                "year",
+            ]
+        ].to_numpy(dtype=float)
     else:
         return np.array([], dtype=float)

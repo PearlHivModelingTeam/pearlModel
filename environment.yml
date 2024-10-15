@@ -18,6 +18,7 @@ dependencies:
   - fastparquet
   - colorcet
   - seaborn
+  - numba
   - pip:
     - pip
     - setuptools
