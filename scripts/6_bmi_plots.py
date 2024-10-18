@@ -737,7 +737,7 @@ if __name__ == "__main__":
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure3a_table.csv")
 
-    # 3b
+    # 3B
     # relative difference
     rel_sample_diff = -(s1_sample[["risk"]] - s0_sample[["risk"]]) / s0_sample[["risk"]]
     rel_sample_diff["group"] = s0_sample["group"]
@@ -752,7 +752,7 @@ if __name__ == "__main__":
         showfliers=False,
         palette=palette,
         hue=rel_sample_diff_plot["group"],
-        order=group_order,
+        order=group_order[:-1],
         hue_order=group_order[:-1],
     )
 
