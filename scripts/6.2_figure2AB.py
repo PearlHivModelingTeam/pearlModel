@@ -267,7 +267,7 @@ if __name__ == "__main__":
     
     final_df.to_csv(out_dir/'figure2b_table.csv', index = False)
     
-    ######################################################################################################################
+    ########################################################################################################
     # 2c
     bmi_int_dm_prev = dd.read_parquet(baseline_dir /'dm_final_output.parquet').reset_index()
 
@@ -358,12 +358,11 @@ if __name__ == "__main__":
     df = rearrange_group_order(df)
     df.to_csv(out_dir / "figure2c_table.csv")
     df_summary_dict['Control|7-year Risk of DM Diagnosis Post-ART Initiation'] = df['formatted']
-    
-    #################################################################################################################################
-    # 2D
-    group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev_agg, 7).compute()
 
-    group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
+    # 2D
+    # group_dm_risk_table = calc_risk_by_group(control_bmi_int_dm_prev, 7).compute()
+
+    # group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
 
     group_risk_ax = sns.boxplot(
         x=group_dm_risk_table["group"],
@@ -437,45 +436,3 @@ if __name__ == "__main__":
     pd.DataFrame(df_summary_dict).to_csv(out_dir/'df_summary.csv', index = False)
 
     print("Figure 2 Finished.")
-
-    ########################################################################################################
-    # Suppliment Figure 2
-    # calculate group prevalence
-    group_prevalence = calc_percentage(control_bmi_int_cascade, "bmiInt_ineligible_dm")
-    group_prevalence["dm_per_1000"] = (group_prevalence["n"] / 100) * 1000
-    group_prevalence["group"] = group_prevalence["group"].map(group_title_dict)
-
-    # Graph Median Prevalence of DM by group
-    bar_ax = sns.barplot(
-        x=group_prevalence["group"],
-        y=group_prevalence["dm_per_1000"],
-        estimator="median",
-        palette=palette,
-        hue=group_prevalence["group"],
-        errorbar=("pi", 95),
-        order=group_order,
-        hue_order=group_order,
-    )
-
-    bar_ax.tick_params(axis="x", rotation=90)
-
-    bar_ax.set_xlabel("")
-    bar_ax.set_ylabel(
-        "Prevalence of Preexisting DM Diagnosis at ART Initiation \n(per 1,000 persons)"
-    )
-    bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
-
-    bar_fig = bar_ax.get_figure()
-    bar_fig.savefig(out_dir / "figS2.png", bbox_inches="tight")
-    plt.show()
-    plt.clf()
-
-    df = group_prevalence.groupby('group')[['dm_per_1000']].quantile([0.025,0.5,0.975]).unstack().reset_index()
-    df.columns = ['group',0.025, 0.5, 0.975]
-    df['formatted'] = df.apply(
-        lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(row[0.50], row[0.025], row[0.975]), axis=1
-    )
-    df = rearrange_group_order(df)
-    df.to_csv(out_dir/'figureS2_table.csv')
-    df_summary_dict['Control|Prevalence of Preexisting DM Diagnosis at ART Initiation (per 1,000 persons)'] = df['formatted']
-    ########################################################################################################
