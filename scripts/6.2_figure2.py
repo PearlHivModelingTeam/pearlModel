@@ -25,7 +25,8 @@ from pearl.post_processing.bmi import (
     rearrange_group_order,
     round_thousand,
     calc_dm_prop,
-    add_sub_total
+    add_sub_total,
+    calc_overall_bmi_risk,
 )
 
 if __name__ == "__main__":
