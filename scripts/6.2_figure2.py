@@ -413,7 +413,7 @@ if __name__ == "__main__":
     ########################################################
     
     group_risk_ax.set_xlabel(overall_info_text)
-    group_risk_ax.set_ylabel("7-year number of incident diabetes diagnosis among subgroups of PLWH")
+    group_risk_ax.set_ylabel("7-year number of incident diabetes diagnosis\n among subgroups of PLWH")
     group_risk_fig = group_risk_ax.get_figure()
     group_risk_fig.savefig(out_dir / "fig2d.png", bbox_inches="tight")
     plt.show()
