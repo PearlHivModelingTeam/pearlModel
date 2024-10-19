@@ -292,7 +292,7 @@ if __name__ == "__main__":
 
     # Figure 2A
     dm_risk_table = calc_overall_risk(control_bmi_int_dm_prev).compute()
-
+    
     # Graph Overall DM Probability and Population across ART initiation Groups
     pop_ax = sns.barplot(
         x=dm_risk_table["init_age_group"],
@@ -301,50 +301,47 @@ if __name__ == "__main__":
         color="steelblue",
         errorbar=("pi", 95),
     )
-
+    
     pop_ax.tick_params(axis="x", rotation=90)
-
+    
     rounded_vals = [round_thousand(x) for x in pop_ax.containers[0].datavalues]
-
+    
     pop_ax.bar_label(pop_ax.containers[0], labels=rounded_vals, padding=5)
-
+    
     pop_ax.set_ylabel("Population size under the control arm")
     pop_ax.set_xlabel("Age Group at ART Initiation")
     pop_ax.set_xticks(range(0, 7))
     pop_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
     pop_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
-
+    
+    ax2 = pop_ax.twinx()
+    percentiles = (
+        dm_risk_table.groupby("init_age_group")["risk"].quantile([0.025, 0.5, 0.975]).unstack()
+    )
+    ax2.plot(
+        percentiles.index,
+        percentiles.loc[:, 0.50],
+        marker="o",
+        linestyle="-",
+        color="r",
+        label="Median Risk",
+    )
+    ax2.fill_between(
+        percentiles.index,
+        percentiles.loc[:, 0.025],
+        percentiles.loc[:, 0.975],
+        color="lightcoral",
+        alpha=0.5,
+        label="95% CI",
+    )
+    ax2.set_ylabel("7-year Risk of DM Diagnosis Post-ART Initiation")
+    
     pop_fig = pop_ax.get_figure()
     pop_fig.savefig(out_dir / "fig2a.png", bbox_inches="tight")
     # clear the plot
     plt.show()
     plt.clf()
-
-    # Fig2B
-    bar_ax = sns.barplot(
-        x=dm_risk_table["init_age_group"],
-        y=dm_risk_table["risk"],
-        estimator="median",
-        color="steelblue",
-        errorbar=("pi", 95),
-    )
-
-    rounded_vals = [np.round(x,1) for x in bar_ax.containers[0].datavalues]
-
-    bar_ax.bar_label(bar_ax.containers[0], labels=rounded_vals, padding=5)
-
-    bar_ax.set_ylabel("7-year Risk of DM Diagnosis after ART Initiation")
-    bar_ax.set_xlabel("Age Group at ART Initiation")
-    bar_ax.set_xticks(range(0, 7))
-    bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
-    bar_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
-
-    pop_fig = bar_ax.get_figure()
-    pop_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
-    # clear the plot
-    plt.show()
-    plt.clf()
-
+    
     df = dm_risk_table.groupby(['init_age_group'])[['num', 'risk']].quantile([0.025,0.5,0.975]).unstack()
     final_df = pd.DataFrame()
     for col in ['num', 'risk']:
@@ -353,8 +350,107 @@ if __name__ == "__main__":
             final_df[col] = col_df.apply(lambda row: '{:.1f} [{:.1f} - {:.1f}]'.format(row[0.5], row[0.025], row[0.975]), axis=1)
         else:
             final_df[col] = col_df.apply(lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.5],-2), round(row[0.025],-2), round(row[0.975],-2)), axis=1)
+    
+    final_df.to_csv(out_dir/'figure2a_table.csv', index = False)
 
-    final_df.to_csv(out_dir/'figure2a&b_table.csv', index = False)
+    ## Fig2B
+    ##################################################################################################################################
+    # we will look at the "bmi_int_dm_prev.h5" for S0
+    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "bmi_cat_final_output.parquet").reset_index()
+    
+    # Add Overall
+    all_but_group = list(bmi_int_dm_prev.columns[1:])
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    bmi_int_dm_prev_overall["group"] = "overall"
+    bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
+    
+    # type the dataframe for space efficiency
+    bmi_int_dm_prev = bmi_int_dm_prev.astype(
+        {
+            "group": "str",
+            "replication": "int16",
+            "bmiInt_scenario": np.int8,
+            "h1yy": np.int16,
+            "init_bmi_group": np.int8,
+            "bmiInt_impacted": bool,
+            "dm": bool,
+            "t_dm": np.int16,
+            "n": np.int16,
+        }
+    )
+    
+    # clean to control specifications
+    control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True)
+    
+    dm_risk_table = calc_overall_bmi_risk(control_bmi_int_dm_prev).compute()
+    
+    pre_art_bmi_bins = [0, 18.5, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
+    # Create a label map
+    bmi_group_map = {i: f"{pre_art_bmi_bins[i]}-{pre_art_bmi_bins[i+1]}" for i in range(len(pre_art_bmi_bins) - 1)}
+    bmi_group_map[13] = '> 30'
+    group_order = list(bmi_group_map.values())
+    
+    dm_risk_table["init_bmi_group"] = dm_risk_table["init_bmi_group"].map(bmi_group_map)
+    
+    # Graph Overall DM Probability and Population across BMI initiation Groups
+    pop_ax = sns.barplot(
+        x=dm_risk_table["init_bmi_group"],
+        y=dm_risk_table["num"],
+        estimator="median",
+        color="steelblue",
+        errorbar=("pi", 95),
+        order = group_order
+    )
+    
+    pop_ax.tick_params(axis="x", rotation=90)
+    
+    rounded_vals = [round_thousand(x) for x in pop_ax.containers[0].datavalues]
+    
+    pop_ax.bar_label(pop_ax.containers[0], labels=rounded_vals, padding=5)
+    
+    pop_ax.set_ylabel("Population size under the control arm")
+    pop_ax.set_xlabel("BMI Group at ART Initiation")
+    pop_ax.yaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:,.0f}"))
+    
+    ax2 = pop_ax.twinx()
+    percentiles = (
+        dm_risk_table.groupby("init_bmi_group")["risk"].quantile([0.025, 0.5, 0.975]).unstack()
+    )
+    ax2.plot(
+        percentiles.index,
+        percentiles.loc[:, 0.50],
+        marker="o",
+        linestyle="-",
+        color="r",
+        label="Median Risk",
+    )
+    ax2.fill_between(
+        percentiles.index,
+        percentiles.loc[:, 0.025],
+        percentiles.loc[:, 0.975],
+        color="lightcoral",
+        alpha=0.5,
+        label="95% CI",
+    )
+    
+    ax2.set_ylabel("7-year Risk of DM Diagnosis Post-ART Initiation")
+    
+    pop_fig = pop_ax.get_figure()
+    pop_fig.savefig(out_dir / "fig2b.png", bbox_inches="tight")
+    # clear the plot
+    plt.show()
+    plt.clf()
+    
+    df = dm_risk_table.groupby(['init_bmi_group'])[['num', 'risk']].quantile([0.025,0.5,0.975]).unstack()
+    final_df = pd.DataFrame()
+    for col in ['num', 'risk']:
+        col_df = df[col].reset_index()
+        if col == 'risk':
+            final_df[col] = col_df.apply(lambda row: '{:.1f} [{:.1f} - {:.1f}]'.format(row[0.5], row[0.025], row[0.975]), axis=1)
+        else:
+            final_df[col] = col_df.apply(lambda row: '{:.0f} [{:.0f} - {:.0f}]'.format(round(row[0.5],-2), round(row[0.025],-2), round(row[0.975],-2)), axis=1)
+    
+    final_df.to_csv(out_dir/'figure2b_table.csv', index = False)
 
     ########################################################################################################
     # Suppliment Figure 2
