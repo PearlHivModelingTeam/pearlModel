@@ -23,7 +23,7 @@ def create_mm_detail_stats(pop: pd.DataFrame) -> pd.DataFrame:
 
 def create_comorbidity_pop_matrix(
     pop: pd.DataFrame, condition: str, parameters: Parameters
-) -> NDArray[Any]:
+) -> Any:
     """
     Create and return the population matrix as a numpy array for calculating the probability of
     incidence of any of the 9 comorbidities. Each comorbidity has a unique set of variables as

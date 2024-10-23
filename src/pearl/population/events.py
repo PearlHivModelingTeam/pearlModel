@@ -14,7 +14,7 @@ from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_
 from pearl.parameters import Parameters
 
 
-def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
+def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> Any:
     """
     Return the population matrix as a numpy array for calculating mortality in care. This log
     odds of mortality are a linear function of calendar year, ART init year category modeled as two
@@ -69,9 +69,7 @@ def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameter
     ].to_numpy(dtype=float)
 
 
-def create_mortality_out_care_pop_matrix(
-    pop: pd.DataFrame, parameters: Parameters
-) -> NDArray[Any]:
+def create_mortality_out_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> Any:
     """
     Return the population matrix as a numpy array for calculating mortality out of care.
     This log odds of mortality are a linear function of calendar year and age and sqrt cd4 count

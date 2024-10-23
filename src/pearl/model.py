@@ -170,7 +170,7 @@ class Pearl:
         return np.array(prob)
 
     @staticmethod
-    def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> NDArray[Any]:
+    def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> Any:
         """
         Create and return the population matrix as a numpy array for use in calculating probability
         of loss to follow up.
