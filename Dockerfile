@@ -1,7 +1,7 @@
 FROM condaforge/mambaforge:4.9.2-5 as conda
 
 # update packages and install make
-RUN apt-get update && apt-get install make
+RUN apt-get update && apt-get install make openssh-client
 
 # Add environment lock file
 ADD conda-lock.yml /tmp/conda-lock.yml
