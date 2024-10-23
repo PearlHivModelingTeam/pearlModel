@@ -5,7 +5,6 @@ Functions pertraining to multimorbidity calculations
 from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
 
 from pearl.definitions import ART_NONUSER, STAGE0, STAGE1, STAGE2, STAGE3

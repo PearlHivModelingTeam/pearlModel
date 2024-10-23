@@ -348,4 +348,6 @@ class Parameters:
         self.param_dataframe = pd.DataFrame(param_dict, index=[0])
 
         if self.output_folder:
-            self.param_dataframe.to_parquet(self.output_folder / "parameters.parquet")
+            self.param_dataframe.to_parquet(
+                self.output_folder / "parameters.parquet", compression="zstd"
+            )

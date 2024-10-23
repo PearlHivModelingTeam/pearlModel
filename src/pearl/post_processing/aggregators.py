@@ -25,7 +25,7 @@ def bmi_info(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
         .reset_index()
         .rename(columns={0: "n"})
     )
-    bmi_info_df.to_parquet(out_dir / "bmi_info.parquet")
+    bmi_info_df.to_parquet(out_dir / "bmi_info.parquet", compression="zstd")
 
 
 def bmi_cat(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
@@ -52,7 +52,8 @@ def bmi_cat(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
     # population_dataframe = population_dataframe.compute()
 
     # pre_art_bmi_bins = [0,18.5,19,20,21,22,23,24,25,26,27,28,29,30,float("inf")]
-    # population_dataframe["init_bmi_group"] = pd.cut(population_dataframe["pre_art_bmi"], labels=False, bins=pre_art_bmi_bins, right=False).astype("int8")
+    # population_dataframe["init_bmi_group"] = pd.cut(population_dataframe["pre_art_bmi"],
+    # labels=False, bins=pre_art_bmi_bins, right=False).astype("int8")
 
     pre_art_bmi_bins = [0, 18.5, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
 
@@ -84,5 +85,4 @@ def bmi_cat(population_dataframe: pd.DataFrame, out_dir: Path) -> None:
 
     dm_final_output = dm_final_output.reset_index(name="n")
 
-    dm_final_output.to_parquet(out_dir / "bmi_cat_final_output.parquet")
-    # dm_final_output.to_csv(out_dir / "bmi_cat_final_output.csv")
+    dm_final_output.to_parquet(out_dir / "bmi_cat_final_output.parquet", compression="zstd")

@@ -132,7 +132,9 @@ class Pearl:
         )
 
         if self.parameters.history:
-            self.population.to_parquet(self.parameters.output_folder / "history.parquet")
+            self.population.to_parquet(
+                self.parameters.output_folder / "history.parquet", compression="zstd"
+            )
             # First recording of stats
             self.record_stats()
 
@@ -739,13 +741,16 @@ class Pearl:
                     self.parameters.output_folder / "history.parquet",
                     engine="fastparquet",
                     append=True,
+                    compression="zstd",
                 )
 
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
         if self.parameters.output_folder:
-            self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
+            self.population.to_parquet(
+                self.parameters.output_folder / "final_state.parquet", compression="zstd"
+            )
 
         # Record output statistics for the end of the simulation
         self.record_final_stats()
@@ -1574,6 +1579,8 @@ class Statistics:
                     item = item.assign(group=self.group_name, replication=self.replication).astype(
                         {"replication": "int16"}
                     )
-                    item.to_parquet(self.output_folder / f"{name}.parquet", index=False)
+                    item.to_parquet(
+                        self.output_folder / f"{name}.parquet", index=False, compression="zstd"
+                    )
                 except Exception as e:
                     print(f"Error saving DataFrame {name}: {e}")
