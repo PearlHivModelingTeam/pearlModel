@@ -54,6 +54,7 @@ def parameter(param_file_path, output_folder, config):
         new_dx=config["new_dx"],
         final_year=config["final_year"],
         mortality_model=config["mortality_model"],
+        final_state=True,
         mortality_threshold_flag=config["mortality_threshold_flag"],
         idu_threshold=config["idu_threshold"],
         bmi_intervention_scenario=config["bmi_intervention_scenario"],
