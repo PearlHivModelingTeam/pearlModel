@@ -747,7 +747,7 @@ class Pearl:
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
-        if self.parameters.output_folder:
+        if self.parameters.output_folder and self.parameters.final_state:
             self.population.to_parquet(
                 self.parameters.output_folder / "final_state.parquet", compression="zstd"
             )

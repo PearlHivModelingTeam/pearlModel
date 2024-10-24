@@ -3,7 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,7 @@ class Parameters:
         idu_threshold: str,
         seed: int,
         history: Optional[List[str]] = None,
+        final_state: bool = False,
         ignore_columns: Optional[List[str]] = None,
         bmi_intervention_scenario: int = 0,
         bmi_intervention_start_year: int = 2020,
@@ -125,6 +126,7 @@ class Parameters:
         self.init_random_state = np.random.RandomState(seed=replication)
         self.ignore_columns = ignore_columns
         self.history = history
+        self.final_state = final_state
         self.bmi_intervention_scenario = bmi_intervention_scenario
         self.bmi_intervention_start_year = bmi_intervention_start_year
         self.bmi_intervention_end_year = bmi_intervention_end_year
