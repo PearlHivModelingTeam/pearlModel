@@ -3,7 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,9 @@ class Parameters:
         mortality_threshold_flag: bool,
         idu_threshold: str,
         seed: int,
-        history: bool = False,
+        history: Optional[List[str]] = None,
+        final_state: bool = False,
+        ignore_columns: Optional[List[str]] = None,
         bmi_intervention_scenario: int = 0,
         bmi_intervention_start_year: int = 2020,
         bmi_intervention_end_year: int = 2030,
@@ -122,7 +124,9 @@ class Parameters:
         self.seed = seed
         self.random_state = np.random.RandomState(seed=seed)
         self.init_random_state = np.random.RandomState(seed=replication)
+        self.ignore_columns = ignore_columns
         self.history = history
+        self.final_state = final_state
         self.bmi_intervention_scenario = bmi_intervention_scenario
         self.bmi_intervention_start_year = bmi_intervention_start_year
         self.bmi_intervention_end_year = bmi_intervention_end_year
@@ -348,4 +352,6 @@ class Parameters:
         self.param_dataframe = pd.DataFrame(param_dict, index=[0])
 
         if self.output_folder:
-            self.param_dataframe.to_parquet(self.output_folder / "parameters.parquet")
+            self.param_dataframe.to_parquet(
+                self.output_folder / "parameters.parquet", compression="zstd"
+            )

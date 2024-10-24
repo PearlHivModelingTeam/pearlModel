@@ -309,22 +309,22 @@ def calculate_post_art_bmi(
         numpy array representing the population bmi after ART initiation.
     """
     # Copy coefficients and knots to more reasonable variable names
-    coeffs = parameters.post_art_bmi
-    t_age = parameters.post_art_bmi_age_knots
-    t_pre_sqrt = parameters.post_art_bmi_pre_art_bmi_knots
-    t_sqrtcd4 = parameters.post_art_bmi_cd4_knots
-    t_sqrtcd4_post = parameters.post_art_bmi_cd4_post_knots
+    coeffs = parameters.post_art_bmi.to_numpy(dtype=float)
+    t_age = parameters.post_art_bmi_age_knots.to_numpy(dtype=float)
+    t_pre_sqrt = parameters.post_art_bmi_pre_art_bmi_knots.to_numpy(dtype=float)
+    t_sqrtcd4 = parameters.post_art_bmi_cd4_knots.to_numpy(dtype=float)
+    t_sqrtcd4_post = parameters.post_art_bmi_cd4_post_knots.to_numpy(dtype=float)
     rse = parameters.post_art_bmi_rse
 
     # Calculate spline variables
-    pop["age_"] = restricted_cubic_spline_var(pop["init_age"], t_age, 1)
-    pop["age__"] = restricted_cubic_spline_var(pop["init_age"], t_age, 2)
+    pop["age_"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 1)
+    pop["age__"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 2)
     pop["pre_sqrt"] = pop["pre_art_bmi"] ** 0.5
-    pop["pre_sqrt_"] = restricted_cubic_spline_var(pop["pre_sqrt"], t_pre_sqrt, 1)
-    pop["pre_sqrt__"] = restricted_cubic_spline_var(pop["pre_sqrt"], t_pre_sqrt, 2)
+    pop["pre_sqrt_"] = restricted_cubic_spline_var(pop["pre_sqrt"].to_numpy(), t_pre_sqrt, 1)
+    pop["pre_sqrt__"] = restricted_cubic_spline_var(pop["pre_sqrt"].to_numpy(), t_pre_sqrt, 2)
     pop["sqrtcd4"] = pop["init_sqrtcd4n"]
-    pop["sqrtcd4_"] = restricted_cubic_spline_var(pop["sqrtcd4"], t_sqrtcd4, 1)
-    pop["sqrtcd4__"] = restricted_cubic_spline_var(pop["sqrtcd4"], t_sqrtcd4, 2)
+    pop["sqrtcd4_"] = restricted_cubic_spline_var(pop["sqrtcd4"].to_numpy(), t_sqrtcd4, 1)
+    pop["sqrtcd4__"] = restricted_cubic_spline_var(pop["sqrtcd4"].to_numpy(), t_sqrtcd4, 2)
 
     # Calculate cd4 count 2 years after art initiation and its spline terms
     pop_future = pop.copy().assign(age=pop["init_age"] + 2)
@@ -334,8 +334,12 @@ def calculate_post_art_bmi(
     pop_future.loc[pop_future["age_cat"] > 7, "age_cat"] = 7
     pop["sqrtcd4_post"] = calculate_cd4_increase(pop_future, parameters)
 
-    pop["sqrtcd4_post_"] = restricted_cubic_spline_var(pop["sqrtcd4_post"], t_sqrtcd4_post, 1)
-    pop["sqrtcd4_post__"] = restricted_cubic_spline_var(pop["sqrtcd4_post"], t_sqrtcd4_post, 2)
+    pop["sqrtcd4_post_"] = restricted_cubic_spline_var(
+        pop["sqrtcd4_post"].to_numpy(), t_sqrtcd4_post, 1
+    )
+    pop["sqrtcd4_post__"] = restricted_cubic_spline_var(
+        pop["sqrtcd4_post"].to_numpy(), t_sqrtcd4_post, 2
+    )
 
     # Create the population matrix and perform the matrix multiplication
     pop_matrix = pop[
@@ -356,15 +360,25 @@ def calculate_post_art_bmi(
             "sqrtcd4_post__",
         ]
     ].to_numpy(dtype=float)
-    sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+    sqrt_post_art_bmi = np.matmul(pop_matrix, coeffs)
     sqrt_post_art_bmi = sqrt_post_art_bmi.T[0]
     if intervention:
-        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(
-            np.sqrt(10), np.sqrt(30), sqrt_post_art_bmi, np.sqrt(rse), 1, random_state
+        sqrt_post_art_bmi = draw_from_trunc_norm(
+            np.sqrt(10),
+            np.sqrt(30),
+            sqrt_post_art_bmi,
+            np.sqrt(rse),
+            len(sqrt_post_art_bmi),
+            random_state,
         )
     else:
-        sqrt_post_art_bmi = np.vectorize(draw_from_trunc_norm)(
-            np.sqrt(10), np.sqrt(65), sqrt_post_art_bmi, np.sqrt(rse), 1, random_state
+        sqrt_post_art_bmi = draw_from_trunc_norm(
+            np.sqrt(10),
+            np.sqrt(65),
+            sqrt_post_art_bmi,
+            np.sqrt(rse),
+            len(sqrt_post_art_bmi),
+            random_state,
         )
     post_art_bmi = sqrt_post_art_bmi**2.0
 
@@ -383,32 +397,32 @@ def calculate_pre_art_bmi(
     """
     # Calculate pre art bmi using one of 5 different models depending on subpopulation
     # Copy coefficients and knots to more reasonable variable names
-    coeffs = parameters.pre_art_bmi
-    t_age = parameters.pre_art_bmi_age_knots
-    t_h1yy = parameters.pre_art_bmi_h1yy_knots
+    coeffs = parameters.pre_art_bmi.to_numpy(dtype=float)
+    t_age = parameters.pre_art_bmi_age_knots.to_numpy(dtype=float)
+    t_h1yy = parameters.pre_art_bmi_h1yy_knots.to_numpy(dtype=float)
     rse = parameters.pre_art_bmi_rse
     pre_art_bmi = np.nan
     model = parameters.pre_art_bmi_model
     if model == 6:
-        pop["age_"] = restricted_cubic_spline_var(pop["init_age"], t_age, 1)
-        pop["age__"] = restricted_cubic_spline_var(pop["init_age"], t_age, 2)
+        pop["age_"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 1)
+        pop["age__"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 2)
         h1yy = pop["h1yy"].values
         pop["h1yy_"] = restricted_cubic_spline_var(h1yy, t_h1yy, 1)
         pop["h1yy__"] = restricted_cubic_spline_var(h1yy, t_h1yy, 2)
         pop_matrix = pop[
             ["init_age", "age_", "age__", "h1yy", "h1yy_", "h1yy__", "intercept"]
         ].to_numpy(dtype=float)
-        log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+        log_pre_art_bmi = np.matmul(pop_matrix, coeffs)
 
     elif model == 5:
-        pop["age_"] = restricted_cubic_spline_var(pop["init_age"], t_age, 1)
-        pop["age__"] = restricted_cubic_spline_var(pop["init_age"], t_age, 2)
+        pop["age_"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 1)
+        pop["age__"] = restricted_cubic_spline_var(pop["init_age"].to_numpy(), t_age, 2)
         pop_matrix = pop[["init_age", "age_", "age__", "h1yy", "intercept"]].to_numpy(dtype=float)
-        log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+        log_pre_art_bmi = np.matmul(pop_matrix, coeffs)
 
     elif model == 3:
         pop_matrix = pop[["init_age", "h1yy", "intercept"]].to_numpy(dtype=float)
-        log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+        log_pre_art_bmi = np.matmul(pop_matrix, coeffs)
 
     elif model == 2:
         pop["age_"] = (pop["init_age"] >= 30) & (pop["init_age"] < 40)
@@ -430,7 +444,7 @@ def calculate_pre_art_bmi(
                 "intercept",
             ]
         ].to_numpy(dtype=float)
-        log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+        log_pre_art_bmi = np.matmul(pop_matrix, coeffs)
 
     elif model == 1:
         pop["age_"] = (pop["init_age"] >= 30) & (pop["init_age"] < 40)
@@ -440,12 +454,19 @@ def calculate_pre_art_bmi(
         pop_matrix = pop[["age_", "age__", "age___", "age____", "h1yy", "intercept"]].to_numpy(
             dtype=float
         )
-        log_pre_art_bmi = np.matmul(pop_matrix, coeffs.to_numpy(dtype=float))
+        log_pre_art_bmi = np.matmul(pop_matrix, coeffs)
 
     log_pre_art_bmi = log_pre_art_bmi.T[0]
-    log_pre_art_bmi = np.vectorize(draw_from_trunc_norm)(
-        np.log10(10), np.log10(65), log_pre_art_bmi, np.sqrt(rse), 1, random_state
+
+    log_pre_art_bmi = draw_from_trunc_norm(
+        np.log10(10),
+        np.log10(65),
+        log_pre_art_bmi,
+        np.sqrt(rse),
+        len(log_pre_art_bmi),
+        random_state,
     )
+
     pre_art_bmi = 10.0**log_pre_art_bmi
 
     if parameters.sa_variables and "pre_art_bmi" in parameters.sa_variables:

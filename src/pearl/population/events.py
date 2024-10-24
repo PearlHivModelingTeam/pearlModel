@@ -14,7 +14,7 @@ from pearl.interpolate import restricted_cubic_spline_var, restricted_quadratic_
 from pearl.parameters import Parameters
 
 
-def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
+def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> Any:
     """
     Return the population matrix as a numpy array for calculating mortality in care. This log
     odds of mortality are a linear function of calendar year, ART init year category modeled as two
@@ -39,42 +39,37 @@ def create_mortality_in_care_pop_matrix(pop: pd.DataFrame, parameters: Parameter
     """
 
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
-        pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 1
+        pop["post_art_bmi"].to_numpy(), parameters.mortality_in_care_post_art_bmi.to_numpy(), 1
     )
     pop["post_art_bmi__"] = restricted_cubic_spline_var(
-        pop["post_art_bmi"], parameters.mortality_in_care_post_art_bmi, 2
+        pop["post_art_bmi"].to_numpy(), parameters.mortality_in_care_post_art_bmi.to_numpy(), 2
     )
-    return np.array(
-        pop[
-            [
-                "age_cat",
-                "anx",
-                "post_art_bmi",
-                "post_art_bmi_",
-                "post_art_bmi__",
-                "ckd",
-                "dm",
-                "dpr",
-                "esld",
-                "h1yy",
-                "hcv",
-                "ht",
-                "intercept",
-                "lipid",
-                "malig",
-                "mi",
-                "smoking",
-                "init_sqrtcd4n",
-                "year",
-            ]
-        ],
-        dtype=float,
-    )
+    return pop[
+        [
+            "age_cat",
+            "anx",
+            "post_art_bmi",
+            "post_art_bmi_",
+            "post_art_bmi__",
+            "ckd",
+            "dm",
+            "dpr",
+            "esld",
+            "h1yy",
+            "hcv",
+            "ht",
+            "intercept",
+            "lipid",
+            "malig",
+            "mi",
+            "smoking",
+            "init_sqrtcd4n",
+            "year",
+        ]
+    ].to_numpy(dtype=float)
 
 
-def create_mortality_out_care_pop_matrix(
-    pop: pd.DataFrame, parameters: Parameters
-) -> NDArray[Any]:
+def create_mortality_out_care_pop_matrix(pop: pd.DataFrame, parameters: Parameters) -> Any:
     """
     Return the population matrix as a numpy array for calculating mortality out of care.
     This log odds of mortality are a linear function of calendar year and age and sqrt cd4 count
@@ -100,36 +95,33 @@ def create_mortality_out_care_pop_matrix(
     """
 
     pop["post_art_bmi_"] = restricted_cubic_spline_var(
-        pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 1
+        pop["post_art_bmi"].to_numpy(), parameters.mortality_out_care_post_art_bmi.to_numpy(), 1
     )
     pop["post_art_bmi__"] = restricted_cubic_spline_var(
-        pop["post_art_bmi"], parameters.mortality_out_care_post_art_bmi, 2
+        pop["post_art_bmi"].to_numpy(), parameters.mortality_out_care_post_art_bmi.to_numpy(), 2
     )
-    return np.array(
-        pop[
-            [
-                "age_cat",
-                "anx",
-                "post_art_bmi",
-                "post_art_bmi_",
-                "post_art_bmi__",
-                "ckd",
-                "dm",
-                "dpr",
-                "esld",
-                "hcv",
-                "ht",
-                "intercept",
-                "lipid",
-                "malig",
-                "mi",
-                "smoking",
-                "time_varying_sqrtcd4n",
-                "year",
-            ]
-        ],
-        dtype=float,
-    )
+    return pop[
+        [
+            "age_cat",
+            "anx",
+            "post_art_bmi",
+            "post_art_bmi_",
+            "post_art_bmi__",
+            "ckd",
+            "dm",
+            "dpr",
+            "esld",
+            "hcv",
+            "ht",
+            "intercept",
+            "lipid",
+            "malig",
+            "mi",
+            "smoking",
+            "time_varying_sqrtcd4n",
+            "year",
+        ]
+    ].to_numpy(dtype=float)
 
 
 def calculate_cd4_increase(pop: pd.DataFrame, parameters: Parameters) -> NDArray[Any]:
@@ -157,13 +149,13 @@ def calculate_cd4_increase(pop: pd.DataFrame, parameters: Parameters) -> NDArray
     # Calculate spline variables
     pop["time_from_h1yy"] = pop["year"] - pop["last_h1yy"]
     pop["time_from_h1yy_"] = restricted_quadratic_spline_var(
-        pop["time_from_h1yy"], knots.to_numpy(), 1
+        pop["time_from_h1yy"].to_numpy(), knots.to_numpy(), 1
     )
     pop["time_from_h1yy__"] = restricted_quadratic_spline_var(
-        pop["time_from_h1yy"], knots.to_numpy(), 2
+        pop["time_from_h1yy"].to_numpy(), knots.to_numpy(), 2
     )
     pop["time_from_h1yy___"] = restricted_quadratic_spline_var(
-        pop["time_from_h1yy"], knots.to_numpy(), 3
+        pop["time_from_h1yy"].to_numpy(), knots.to_numpy(), 3
     )
 
     # Calculate CD4 Category Variables

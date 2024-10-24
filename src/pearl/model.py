@@ -131,11 +131,12 @@ class Pearl:
             }
         )
 
-        # First recording of stats
-        self.record_stats()
-
         if self.parameters.history:
-            self.population.to_parquet(self.parameters.output_folder / "history.parquet")
+            self.population.to_parquet(
+                self.parameters.output_folder / "history.parquet", compression="zstd"
+            )
+            # First recording of stats
+            self.record_stats()
 
         # Move to 2010
         self.year += 1
@@ -171,7 +172,7 @@ class Pearl:
         return np.array(prob)
 
     @staticmethod
-    def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> NDArray[Any]:
+    def create_ltfu_pop_matrix(pop: pd.DataFrame, knots: pd.DataFrame) -> Any:
         """
         Create and return the population matrix as a numpy array for use in calculating probability
         of loss to follow up.
@@ -189,24 +190,23 @@ class Pearl:
             numpy array for passing into Pearl.calculate_prob
         """
         # Create all needed intermediate variables
-        pop["age_"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 1)
-        pop["age__"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 2)
-        pop["age___"] = restricted_quadratic_spline_var(pop["age"], knots.to_numpy(), 3)
+        knots = knots.to_numpy()
+        pop["age_"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 1)
+        pop["age__"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 2)
+        pop["age___"] = restricted_quadratic_spline_var(pop["age"].to_numpy(), knots, 3)
         pop["haart_period"] = (pop["h1yy"].values > 2010).astype(int)
-        return np.array(
-            pop[
-                [
-                    "intercept",
-                    "age",
-                    "age_",
-                    "age__",
-                    "age___",
-                    "year",
-                    "init_sqrtcd4n",
-                    "haart_period",
-                ]
+        return pop[
+            [
+                "intercept",
+                "age",
+                "age_",
+                "age__",
+                "age___",
+                "year",
+                "init_sqrtcd4n",
+                "haart_period",
             ]
-        )
+        ].to_numpy()
 
     @staticmethod
     def add_age_categories(population: pd.DataFrame) -> pd.DataFrame:
@@ -727,9 +727,6 @@ class Pearl:
             self.kill_out_care()  # Kill some people out of care
             self.reengage()  # Reengage some people out of care
 
-            # Record output statistics
-            self.record_stats()
-
             # Append changed populations to their respective DataFrames
             self.append_new()
 
@@ -738,17 +735,22 @@ class Pearl:
 
             # store history
             if self.parameters.history:
+                # Record output statistics
+                self.record_stats()
                 self.population.to_parquet(
                     self.parameters.output_folder / "history.parquet",
                     engine="fastparquet",
                     append=True,
+                    compression="zstd",
                 )
 
         self.population = self.population.assign(
             group=self.group_name, replication=self.replication
         )
-        if self.parameters.output_folder:
-            self.population.to_parquet(self.parameters.output_folder / "final_state.parquet")
+        if self.parameters.output_folder and self.parameters.final_state:
+            self.population.to_parquet(
+                self.parameters.output_folder / "final_state.parquet", compression="zstd"
+            )
 
         # Record output statistics for the end of the simulation
         self.record_final_stats()
@@ -1577,6 +1579,8 @@ class Statistics:
                     item = item.assign(group=self.group_name, replication=self.replication).astype(
                         {"replication": "int16"}
                     )
-                    item.to_parquet(self.output_folder / f"{name}.parquet", index=False)
+                    item.to_parquet(
+                        self.output_folder / f"{name}.parquet", index=False, compression="zstd"
+                    )
                 except Exception as e:
                     print(f"Error saving DataFrame {name}: {e}")

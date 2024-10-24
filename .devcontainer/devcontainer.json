@@ -35,7 +35,8 @@
 		"ms-python.vscode-pylance",
 		"ms-python.debugpy",
 		"donjayamanne.python-environment-manager",
-		"donjayamanne.python-extension-pack"
+		"donjayamanne.python-extension-pack",
+		"ms-toolsai.jupyter"
 	]
     }
 	}
