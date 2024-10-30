@@ -35,6 +35,12 @@ if __name__ == "__main__":
         for x in next(os.walk(in_dir / group_names[0] / replications[0]))[2]
         if x not in ["random.state", "final_state.parquet"]
     ]
+    output_tables = [
+        "bmi_int_cascade.parquet",
+        "new_init_age.parquet",
+        "dm_final_output.parquet",
+        "parameters.parquet",
+    ]
     results = []
     for output_table in output_tables:
         chunk_list = []
