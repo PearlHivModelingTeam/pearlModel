@@ -247,6 +247,7 @@ def clean_control(
 
     return df_control
 
+
 def calc_overall_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFrame:
     # filter for only overall group
     df_overall = df[df["group"] == "overall"]
