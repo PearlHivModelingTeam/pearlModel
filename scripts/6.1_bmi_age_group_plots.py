@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     start_year = 2013
     end_year = 2017
+    font_size = 9
     
     ##################################################################################################################################
     # Age Groups
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     # clean to control specifications
     control_bmi_int_dm_prev = clean_control(bmi_int_dm_prev, only_eligible=True, only_received = True)
 
-    # Figure 2A
+    # Figure 4A
     dm_risk_table_S1 = calc_overall_risk(control_bmi_int_dm_prev).compute()
     
     
@@ -150,9 +151,9 @@ if __name__ == "__main__":
     
     bar_ax.set_ylabel(
         "Absolute percentage point risk reduction in incident diabetes\n diagnosis (per 1,000 pys) with vs. without the intervention",
-        fontsize=8.5,
+        fontsize=font_size,
     )
-    bar_ax.set_xlabel("Age Group at ART Initiation")
+    bar_ax.set_xlabel("Age Group at ART Initiation", fontsize = font_size, labelpad = 5)
     bar_ax.set_xticks(range(0, 7))
     bar_ax.set_xticklabels(["<20", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"])
     
