@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pearl"
 description = "Implementation of the PEARL HIV model"
-readme = "README.md"
+readme = "README.rst"
 version = "0.0.1"
 dependencies = [
     "numpy",
@@ -22,6 +22,9 @@ strict = true
 enable_error_code = ["explicit-override"]
 # If certain strict config options are too pedantic for a project,
 # disable them selectively here by setting to false.
+exclude = ["tests",
+           "scripts",
+           "doc"]
 
 [tool.ruff]
 line-length = 99

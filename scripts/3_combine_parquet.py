@@ -13,7 +13,7 @@ from dask import delayed
 def load_and_write(parquet_file_list, target_path):
     df = dd.read_parquet(parquet_file_list)
     df = df.repartition(partition_size="1000MB")
-    df.to_parquet(target_path)
+    df.to_parquet(target_path, compression="zstd")
 
 
 if __name__ == "__main__":
@@ -28,18 +28,19 @@ if __name__ == "__main__":
     in_dir = Path(args.in_dir)
     out_dir = Path(args.in_dir).parent / "combined" if not args.out_dir else Path(args.out_dir)
 
-    if out_dir.is_dir():  # creating output folders
-        shutil.rmtree(out_dir)
-    out_dir.mkdir()
-
     group_names = next(os.walk(in_dir))[1]
     replications = next(os.walk(in_dir / group_names[0]))[1]
     output_tables = [
         x
         for x in next(os.walk(in_dir / group_names[0] / replications[0]))[2]
-        if x != "random.state"
+        if x not in ["random.state", "final_state.parquet"]
     ]
-
+    output_tables = [
+        "bmi_int_cascade.parquet",
+        "new_init_age.parquet",
+        "dm_final_output.parquet",
+        "parameters.parquet",
+    ]
     results = []
     for output_table in output_tables:
         chunk_list = []

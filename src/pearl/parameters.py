@@ -3,7 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ class Parameters:
         self,
         path: Path,
         output_folder: Path,
+        replication: int,
         group_name: str,
         new_dx: str,
         final_year: int,
@@ -25,6 +26,9 @@ class Parameters:
         mortality_threshold_flag: bool,
         idu_threshold: str,
         seed: int,
+        history: Optional[List[str]] = None,
+        final_state: bool = False,
+        ignore_columns: Optional[List[str]] = None,
         bmi_intervention_scenario: int = 0,
         bmi_intervention_start_year: int = 2020,
         bmi_intervention_end_year: int = 2030,
@@ -47,11 +51,15 @@ class Parameters:
             Path to parameters.h5 files that contains all necessary coefficient values.
         output_folder : Path
             Folder to write simulation outputs to.
+        replication : int
+            replication number
         group_name : str
             Subpopulation name from [msm_white_male, msm_black_male, msm_hisp_male, idu_white_male,
             idu_black_male, idu_hisp_male, idu_white_female, idu_black_female, idu_hisp_female,
             het_white_male, het_black_male, het_hisp_male, het_white_female, het_black_female,
             het_hisp_female].
+        new_dx : str
+            new diagnosis model from [base, ehe].
         final_year : int
             Final year of simulation. The simulation will run from 2009 until the final year.
         mortality_model : str
@@ -62,6 +70,8 @@ class Parameters:
             IDU threshold from [2x, 5x, 10x]
         seed : int
             Value for random number generation seeding.
+        history: bool
+            Whether or not to store history
         bmi_intervention_scenario : int, optional
             BMI intervention to apply from [0 for no intervention, or 1, 2, 3], by default 0
         bmi_intervention_start_year : int, optional
@@ -74,7 +84,8 @@ class Parameters:
         bmi_intervention_effectiveness : float, optional
             Efficacy of BMI intervention for those that do receive it between 0 and 1
             , by default 1.0
-
+        sa_variables : list[str]
+            variables for sensitivity analysis
         Raises
         ------
         ValueError
@@ -103,11 +114,25 @@ class Parameters:
 
         # Save inputs as class attributes
         self.output_folder = output_folder
+        self.replication = replication
         self.group_name = group_name
+        self.new_dx_val = new_dx
         self.final_year = final_year
+        self.mortality_model = mortality_model
         self.mortality_threshold_flag = mortality_threshold_flag
+        self.idu_threshold = idu_threshold
         self.seed = seed
         self.random_state = np.random.RandomState(seed=seed)
+        self.init_random_state = np.random.RandomState(seed=replication)
+        self.ignore_columns = ignore_columns
+        self.history = history
+        self.final_state = final_state
+        self.bmi_intervention_scenario = bmi_intervention_scenario
+        self.bmi_intervention_start_year = bmi_intervention_start_year
+        self.bmi_intervention_end_year = bmi_intervention_end_year
+        self.bmi_intervention_coverage = bmi_intervention_coverage
+        self.bmi_intervention_effectiveness = bmi_intervention_effectiveness
+        self.sa_variables = sa_variables
 
         # 2009 population
         self.on_art_2009 = pd.read_hdf(path, "on_art_2009").loc[group_name]
@@ -262,19 +287,71 @@ class Parameters:
 
         # Sensitivity Analysis
         self.sa_variables = sa_variables
+        self.sa_scalars = {}
 
         if self.sa_variables:
             for comorbidity in self.prev_users_dict:
-                if comorbidity in self.sa_variables:
-                    self.prev_users_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_users_dict[comorbidity] * 0.5,
-                        self.prev_users_dict[comorbidity] * 1.5,
+                if f"{comorbidity}_prevalence_prev" in self.sa_variables:
+                    self.sa_scalars[f"{comorbidity}_prevalence_prev"] = (
+                        self.init_random_state.uniform(0.8, 1.2)
+                    )
+                    self.prev_users_dict[comorbidity] *= self.sa_scalars[
+                        f"{comorbidity}_prevalence_prev"
+                    ]
+
+            for comorbidity in self.prev_inits_dict:
+                if f"{comorbidity}_prevalence" in self.sa_variables:
+                    self.sa_scalars[f"{comorbidity}_prevalence"] = self.init_random_state.uniform(
+                        0.8, 1.2
+                    )
+                    self.prev_inits_dict[comorbidity] *= self.sa_scalars[
+                        f"{comorbidity}_prevalence"
+                    ]
+
+            for comorbidity in STAGE0 + STAGE1 + STAGE2 + STAGE3:
+                if f"{comorbidity}_incidence" in self.sa_variables:
+                    self.sa_scalars[f"{comorbidity}_incidence"] = self.init_random_state.uniform(
+                        0.8, 1.2
                     )
 
-        if self.sa_variables:
-            for comorbidity in self.prev_users_dict:
-                if comorbidity in self.sa_variables:
-                    self.prev_inits_dict[comorbidity] = self.random_state.uniform(
-                        self.prev_inits_dict[comorbidity] * 0.5,
-                        self.prev_inits_dict[comorbidity] * 1.5,
-                    )
+            if "pre_art_bmi" in self.sa_variables:
+                self.sa_scalars["pre_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
+
+            if "post_art_bmi" in self.sa_variables:
+                self.sa_scalars["post_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
+
+            if "art_initiators" in self.sa_variables:
+                self.sa_scalars["art_initiators"] = self.init_random_state.uniform(0.8, 1.2)
+
+        self.save_parameters()
+
+    def save_parameters(self) -> None:
+        """
+        Save all parameters as a dataframe.
+        """
+
+        param_dict = {
+            "replication": self.replication,
+            "group": self.group_name,
+            "new_dx": self.new_dx_val,
+            "final_year": self.final_year,
+            "mortality_model": self.mortality_model,
+            "mortality_threshold_flag": self.mortality_threshold_flag,
+            "idu_threshold": self.idu_threshold,
+            "seed": self.seed,
+            "bmi_intervention_scenario": self.bmi_intervention_scenario,
+            "bmi_intervention_start_year": self.bmi_intervention_start_year,
+            "bmi_intervention_end_year": self.bmi_intervention_end_year,
+            "bmi_intervention_coverage": self.bmi_intervention_coverage,
+            "bmi_intervention_effectiveness": self.bmi_intervention_effectiveness,
+        }
+
+        for scalar in self.sa_scalars:
+            param_dict[scalar] = self.sa_scalars[scalar]
+
+        self.param_dataframe = pd.DataFrame(param_dict, index=[0])
+
+        if self.output_folder:
+            self.param_dataframe.to_parquet(
+                self.output_folder / "parameters.parquet", compression="zstd"
+            )

@@ -129,6 +129,7 @@ def test_parameters(test_new_dx, test_linkage_to_care):
     parameters = Mock()
     parameters.new_dx = test_new_dx
     parameters.linkage_to_care = test_linkage_to_care
+    parameters.sa_variables = []
     return parameters
 
 
@@ -272,6 +273,7 @@ def test_art_bmi_parameters(param_file_path):
     return Parameters(
         path=param_file_path,
         output_folder=None,
+        replication=42,
         group_name="msm_black_male",
         new_dx="base",
         final_year=2015,

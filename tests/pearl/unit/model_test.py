@@ -20,6 +20,7 @@ def test_parameters(param_file_path):
     return Parameters(
         path=param_file_path,
         output_folder=None,
+        replication=42,
         group_name="msm_black_male",
         new_dx="base",
         final_year=2015,
@@ -32,7 +33,7 @@ def test_parameters(param_file_path):
 
 @fixture
 def test_pearl(test_parameters):
-    return Pearl(test_parameters, "msm_black_male", 42)
+    return Pearl(test_parameters)
 
 
 def test_init_year(test_pearl):
