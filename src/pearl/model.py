@@ -543,40 +543,6 @@ class Pearl:
         pd.DataFrame
             Population DataFrame containing all agents initiating ART in the simulation.
         """
-        # Draw a random value between predicted and 2018 predicted value for years greater than
-        # 2018
-        rand = random_state.rand(len(self.parameters.age_by_h1yy.index))
-        self.parameters.age_by_h1yy["estimate"] = (
-            rand
-            * (
-                self.parameters.age_by_h1yy["high_value"]
-                - self.parameters.age_by_h1yy["low_value"]
-            )
-        ) + self.parameters.age_by_h1yy["low_value"]
-        self.stats.art_coeffs = (  # type: ignore[attr-defined]
-            self.parameters.age_by_h1yy[["estimate"]]
-            .assign(variable="age")
-            .reset_index()
-            .astype({"h1yy": "int16", "param": str, "variable": str})
-        )
-
-        rand = random_state.rand(len(self.parameters.cd4n_by_h1yy.index))
-        self.parameters.cd4n_by_h1yy["estimate"] = (
-            rand
-            * (
-                self.parameters.cd4n_by_h1yy["high_value"]
-                - self.parameters.cd4n_by_h1yy["low_value"]
-            )
-        ) + self.parameters.cd4n_by_h1yy["low_value"]
-        art_coeffs_cd4 = (
-            self.parameters.cd4n_by_h1yy[["estimate"]]
-            .assign(variable="cd4")
-            .reset_index()
-            .astype({"h1yy": "int16", "param": str, "variable": str})
-        )
-        self.stats.art_coeffs = pd.concat([self.stats.art_coeffs, art_coeffs_cd4]).rename(  # type: ignore[attr-defined]
-            columns={"h1yy": "year"}
-        )[["year", "variable", "param", "estimate"]]
 
         # Create population
         population = pd.DataFrame()

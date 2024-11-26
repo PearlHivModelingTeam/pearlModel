@@ -323,6 +323,19 @@ class Parameters:
             if "art_initiators" in self.sa_variables:
                 self.sa_scalars["art_initiators"] = self.init_random_state.uniform(0.8, 1.2)
 
+        # Draw a random value between predicted and 2018 predicted value for years greater than
+        # 2018
+        # TODO refactor this and save it in parameters
+        self.age_by_h1yy["estimate"] = (
+            self.random_state.rand(len(self.age_by_h1yy.index))
+            * (self.age_by_h1yy["high_value"] - self.age_by_h1yy["low_value"])
+        ) + self.age_by_h1yy["low_value"]
+
+        self.cd4n_by_h1yy["estimate"] = (
+            self.random_state.rand(len(self.cd4n_by_h1yy.index))
+            * (self.cd4n_by_h1yy["high_value"] - self.cd4n_by_h1yy["low_value"])
+        ) + self.cd4n_by_h1yy["low_value"]
+
         self.save_parameters()
 
     def save_parameters(self) -> None:
