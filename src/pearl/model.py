@@ -647,17 +647,7 @@ class Pearl:
         population["year"] = 2009
 
         # Prevalence of existing comorbidities and BMI dynamics:
-
-        # Pre-exisiting comorbidities:
-        for condition in STAGE0:
-            population[condition] = (
-                random_state.rand(len(population.index))
-                < self.parameters.prev_inits_dict[condition].values
-            ).astype(int)
-            population[f"t_{condition}"] = population[
-                condition
-            ]  # 0 if not having a condition, and 1 if they have it
-        for condition in STAGE1 + STAGE2 + STAGE3:
+        for condition in STAGE0 + STAGE1 + STAGE2 + STAGE3:
             population[condition] = (
                 random_state.rand(len(population.index))
                 < (self.parameters.prev_inits_dict[condition].values)
