@@ -3,7 +3,7 @@ Parameters class
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -336,6 +336,9 @@ class Parameters:
             * (self.cd4n_by_h1yy["high_value"] - self.cd4n_by_h1yy["low_value"])
         ) + self.cd4n_by_h1yy["low_value"]
 
+        # Simulate number of new art initiators and initial nonusers
+        self.n_initial_nonusers, self.n_new_agents = self.simulate_new_dx()
+
         self.save_parameters()
 
     def save_parameters(self) -> None:
@@ -368,3 +371,65 @@ class Parameters:
             self.param_dataframe.to_parquet(
                 self.output_folder / "parameters.parquet", compression="zstd"
             )
+
+    def simulate_new_dx(self) -> Tuple[int, pd.DataFrame]:
+        """
+        Return the number of ART non-users in 2009 as an integer and the number of agents entering
+        the model each year as art users and non-users as a dataframe. Draw number of new diagnoses
+        from a uniform distribution between upper and lower bounds. Calculate number of new art
+        initiators by assuming a certain number link in the first year as estimated by a linear
+        regression on CDC data, capped at 95%. We assume that 40% of the remaining population links to
+        care over the next 3 years. We assume that 70% of those linking to care begin ART, rising
+        to 85% in 2011 and 97% afterwards. We take the number of people not initiating ART 2006 - 2009
+        in this calculation to be the out of care population size in 2009 for our simulation.
+
+        Returns
+        -------
+        Tuple[int, pd.DataFrame]
+            (number of ART non-users in 2009 as an integer, number of agents entering the model each
+            year as art users and non-users as a dataframe)
+        """
+        new_dx = self.new_dx.copy()
+        linkage_to_care = self.linkage_to_care
+
+        # Draw new dx from a uniform distribution between upper and lower for 2016-final_year
+        new_dx["n_dx"] = (
+            new_dx["lower"] + (new_dx["upper"] - new_dx["lower"]) * self.random_state.uniform()
+        )
+
+        # Only a proportion of new diagnoses link to care and 40% of the remaining link
+        # in the next 3 years
+        new_dx["unlinked"] = new_dx["n_dx"] * (1 - linkage_to_care["link_prob"])
+        new_dx["gardner_per_year"] = new_dx["unlinked"] * 0.4 / 3.0
+        new_dx["year0"] = new_dx["n_dx"] * linkage_to_care["link_prob"]
+        new_dx["year1"] = new_dx["gardner_per_year"].shift(1, fill_value=0)
+        new_dx["year2"] = new_dx["gardner_per_year"].shift(2, fill_value=0)
+        new_dx["year3"] = new_dx["gardner_per_year"].shift(3, fill_value=0)
+        new_dx["total_linked"] = (
+            new_dx["year0"] + new_dx["year1"] + new_dx["year2"] + new_dx["year3"]
+        )
+
+        # Proportion of those linked to care start ART
+        new_dx["art_initiators"] = (new_dx["total_linked"] * linkage_to_care["art_prob"]).astype(
+            int
+        )
+        new_dx["art_delayed"] = (
+            new_dx["total_linked"] * (1 - linkage_to_care["art_prob"])
+        ).astype(int)
+
+        # TODO make the start and end dates here parametric
+        # Count those not starting art 2006 - 2009 as initial ART nonusers
+        n_initial_nonusers = new_dx.loc[np.arange(2006, 2010), "art_delayed"].sum()
+
+        # Compile list of number of new agents to be introduced in the model
+        new_agents = new_dx.loc[
+            np.arange(2010, new_dx.index.max() + 1), ["art_initiators", "art_delayed"]
+        ]
+
+        if self.sa_variables and "art_initiators" in self.sa_variables:
+            new_agents["art_initiators"] *= self.sa_scalars["art_initiators"]
+            new_agents["art_delayed"] *= self.sa_scalars["art_initiators"]
+
+            new_agents = new_agents.astype({"art_initiators": int, "art_delayed": int})
+
+        return n_initial_nonusers, new_agents

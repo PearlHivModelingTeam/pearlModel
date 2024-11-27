@@ -48,7 +48,6 @@ from pearl.population.generation import (
     calculate_post_art_bmi,
     calculate_pre_art_bmi,
     simulate_ages,
-    simulate_new_dx,
 )
 from pearl.sample import draw_from_trunc_norm
 
@@ -94,24 +93,18 @@ class Pearl:
             replication=self.replication,
         )
 
-        # Simulate number of new art initiators and initial nonusers
-        n_initial_nonusers, n_new_agents = simulate_new_dx(
-            self.parameters,
-            self.random_state,
-        )
-
         # Create art using 2009 population
         n_initial_users = self.parameters.on_art_2009.iloc[0]
         user_pop = self.make_user_pop_2009(n_initial_users)
 
         # Create art non-using 2009 population
-        non_user_pop = self.make_nonuser_pop_2009(n_initial_nonusers)
+        non_user_pop = self.make_nonuser_pop_2009(self.parameters.n_initial_nonusers)
 
         # concat to get initial population
         self.population = pd.concat([user_pop, non_user_pop])
 
         # Create population of new art initiators
-        art_pop = self.make_new_population(n_new_agents, self.random_state)
+        art_pop = self.make_new_population(self.parameters.n_new_agents, self.random_state)
 
         # concat the art pop to population
         self.population = pd.concat([self.population, art_pop]).fillna(0)

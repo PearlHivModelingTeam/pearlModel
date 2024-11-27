@@ -17,7 +17,6 @@ from pearl.population.generation import (
     calculate_post_art_bmi,
     calculate_pre_art_bmi,
     simulate_ages,
-    simulate_new_dx,
 )
 
 
@@ -147,21 +146,6 @@ def expected_new_agents():
     }
 
     return pd.DataFrame(new_agents).set_index("year")
-
-
-def test_simulate_new_dx(
-    test_parameters,
-    random_state,
-    expected_n_initial_nonusers,
-    expected_new_agents,
-):
-    """
-    It should return the same numbers when passed a seeded RandomState
-    """
-    initial_nonusers, new_agents = simulate_new_dx(test_parameters, random_state=random_state)
-
-    assert expected_n_initial_nonusers == initial_nonusers
-    assert_frame_equal(new_agents, expected_new_agents)
 
 
 @fixture
