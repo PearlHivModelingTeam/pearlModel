@@ -346,12 +346,14 @@ if __name__ == "__main__":
     parser.add_argument("--variable_sa")
     parser.add_argument("--out_dir")
     parser.add_argument("--num_samples", default=10000, type=int)
+    parser.add_argument("--dm", default=False, type=bool)
     args = parser.parse_args()
 
     baseline_dir = Path(args.baseline)
     variable_dir = Path(args.variable)
     baseline_dir_sa = Path(args.baseline_sa)
     variable_dir_sa = Path(args.variable_sa)
+    dm_run = args.dm
 
     out_dir = Path(args.out_dir)
     num_samples = args.num_samples
@@ -386,21 +388,35 @@ if __name__ == "__main__":
     control_bmi_int_dm_prev_baseline_sa = clean_control(
         bmi_int_dm_prev_baseline_sa, only_eligible=True, only_received=True
     )
+    del bmi_int_dm_prev_baseline
 
     # filter for only people eligible for intervention
     bmi_int_eligible_risk_baseline = calc_risk_by_group(
         control_bmi_int_dm_prev_baseline, 7
     ).compute()
+    bmi_int_eligible_dm_baseline = bmi_int_eligible_risk_baseline["dm_num"]
+
     bmi_int_eligible_risk_baseline_sa = calc_risk_by_group(
         control_bmi_int_dm_prev_baseline_sa, 7
     ).compute()
+    bmi_int_eligible_dm_baseline_sa = bmi_int_eligible_risk_baseline_sa["dm_num"]
 
-    baseline_risk_median = (
-        bmi_int_eligible_risk_baseline.groupby("group")["risk"].median().reset_index()
-    )
-    baseline_risk_sa_median = (
-        bmi_int_eligible_risk_baseline_sa.groupby("group")["risk"].median().reset_index()
-    )
+    if not dm_run:
+        # risk
+        baseline_risk_median = (
+            bmi_int_eligible_risk_baseline.groupby("group")["risk"].median().reset_index()
+        )
+        baseline_risk_sa_median = (
+            bmi_int_eligible_risk_baseline_sa.groupby("group")["risk"].median().reset_index()
+        )
+    else:
+        # dm
+        baseline_dm_median = (
+            bmi_int_eligible_dm_baseline.groupby("group")["dm_num"].median().reset_index()
+        )
+        baseline_dm_sa_median = (
+            bmi_int_eligible_dm_baseline_sa.groupby("group")["dm_num"].median().reset_index()
+        )
 
     # load the variable data
     bmi_int_dm_prev_variable = dd.read_parquet(variable_dir / "dm_final_output.parquet")
@@ -422,149 +438,299 @@ if __name__ == "__main__":
     bmi_int_eligible_risk_variable = calc_risk_by_group(
         control_bmi_int_dm_prev_variable, 7
     ).compute()
+    bmi_int_eligible_dm_variable = bmi_int_eligible_risk_variable["dm_num"]
+
     bmi_int_eligible_risk_variable_sa = calc_risk_by_group(
         control_bmi_int_dm_prev_variable_sa, 7
     ).compute()
+    bmi_int_eligible_dm_variable_sa = bmi_int_eligible_risk_variable_sa["dm_num"]
 
-    variable_risk_median = (
-        bmi_int_eligible_risk_variable.groupby("group")["risk"].median().reset_index()
-    )
-
-    variable_risk_sa_median = (
-        bmi_int_eligible_risk_variable_sa.groupby("group")["risk"].median().reset_index()
-    )
-
-    # gather samples from each non SA run
-    baseline_risk = (
-        bmi_int_eligible_risk_baseline.groupby("group")
-        .sample(num_samples, replace=True)
-        .reset_index()
-    )
-    variable_risk = (
-        bmi_int_eligible_risk_variable.groupby("group")
-        .sample(num_samples, replace=True)
-        .reset_index()
-    )
-
-    # baseline risk difference
-    # absolute difference
-    risk_df = pd.DataFrame(variable_risk["risk"] - baseline_risk["risk"])
-
-    # relative difference
-    risk_df_relative = pd.DataFrame(
-        (variable_risk["risk"] - baseline_risk["risk"]) / baseline_risk["risk"]
-    )
-
-    # add back the group column that is lost
-    risk_df["group"] = baseline_risk["group"]
-    risk_df_relative["group"] = baseline_risk["group"]
-
-    # take the median across groups
-    baseline_risk_difference_df = risk_df.groupby("group").median().reset_index()
-    baseline_risk_difference_df_relative = risk_df_relative.groupby("group").median().reset_index()
-
-    # gather samples from each SA run
-    baseline_risk_sa = (
-        bmi_int_eligible_risk_baseline_sa.groupby("group")
-        .sample(num_samples, replace=True)
-        .reset_index()
-    )
-    variable_risk_sa = (
-        bmi_int_eligible_risk_variable_sa.groupby("group")
-        .sample(num_samples, replace=True)
-        .reset_index()
-    )
-
-    # SA
-    # absolute difference
-    risk_df_sa = pd.DataFrame(variable_risk_sa["risk"] - baseline_risk_sa["risk"])
-
-    # relative difference
-    risk_df_sa_relative = pd.DataFrame(
-        (variable_risk_sa["risk"] - baseline_risk_sa["risk"]) / baseline_risk_sa["risk"]
-    )
-
-    # add back the group column that is lost
-    risk_df_sa["group"] = baseline_risk_sa["group"]
-    risk_df_sa_relative["group"] = baseline_risk_sa["group"]
-
-    # take the median across groups
-    baseline_risk_difference_df_sa = risk_df_sa.groupby("group").median().reset_index()
-    baseline_risk_difference_df_sa_relative = (
-        risk_df_sa_relative.groupby("group").median().reset_index()
-    )
-
-    baseline_tornado_vals = []
-    variable_tornado_vals = []
-    difference_tornado_vals = []
-    relative_tornado_vals = []
-    for col in target_columns:
-        baseline_vals, variable_vals, difference_vals, relative_difference_vals = (
-            calc_tornado_vals(
-                bmi_int_eligible_risk_baseline_sa,
-                bmi_int_eligible_risk_variable_sa,
-                param_df_baseline_sa,
-                param_df_variable_sa,
-                col,
-                lesser=0.20,
-                greater=0.80,
-            )
+    if not dm_run:
+        # risk
+        variable_risk_median = (
+            bmi_int_eligible_risk_variable.groupby("group")["risk"].median().reset_index()
+        )
+        variable_risk_sa_median = (
+            bmi_int_eligible_risk_variable_sa.groupby("group")["risk"].median().reset_index()
         )
 
-        baseline_tornado_vals.append(baseline_vals)
-        variable_tornado_vals.append(variable_vals)
-        difference_tornado_vals.append(difference_vals)
-        relative_tornado_vals.append(relative_difference_vals)
+        # risk
+        # gather samples from each non SA run
+        baseline_risk = (
+            bmi_int_eligible_risk_baseline.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+        variable_risk = (
+            bmi_int_eligible_risk_variable.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+        # baseline risk difference
+        # absolute difference
+        risk_df = pd.DataFrame(variable_risk["risk"] - baseline_risk["risk"])
 
-    baseline_tornado_vals = pd.concat(baseline_tornado_vals).reset_index(drop=True)
-    variable_tornado_vals = pd.concat(variable_tornado_vals).reset_index(drop=True)
-    difference_tornado_vals = pd.concat(difference_tornado_vals).reset_index(drop=True)
-    relative_tornado_vals = pd.concat(relative_tornado_vals).reset_index(drop=True)
+        # relative difference risk
+        risk_df_relative = pd.DataFrame(
+            (variable_risk["risk"] - baseline_risk["risk"]) / baseline_risk["risk"]
+        )
 
-    # rename variable to semantic labels
-    baseline_tornado_vals["variable"] = baseline_tornado_vals["variable"].map(variable_name_map)
-    variable_tornado_vals["variable"] = variable_tornado_vals["variable"].map(variable_name_map)
-    difference_tornado_vals["variable"] = difference_tornado_vals["variable"].map(
-        variable_name_map
-    )
-    relative_tornado_vals["variable"] = relative_tornado_vals["variable"].map(variable_name_map)
+        # add back the group column that is lost
+        risk_df["group"] = baseline_risk["group"]
+        risk_df_relative["group"] = baseline_risk["group"]
 
-    baseline_tornado = multi_tornado_plot(baseline_tornado_vals, baseline_risk_sa_median)
-    baseline_tornado.savefig(out_dir / "baseline_tornado.png", bbox_inches="tight")
-    plt.clf()
+        # take the median across groups
+        baseline_risk_difference_df = risk_df.groupby("group").median().reset_index()
+        baseline_risk_difference_df_relative = (
+            risk_df_relative.groupby("group").median().reset_index()
+        )
 
-    variable_tornado = multi_tornado_plot(variable_tornado_vals, variable_risk_sa_median)
-    variable_tornado.savefig(out_dir / "variable_tornado.png", bbox_inches="tight")
-    plt.clf()
+        # gather samples from each SA run
+        baseline_risk_sa = (
+            bmi_int_eligible_risk_baseline_sa.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+        variable_risk_sa = (
+            bmi_int_eligible_risk_variable_sa.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
 
-    difference_tornado = multi_tornado_plot(
-        difference_tornado_vals, baseline_risk_difference_df_sa
-    )
-    difference_tornado.savefig(out_dir / "tornado_absolute.png", bbox_inches="tight")
-    plt.clf()
+        # SA
+        # absolute difference
+        risk_df_sa = pd.DataFrame(variable_risk_sa["risk"] - baseline_risk_sa["risk"])
 
-    relative_tornado = multi_tornado_plot(
-        relative_tornado_vals, baseline_risk_difference_df_sa_relative
-    )
-    relative_tornado.savefig(out_dir / "tornado_relative.png", bbox_inches="tight")
-    plt.clf()
+        # relative difference
+        risk_df_sa_relative = pd.DataFrame(
+            (variable_risk_sa["risk"] - baseline_risk_sa["risk"]) / baseline_risk_sa["risk"]
+        )
 
-    baseline_overall = overall_tornado_plot(baseline_tornado_vals, baseline_risk_sa_median)
-    baseline_overall.savefig(out_dir / "overall_baseline.png", bbox_inches="tight")
-    plt.clf()
+        # add back the group column that is lost
+        risk_df_sa["group"] = baseline_risk_sa["group"]
+        risk_df_sa_relative["group"] = baseline_risk_sa["group"]
 
-    variable_overall = overall_tornado_plot(variable_tornado_vals, variable_risk_sa_median)
-    variable_overall.savefig(out_dir / "overall_variable.png", bbox_inches="tight")
-    plt.clf()
+        # take the median across groups
+        baseline_risk_difference_df_sa = risk_df_sa.groupby("group").median().reset_index()
+        baseline_risk_difference_df_sa_relative = (
+            risk_df_sa_relative.groupby("group").median().reset_index()
+        )
 
-    overall_absolute = overall_tornado_plot(
-        difference_tornado_vals, baseline_risk_difference_df_sa
-    )
-    overall_absolute.savefig(out_dir / "overall_aboslute.png", bbox_inches="tight")
-    plt.clf()
+        baseline_tornado_vals = []
+        variable_tornado_vals = []
+        difference_tornado_vals = []
+        relative_tornado_vals = []
+        for col in target_columns:
+            baseline_vals, variable_vals, difference_vals, relative_difference_vals = (
+                calc_tornado_vals(
+                    bmi_int_eligible_risk_baseline_sa,
+                    bmi_int_eligible_risk_variable_sa,
+                    param_df_baseline_sa,
+                    param_df_variable_sa,
+                    col,
+                    lesser=0.20,
+                    greater=0.80,
+                )
+            )
 
-    overall_relative = overall_tornado_plot(
-        relative_tornado_vals, baseline_risk_difference_df_sa_relative
-    )
-    overall_relative.savefig(out_dir / "overall_relative.png", bbox_inches="tight")
-    plt.clf()
+            baseline_tornado_vals.append(baseline_vals)
+            variable_tornado_vals.append(variable_vals)
+            difference_tornado_vals.append(difference_vals)
+            relative_tornado_vals.append(relative_difference_vals)
+
+        baseline_tornado_vals = pd.concat(baseline_tornado_vals).reset_index(drop=True)
+        variable_tornado_vals = pd.concat(variable_tornado_vals).reset_index(drop=True)
+        difference_tornado_vals = pd.concat(difference_tornado_vals).reset_index(drop=True)
+        relative_tornado_vals = pd.concat(relative_tornado_vals).reset_index(drop=True)
+
+        # rename variable to semantic labels
+        baseline_tornado_vals["variable"] = baseline_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        variable_tornado_vals["variable"] = variable_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        difference_tornado_vals["variable"] = difference_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        relative_tornado_vals["variable"] = relative_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        baseline_tornado = multi_tornado_plot(baseline_tornado_vals, baseline_risk_sa_median)
+        baseline_tornado.savefig(out_dir / "baseline_tornado.png", bbox_inches="tight")
+        plt.clf()
+
+        variable_tornado = multi_tornado_plot(variable_tornado_vals, variable_risk_sa_median)
+        variable_tornado.savefig(out_dir / "variable_tornado.png", bbox_inches="tight")
+        plt.clf()
+
+        difference_tornado = multi_tornado_plot(
+            difference_tornado_vals, baseline_risk_difference_df_sa
+        )
+        difference_tornado.savefig(out_dir / "tornado_absolute.png", bbox_inches="tight")
+        plt.clf()
+
+        relative_tornado = multi_tornado_plot(
+            relative_tornado_vals, baseline_risk_difference_df_sa_relative
+        )
+        relative_tornado.savefig(out_dir / "tornado_relative.png", bbox_inches="tight")
+        plt.clf()
+
+        baseline_overall = overall_tornado_plot(baseline_tornado_vals, baseline_risk_sa_median)
+        baseline_overall.savefig(out_dir / "overall_baseline.png", bbox_inches="tight")
+        plt.clf()
+
+        variable_overall = overall_tornado_plot(variable_tornado_vals, variable_risk_sa_median)
+        variable_overall.savefig(out_dir / "overall_variable.png", bbox_inches="tight")
+        plt.clf()
+
+        overall_absolute = overall_tornado_plot(
+            difference_tornado_vals, baseline_risk_difference_df_sa
+        )
+        overall_absolute.savefig(out_dir / "overall_aboslute.png", bbox_inches="tight")
+        plt.clf()
+
+        overall_relative = overall_tornado_plot(
+            relative_tornado_vals, baseline_risk_difference_df_sa_relative
+        )
+        overall_relative.savefig(out_dir / "overall_relative.png", bbox_inches="tight")
+        plt.clf()
+
+    else:
+        # dm
+        variable_dm_median = (
+            bmi_int_eligible_dm_variable.groupby("group")["dm_num"].median().reset_index()
+        )
+
+        variable_dm_sa_median = (
+            bmi_int_eligible_dm_variable_sa.groupby("group")["dm_num"].median().reset_index()
+        )
+
+        baseline_dm = (
+            bmi_int_eligible_dm_baseline.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+        variable_dm = (
+            bmi_int_eligible_dm_variable.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+
+        dm_df = pd.DataFrame(variable_dm["dm_num"] - baseline_dm["dm_num"])
+
+        dm_df_relative = pd.DataFrame(
+            (variable_dm["dm_num"] - baseline_dm["dm_num"]) / baseline_dm["dm_num"]
+        )
+
+        dm_df = baseline_dm["group"]
+        dm_df_relative = baseline_dm["group"]
+
+        baseline_dm_difference_df = dm_df.groupby("group").median().reset_index()
+        baseline_dm_difference_df_relative = dm_df_relative.groupby("group").median().reset_index()
+
+        baseline_dm_sa = (
+            bmi_int_eligible_dm_baseline_sa.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+        variable_dm_sa = (
+            bmi_int_eligible_dm_variable_sa.groupby("group")
+            .sample(num_samples, replace=True)
+            .reset_index()
+        )
+
+        dm_df_sa = pd.DataFrame(variable_dm_sa["risk"] - baseline_dm_sa["risk"])
+
+        dm_df_sa_relative = pd.DataFrame(
+            (variable_dm_sa["risk"] - baseline_dm_sa["risk"]) / baseline_dm_sa["risk"]
+        )
+
+        dm_df_sa["group"] = baseline_dm_sa["group"]
+        dm_df_sa_relative = baseline_dm_sa["group"]
+
+        # take the median across groups
+        baseline_dm_difference_df_sa = dm_df_sa.groupby("group").median().reset_index()
+        baseline_dm_difference_df_sa_relative = (
+            dm_df_sa_relative.groupby("group").median().reset_index()
+        )
+
+        dm_baseline_tornado_vals = []
+        dm_variable_tornado_vals = []
+        dm_difference_tornado_vals = []
+        dm_relative_tornado_vals = []
+        for col in target_columns:
+            baseline_vals, variable_vals, difference_vals, relative_difference_vals = (
+                calc_tornado_vals(
+                    bmi_int_eligible_dm_baseline_sa,
+                    bmi_int_eligible_dm_variable_sa,
+                    param_df_baseline_sa,
+                    param_df_variable_sa,
+                    col,
+                    lesser=0.20,
+                    greater=0.80,
+                )
+            )
+
+            dm_baseline_tornado_vals.append(baseline_vals)
+            dm_variable_tornado_vals.append(variable_vals)
+            dm_difference_tornado_vals.append(difference_vals)
+            dm_relative_tornado_vals.append(relative_difference_vals)
+
+        dm_baseline_tornado_vals = pd.concat(dm_baseline_tornado_vals).reset_index(drop=True)
+        dm_variable_tornado_vals = pd.concat(dm_variable_tornado_vals).reset_index(drop=True)
+        dm_difference_tornado_vals = pd.concat(dm_difference_tornado_vals).reset_index(drop=True)
+        dm_relative_tornado_vals = pd.concat(dm_relative_tornado_vals).reset_index(drop=True)
+
+        dm_baseline_tornado_vals["variable"] = dm_baseline_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        dm_variable_tornado_vals["variable"] = dm_variable_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        dm_difference_tornado_vals["variable"] = dm_difference_tornado_vals["variable"].map(
+            variable_name_map
+        )
+        dm_relative_tornado_vals["variable"] = dm_relative_tornado_vals["variable"].map(
+            variable_name_map
+        )
+
+        dm_baseline_tornado = multi_tornado_plot(dm_baseline_tornado_vals, baseline_dm_sa_median)
+        dm_baseline_tornado.savefig(out_dir / "baseline_dm_tornado.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_variable_tornado = multi_tornado_plot(dm_variable_tornado_vals, variable_dm_sa_median)
+        dm_variable_tornado.savefig(out_dir / "variable_dm_tornado.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_difference_tornado = multi_tornado_plot(
+            dm_difference_tornado_vals, baseline_dm_difference_df_sa
+        )
+        dm_difference_tornado.savefig(out_dir / "tornado_dm_absolute.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_relative_tornado = multi_tornado_plot(
+            dm_relative_tornado_vals, baseline_dm_difference_df_sa_relative
+        )
+        dm_relative_tornado.savefig(out_dir / "tornado_dm_relative.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_baseline_overall = overall_tornado_plot(dm_baseline_tornado_vals, baseline_dm_sa_median)
+        dm_baseline_overall.savefig(out_dir / "overall_dm_baseline.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_variable_overall = overall_tornado_plot(dm_variable_tornado_vals, variable_dm_sa_median)
+        dm_variable_overall.savefig(out_dir / "overall_dm_variable.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_overall_absolute = overall_tornado_plot(
+            dm_difference_tornado_vals, baseline_dm_difference_df_sa
+        )
+        dm_overall_absolute.savefig(out_dir / "overall_dm_aboslute.png", bbox_inches="tight")
+        plt.clf()
+
+        dm_overall_relative = overall_tornado_plot(
+            dm_relative_tornado_vals, baseline_dm_difference_df_sa_relative
+        )
+        dm_overall_relative.savefig(out_dir / "overall_relative.png", bbox_inches="tight")
+        plt.clf()
