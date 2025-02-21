@@ -33,7 +33,7 @@ Installation and First Run
 
 Clone the repository onto your machine, enter the directory and install pearl::
 
-    git clone git@github.com:PearlHivModelingTeam/pearlModel.git
+    git clone https://github.com/PearlHivModelingTeam/pearlModel.git
     cd pearlModel
     pip install .
 
