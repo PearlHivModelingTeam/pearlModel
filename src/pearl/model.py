@@ -109,20 +109,9 @@ class Pearl:
         # concat the art pop to population
         self.population = pd.concat([self.population, art_pop]).fillna(0)
 
-        self.population = self.population.astype(
-            {
-                "become_obese_postART": "bool",
-                "bmiInt_eligible": "bool",
-                "bmiInt_impacted": "bool",
-                "bmiInt_ineligible_dm": "bool",
-                "bmiInt_ineligible_obese": "bool",
-                "bmiInt_ineligible_underweight": "bool",
-                "bmiInt_received": "bool",
-                "bmiInt_scenario": "int8",
-                "bmi_increase_postART": "bool",
-                "bmi_increase_postART_over5p": "bool",
-            }
-        )
+        self.population = self.population.reset_index()
+        self.population["id"] = np.array(range(self.population.index.size))
+        self.population = self.population.set_index(["id"])
 
         if self.parameters.history:
             self.population.to_parquet(
@@ -220,6 +209,7 @@ class Pearl:
         population["age"] = np.floor(population["age"])
         population["age_cat"] = np.floor(population["age"] / 10)
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
+        population.loc[population["age_cat"] < 2, "age_cat"] = 2
         population["id"] = np.array(range(population.index.size))
         population = population.set_index(["age_cat", "id"]).sort_index()
 
@@ -575,11 +565,9 @@ class Pearl:
         population.loc[population["age_cat"] > 7, "age_cat"] = 7
 
         # Add id number
-        population["id"] = np.arange(
-            len(self.population), (len(self.population) + population.index.size)
-        )
-
-        population.reset_index()
+        population["id"] = np.arange(population.index.size)
+        population = population.set_index(["age_cat", "id"]).sort_index()
+        population = population.reset_index()
         unique_h1yy = population["h1yy"].unique()
         population["init_sqrtcd4n"] = 0.0
         for h1yy in unique_h1yy:
@@ -627,23 +615,23 @@ class Pearl:
         # Apply post_art_bmi intervention
         # (eligibility may depend on current exisiting comorbidities)
 
-        population[
-            [
-                "bmiInt_scenario",
-                "bmiInt_ineligible_dm",
-                "bmiInt_ineligible_underweight",
-                "bmiInt_ineligible_obese",
-                "bmiInt_eligible",
-                "bmiInt_received",
-                "bmi_increase_postART",
-                "bmi_increase_postART_over5p",
-                "become_obese_postART",
-                "bmiInt_impacted",
-                "pre_art_bmi",
-                "post_art_bmi_without_bmiInt",
-                "post_art_bmi",
-            ]
-        ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
+        # population[
+        #     [
+        #         "bmiInt_scenario",
+        #         "bmiInt_ineligible_dm",
+        #         "bmiInt_ineligible_underweight",
+        #         "bmiInt_ineligible_obese",
+        #         "bmiInt_eligible",
+        #         "bmiInt_received",
+        #         "bmi_increase_postART",
+        #         "bmi_increase_postART_over5p",
+        #         "become_obese_postART",
+        #         "bmiInt_impacted",
+        #         "pre_art_bmi",
+        #         "post_art_bmi_without_bmiInt",
+        #         "post_art_bmi",
+        #     ]
+        # ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
 
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
@@ -660,24 +648,41 @@ class Pearl:
         while self.year <= self.parameters.final_year:
             # Increment calendar year, ages, age_cat and years out of care
             self.increment_years()
+            self.random_state = np.random.RandomState(seed=42)
 
             # Apply comorbidities
             self.apply_comorbidity_incidence()
+            self.random_state = np.random.RandomState(seed=42)
+
             self.update_mm()
+            self.random_state = np.random.RandomState(seed=42)
 
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care
+            self.random_state = np.random.RandomState(seed=42)
+
             self.add_new_user()  # Add in newly diagnosed ART initiators
+            self.random_state = np.random.RandomState(seed=42)
+
             self.kill_in_care()  # Kill some people in care
+            self.random_state = np.random.RandomState(seed=42)
+
             self.lose_to_follow_up()  # Lose some people to follow up
+            self.random_state = np.random.RandomState(seed=42)
 
             # Out of care operations
             self.decrease_cd4_count()  # Decrease cd4n in people out of care
+            self.random_state = np.random.RandomState(seed=42)
+
             self.kill_out_care()  # Kill some people out of care
+            self.random_state = np.random.RandomState(seed=42)
+
             self.reengage()  # Reengage some people out of care
+            self.random_state = np.random.RandomState(seed=42)
 
             # Append changed populations to their respective DataFrames
             self.append_new()
+            self.random_state = np.random.RandomState(seed=42)
 
             # Increment year
             self.year += 1
@@ -702,7 +707,7 @@ class Pearl:
             )
 
         # Record output statistics for the end of the simulation
-        self.record_final_stats()
+        # self.record_final_stats()
 
         # Save output
         if self.parameters.output_folder:

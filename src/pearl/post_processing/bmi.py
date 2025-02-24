@@ -140,8 +140,25 @@ palette = sns.color_palette(cc.glasbey_light, n_colors=16)
 
 
 def calc_percentage(
-    df: pd.DataFrame, column_name: str, numerator: int = 1, percentage: bool = True
+    df: pd.DataFrame, column_name: str, numerator: bool = 1, percentage: bool = True
 ) -> pd.DataFrame:
+    """_summary_
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Population Dataframe
+    column_name : str
+        Target column name for which percentage is calculated
+    numerator : bool, optional
+        Whether you want the true or false as the numerator, by default 1
+    percentage : bool, optional
+        scale to percentage if true (multiply by 100), by default True
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # group by group and column_name and sum over 'n'
     df_binary = df.groupby(["group", "replication", column_name])["n"].sum().reset_index()
 
@@ -176,6 +193,22 @@ def round_thousand(x: float) -> float:
 def create_summary_table(
     df: pd.DataFrame, name: str, precision: float = 0, percent: bool = True
 ) -> pd.DataFrame:
+    """Calculate the 5th, 50th and 95th percentile of the 'n' column and return a summary table
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    name : str
+        column name
+    precision : float, optional
+        decimal to round to, by default 0
+    percent : bool, optional
+        scale to percentage if true (multiply by 100), by default True
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     df_quantile = df.groupby("group")["n"].quantile([0.05, 0.5, 0.95]).unstack().reset_index()
 
     if precision == 0:
@@ -199,6 +232,21 @@ def create_summary_table(
 def add_summary(
     destination_df: pd.DataFrame, source_df: pd.DataFrame, name: str, percent: bool = True
 ) -> pd.DataFrame:
+    """
+
+    Parameters
+    ----------
+    destination_df : pd.DataFrame
+    source_df : pd.DataFrame
+    name : str
+        target column name
+    percent : bool, optional
+        scale to percentage if true (multiply by 100), by default True
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # create summary table for df we want to add
     summary_table = create_summary_table(source_df, name, percent=percent)
 
@@ -209,6 +257,18 @@ def add_summary(
 def calc_percentage_and_add_summary(
     destination_df: pd.DataFrame, source_df: pd.DataFrame, name: str
 ) -> pd.DataFrame:
+    """_summary_
+
+    Parameters
+    ----------
+    source_df : pd.DataFrame
+    name : str
+        target column name
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # calculate the percentage of ineligible_dm
     percentage_df = calc_percentage(source_df, name)
 
@@ -217,6 +277,17 @@ def calc_percentage_and_add_summary(
 
 
 def add_overall(bmi_int_dm_prev: pd.DataFrame) -> pd.DataFrame:
+    """
+
+    Parameters
+    ----------
+    bmi_int_dm_prev : pd.DataFrame
+        bmi_int_dm_prev output from pearl model
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
     bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
@@ -229,6 +300,20 @@ def add_overall(bmi_int_dm_prev: pd.DataFrame) -> pd.DataFrame:
 def clean_control(
     df: pd.DataFrame, only_eligible: bool = False, only_received: bool = False
 ) -> pd.DataFrame:
+    """
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    only_eligible : bool, optional
+        filter for only "bmiInt_eligible" == 1, by default False
+    only_received : bool, optional
+        filter for only "bmiInt_received" == 1, by default False
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # filter to only people who have initiated art from 2013 to 2017
     df_control = df[(df["h1yy"] <= 2017) & (df["h1yy"] >= 2013)]
 
@@ -247,7 +332,20 @@ def clean_control(
 
     return df_control
 
+
 def calc_overall_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFrame:
+    """_summary_
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    years_follow_up : int, optional
+        number of years follow up to calculate for, by default 7
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # filter for only overall group
     df_overall = df[df["group"] == "overall"]
 
@@ -301,6 +399,18 @@ def calc_overall_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFram
 
 
 def calc_risk_by_group(df: pd.DataFrame, years_follow_up: int) -> pd.DataFrame:
+    """_summary_
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    years_follow_up : int
+        number of years follow up to calculate for, by default 7
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # filter for only x-year follow up with dm
     df_follow_up = df.loc[
         (df["years_after_h1yy"] > 0) & (df["years_after_h1yy"] <= years_follow_up)
@@ -350,6 +460,18 @@ def calc_risk_by_group(df: pd.DataFrame, years_follow_up: int) -> pd.DataFrame:
 
 
 def calc_dm_prop(df: pd.DataFrame, death_df: pd.DataFrame) -> pd.DataFrame:
+    """_summary_
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    death_df : pd.DataFrame
+        population dataframe on deceased agents
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     dm_prop_df = pd.DataFrame()
 
     for i in range(df["replication"].max() + 1):
@@ -390,6 +512,19 @@ def calc_dm_prop(df: pd.DataFrame, death_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_dm_prop(df_list: List[pd.DataFrame], year_period: int = 15) -> Any:
+    """_summary_
+
+    Parameters
+    ----------
+    df_list : List[pd.DataFrame]
+    year_period : int, optional
+        years to plot, by default 15
+
+    Returns
+    -------
+    Any
+        matplotlib figure
+    """
     colors = [("r", "lightcoral"), ("b", "steelblue")]
 
     column_names = ["Black", "Hispanic", "White"]
@@ -455,6 +590,16 @@ def plot_dm_prop(df_list: List[pd.DataFrame], year_period: int = 15) -> Any:
 
 
 def rearrange_group_order(df: pd.DataFrame) -> pd.DataFrame:
+    """rearrange group order
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     group_order = [
         "Black HET Women",
         "White HET Women",
@@ -510,6 +655,18 @@ def add_sub_total(df: pd.DataFrame, groupby: Optional[List[str]] = None) -> pd.D
 
 
 def calc_overall_bmi_risk(df: pd.DataFrame, years_follow_up: int = 7) -> pd.DataFrame:
+    """calc risk for the overall group
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    years_follow_up : int, optional
+        number of years follow up to calculate for, by default 7
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # filter for only overall group
     df_overall = df[df["group"] == "overall"]
 
