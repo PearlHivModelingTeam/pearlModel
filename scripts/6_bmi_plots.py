@@ -25,7 +25,8 @@ from pearl.post_processing.bmi import (
     rearrange_group_order,
     round_thousand,
     calc_dm_prop,
-    add_sub_total
+    add_sub_total,
+    calc_overall_bmi_risk
 )
 
 if __name__ == "__main__":
@@ -53,6 +54,10 @@ if __name__ == "__main__":
     control_bmi_int_cascade = bmi_int_cascade.loc[
         (bmi_int_cascade["h1yy"] >= start_year) & (bmi_int_cascade["h1yy"] <= 2017)
     ].compute()
+    
+    # Filter group_order to match active data to prevent Seaborn empty-category bugs
+    active_mapped = [group_title_dict.get(g, g) for g in control_bmi_int_cascade["group"].unique()]
+    group_order = [g for g in group_order if g in active_mapped or g == "Overall"]
     
     # Add subtotal for each risk category
     control_bmi_int_cascade = add_sub_total(control_bmi_int_cascade, groupby = ['bmiInt_scenario', 'h1yy', 'bmiInt_ineligible_dm',
@@ -228,7 +233,7 @@ if __name__ == "__main__":
     final_table = final_table.set_index("Group").reindex(group_order_with_sub_total).reset_index()
 
     # save table to csv
-    final_table.to_csv(out_dir / "table1.csv", index=False)
+    final_table.to_csv(out_dir / "final_table.csv", index=False)
     print('Table 1 Finished.')
 
 
@@ -356,7 +361,7 @@ if __name__ == "__main__":
     ## Fig2B
     ##################################################################################################################################
     # we will look at the "bmi_int_dm_prev.h5" for S0
-    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "bmi_cat_final_output.parquet").reset_index()
+    bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
     
     # Add Overall
     all_but_group = list(bmi_int_dm_prev.columns[1:])
@@ -384,11 +389,13 @@ if __name__ == "__main__":
     
     dm_risk_table = calc_overall_bmi_risk(control_bmi_int_dm_prev).compute()
     
-    pre_art_bmi_bins = [0, 18.5, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
+    pre_art_bmi_bins = [0, 18.5, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
+
     # Create a label map
     bmi_group_map = {i: f"{pre_art_bmi_bins[i]}-{pre_art_bmi_bins[i+1]}" for i in range(len(pre_art_bmi_bins) - 1)}
-    bmi_group_map[13] = '> 30'
-    group_order = list(bmi_group_map.values())
+    # the final open-ended bin (last bin edge is inf) gets a "> 30" label
+    bmi_group_map[len(pre_art_bmi_bins) - 2] = f'> {pre_art_bmi_bins[-2]:g}'
+    bmi_group_order = list(bmi_group_map.values()) # Renamed to avoid collision
     
     dm_risk_table["init_bmi_group"] = dm_risk_table["init_bmi_group"].map(bmi_group_map)
     
@@ -399,7 +406,7 @@ if __name__ == "__main__":
         estimator="median",
         color="steelblue",
         errorbar=("pi", 95),
-        order = group_order
+        order = bmi_group_order
     )
     
     pop_ax.tick_params(axis="x", rotation=90)
@@ -513,6 +520,11 @@ if __name__ == "__main__":
 
     group_dm_risk_table["group"] = group_dm_risk_table["group"].map(group_title_dict)
 
+    # --- NEW CODE TO INSERT ---
+    from pearl.post_processing.bmi import group_order as original_group_order
+    active_groups = group_dm_risk_table["group"].dropna().unique()
+    group_order = [g for g in original_group_order if g in active_groups]
+    # --------------------------
     group_risk_ax = sns.boxplot(
         x=group_dm_risk_table["group"],
         y=group_dm_risk_table["risk"],

@@ -31,15 +31,11 @@ if __name__ == "__main__":
     group_names = next(os.walk(in_dir))[1]
     replications = next(os.walk(in_dir / group_names[0]))[1]
     output_tables = [
-        x
-        for x in next(os.walk(in_dir / group_names[0] / replications[0]))[2]
-        if x not in ["random.state", "final_state.parquet"]
-    ]
-    output_tables = [
         "bmi_int_cascade.parquet",
         "new_init_age.parquet",
         "dm_final_output.parquet",
         "parameters.parquet",
+        "bmi_int_dm_prev.parquet" # Append the required target
     ]
     results = []
     for output_table in output_tables:
