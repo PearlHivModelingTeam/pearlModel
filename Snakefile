@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 10000
+num_replications = 10
 zero_ = str(0).zfill(len(str(num_replications)))
 
 
@@ -21,7 +21,8 @@ rule all:
         f"out/S0_{num_replications}/figure3c_table.csv",
         f"out/S0_{num_replications}/fig3d.png",
         f"out/S0_{num_replications}/figure3d_table.csv",
-        f"out/S0_{num_replications}/tornado.png",
+        f"out/S0_{num_replications}/tornado_absolute.png",
+        f"out/S0_{num_replications}/tornado_relative.png",
 
 rule create_params:
     output: 
@@ -65,12 +66,21 @@ rule aggregate:
     shell:
         "python scripts/5_aggregate.py --in_dir {input.combine_dir}"
 
+rule aggregate_bmi_cat:
+    input: 
+        combine_dir = "out/{config}/parquet_output"
+    output: 
+        directory("out/{config}/combined/bmi_cat_final_output.parquet")
+    shell:
+        "python scripts/5.1_aggregate_bmi_cat.py --in_dir {input.combine_dir}"
+
 rule bmi_paper_outputs:
     input:
         f"out/S0_{num_replications}/combined/bmi_info.parquet",
         f"out/S0_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S0_{num_replications}/combined/new_init_age.parquet",
         f"out/S0_{num_replications}/combined/bmi_int_dm_prev.parquet",
+        
         f"out/S3_{num_replications}/combined/bmi_info.parquet",
         f"out/S3_{num_replications}/combined/bmi_int_cascade.parquet",
         f"out/S3_{num_replications}/combined/new_init_age.parquet",
@@ -121,7 +131,8 @@ rule bmi_SA:
         f"out/S0_{num_replications}/combined/dm_final_output.parquet",
         f"out/S0_{num_replications}/combined/parameters.parquet",
     output:
-        f"out/S0_{num_replications}/tornado.png",
+        f"out/S0_{num_replications}/tornado_absolute.png",
+        f"out/S0_{num_replications}/tornado_relative.png",
     params:
         out_dir = f"out/S0_{num_replications}",
         baseline = f"out/S0_{num_replications}/combined",

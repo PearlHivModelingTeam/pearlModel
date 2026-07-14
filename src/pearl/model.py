@@ -1259,7 +1259,7 @@ class Pearl:
         ).astype("int8")
 
         # record bmi group at art_initiation
-        pre_art_bmi_bins = [0, 18.5, 21.5, 25, 27.5, 30, float("inf")]
+        pre_art_bmi_bins = [0, 18.5, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, float("inf")]
         self.population["init_bmi_group"] = pd.cut(
             self.population["pre_art_bmi"], labels=False, bins=pre_art_bmi_bins, right=False
         ).astype("int8")

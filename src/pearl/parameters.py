@@ -318,7 +318,7 @@ class Parameters:
                 self.sa_scalars["pre_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
 
             if "post_art_bmi" in self.sa_variables:
-                self.sa_scalars["post_art_bmi"] = self.init_random_state.uniform(0.8, 1.2)
+                self.sa_scalars["post_art_bmi"] = self.init_random_state.uniform(0.8, 1.0)
 
             if "art_initiators" in self.sa_variables:
                 self.sa_scalars["art_initiators"] = self.init_random_state.uniform(0.8, 1.2)

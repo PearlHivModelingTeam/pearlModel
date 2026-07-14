@@ -1,7 +1,3 @@
-"""
-Script to run aggregators, this will be replaced by snakemake
-"""
-
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -20,9 +16,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     in_dir = Path(args.in_dir)
-    parquet_path = in_dir / "*/*/final_state.parquet"
+    
+    # CORRECTED: Point to the diabetes final output file which contains t_dm
+    parquet_path = in_dir / "*/*/dm_final_output.parquet"
+    
     out_dir = Path(args.in_dir).parent / "combined" if not args.out_dir else Path(args.out_dir)
 
+    # Dask natively handles reading across the nested directory globs
     population_df = dd.read_parquet(parquet_path)
 
     bmi_info(population_df, out_dir)

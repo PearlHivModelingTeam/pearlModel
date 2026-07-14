@@ -20,7 +20,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     in_dir = Path(args.in_dir)
-    parquet_path = in_dir / "*/*/final_state.parquet"
+    parquet_path = in_dir / "*/*/dm_final_output.parquet"
     out_dir = Path(args.in_dir).parent / "combined" if not args.out_dir else Path(args.out_dir)
 
     population_df = dd.read_parquet(parquet_path)
