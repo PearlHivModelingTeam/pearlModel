@@ -24,3 +24,5 @@ build/
 .vs
 tests/pearl/end_to_end/output/
 *.prof
+shared/
+logs.txt

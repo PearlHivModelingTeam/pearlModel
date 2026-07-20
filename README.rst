@@ -31,6 +31,9 @@ through 2030.
 Installation and First Run
 ==========================
 
+These are specific instructions on how to integrate the package into python. For general 
+development and use, please see the development environment documentation below.
+
 Clone the repository onto your machine, enter the directory and install pearl::
 
     git clone https://github.com/PearlHivModelingTeam/pearlModel.git
@@ -293,19 +296,24 @@ cases changing ``num_replications`` to one of those values is all that is needed
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 Step 2: Run the Snakefile
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+-- jobs controls the number of concurrent jobs that can be run. For a replication number of 1000,
+the memory can become saturated and crash. Hence, a single job can be run at a time. For smaller
+numbers of replications, more jobs can be run concurrently.
+
 From the project root, do a dry run first to check which jobs Snakemake plans to execute::
 
-    snakemake --dry-run
+    snakemake --dry-run --jobs 1
 
-Then run the full workflow, giving Snakemake the number of cores it may use::
+Then run the full workflow, giving Snakemake::
 
-    snakemake --cores 8
+    snakemake --jobs 1
 
 Useful variations::
 
-    snakemake --cores 8 --printshellcmds     # echo the shell command for each job
-    snakemake --cores 8 --rerun-incomplete   # redo jobs left half-finished by an interrupted run
-    snakemake --cores 8 --forcerun simulate  # force the simulations to run again
+    snakemake --printshellcmds --jobs 1     # echo the shell command for each job
+    snakemake --rerun-incomplete --jobs 1  # redo jobs left half-finished by an interrupted run
+    snakemake --forcerun simulate --jobs 1 # force the simulations to run again
+    snakemake -F --jobs 1 # run everything again
 
 Note that ``--cores`` bounds how many *jobs* Snakemake runs at once, while ``num_cpus`` in the
 config bounds the dask workers *within* a single simulation. The simulations are the expensive

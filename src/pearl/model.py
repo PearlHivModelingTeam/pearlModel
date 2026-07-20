@@ -535,9 +535,12 @@ class Pearl:
             grouped_pop = pd.DataFrame()
             n_initiators = n_new_agents.loc[h1yy, "art_initiators"]
             n_delayed = n_new_agents.loc[h1yy, "art_delayed"]
+            n_agents = n_initiators + n_delayed
+            if n_agents == 0:
+                continue
             grouped_pop["age"] = simulate_ages(
                 self.parameters.age_by_h1yy.loc[h1yy],
-                n_initiators + n_delayed,
+                n_agents,
                 random_state,
             )
             grouped_pop["h1yy"] = h1yy
@@ -615,23 +618,23 @@ class Pearl:
         # Apply post_art_bmi intervention
         # (eligibility may depend on current exisiting comorbidities)
 
-        # population[
-        #     [
-        #         "bmiInt_scenario",
-        #         "bmiInt_ineligible_dm",
-        #         "bmiInt_ineligible_underweight",
-        #         "bmiInt_ineligible_obese",
-        #         "bmiInt_eligible",
-        #         "bmiInt_received",
-        #         "bmi_increase_postART",
-        #         "bmi_increase_postART_over5p",
-        #         "become_obese_postART",
-        #         "bmiInt_impacted",
-        #         "pre_art_bmi",
-        #         "post_art_bmi_without_bmiInt",
-        #         "post_art_bmi",
-        #     ]
-        # ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
+        population[
+            [
+                "bmiInt_scenario",
+                "bmiInt_ineligible_dm",
+                "bmiInt_ineligible_underweight",
+                "bmiInt_ineligible_obese",
+                "bmiInt_eligible",
+                "bmiInt_received",
+                "bmi_increase_postART",
+                "bmi_increase_postART_over5p",
+                "become_obese_postART",
+                "bmiInt_impacted",
+                "pre_art_bmi",
+                "post_art_bmi_without_bmiInt",
+                "post_art_bmi",
+            ]
+        ] = apply_bmi_intervention(population.copy(), self.parameters, random_state)
 
         population["delta_bmi"] = population["post_art_bmi"] - population["pre_art_bmi"]
 
@@ -707,7 +710,7 @@ class Pearl:
             )
 
         # Record output statistics for the end of the simulation
-        # self.record_final_stats()
+        self.record_final_stats()
 
         # Save output
         if self.parameters.output_folder:

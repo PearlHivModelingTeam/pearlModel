@@ -4,7 +4,7 @@ FROM condaforge/mambaforge:4.9.2-5 AS conda
 RUN apt-get update && apt-get install make
 
 # install open-ssh and unzip
-RUN apt-get install -y openssh-client unzip zip
+RUN apt-get install -y openssh-client unzip zip tmux
 
 # Add environment lock file
 ADD conda-lock.yml /tmp/conda-lock.yml
