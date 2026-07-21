@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 10
+num_replications = 1000
 zero_ = str(0).zfill(len(str(num_replications)))
 
 
