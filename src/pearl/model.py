@@ -651,41 +651,30 @@ class Pearl:
         while self.year <= self.parameters.final_year:
             # Increment calendar year, ages, age_cat and years out of care
             self.increment_years()
-            self.random_state = np.random.RandomState(seed=42)
 
             # Apply comorbidities
             self.apply_comorbidity_incidence()
-            self.random_state = np.random.RandomState(seed=42)
 
             self.update_mm()
-            self.random_state = np.random.RandomState(seed=42)
 
             # In care operations
             self.increase_cd4_count()  # Increase cd4n in people in care
-            self.random_state = np.random.RandomState(seed=42)
 
             self.add_new_user()  # Add in newly diagnosed ART initiators
-            self.random_state = np.random.RandomState(seed=42)
 
             self.kill_in_care()  # Kill some people in care
-            self.random_state = np.random.RandomState(seed=42)
 
             self.lose_to_follow_up()  # Lose some people to follow up
-            self.random_state = np.random.RandomState(seed=42)
 
             # Out of care operations
             self.decrease_cd4_count()  # Decrease cd4n in people out of care
-            self.random_state = np.random.RandomState(seed=42)
 
             self.kill_out_care()  # Kill some people out of care
-            self.random_state = np.random.RandomState(seed=42)
 
             self.reengage()  # Reengage some people out of care
-            self.random_state = np.random.RandomState(seed=42)
 
             # Append changed populations to their respective DataFrames
             self.append_new()
-            self.random_state = np.random.RandomState(seed=42)
 
             # Increment year
             self.year += 1
