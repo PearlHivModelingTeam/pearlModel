@@ -1,6 +1,6 @@
 # type: ignore
 
-num_replications = 1000
+num_replications = 10
 zero_ = str(0).zfill(len(str(num_replications)))
 
 
@@ -23,6 +23,10 @@ rule all:
         f"out/S0_{num_replications}/figure3d_table.csv",
         f"out/S0_{num_replications}/tornado_absolute.png",
         f"out/S0_{num_replications}/tornado_relative.png",
+        f"out/S0_{num_replications}/combined/bmi_cat_final_output.parquet",
+        f"out/S3_{num_replications}/combined/bmi_cat_final_output.parquet",
+        
+        
 
 rule create_params:
     output: 
@@ -69,8 +73,8 @@ rule aggregate:
 rule aggregate_bmi_cat:
     input: 
         combine_dir = "out/{config}/parquet_output"
-    output: 
-        directory("out/{config}/combined/bmi_cat_final_output.parquet")
+    output:
+        "out/{config}/combined/bmi_cat_final_output.parquet"
     shell:
         "python scripts/5.1_aggregate_bmi_cat.py --in_dir {input.combine_dir}"
 

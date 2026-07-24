@@ -250,8 +250,8 @@ if __name__ == "__main__":
     ].compute()
 
     # Add Overall
-    all_but_group = list(bmi_int_dm_prev.columns[1:])
-    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    all_but_group = [c for c in bmi_int_dm_prev.columns if c not in ("group", "n", "index")]
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group)["n"].sum().reset_index()
     bmi_int_dm_prev_overall["group"] = "overall"
     bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
 
@@ -364,8 +364,8 @@ if __name__ == "__main__":
     bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
     
     # Add Overall
-    all_but_group = list(bmi_int_dm_prev.columns[1:])
-    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    all_but_group = [c for c in bmi_int_dm_prev.columns if c not in ("group", "n", "index")]
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group)["n"].sum().reset_index()
     bmi_int_dm_prev_overall["group"] = "overall"
     bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
     
@@ -505,8 +505,8 @@ if __name__ == "__main__":
     bmi_int_dm_prev = dd.read_parquet(baseline_dir /'dm_final_output.parquet').reset_index()
 
     # Add Overall
-    all_but_group = list(bmi_int_dm_prev.columns[1:])
-    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    all_but_group = [c for c in bmi_int_dm_prev.columns if c not in ("group", "n", "index")]
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group)["n"].sum().reset_index()
     bmi_int_dm_prev_overall['group'] = 'overall'
     bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
 
@@ -697,8 +697,8 @@ if __name__ == "__main__":
     )
 
     # Add Overall
-    all_but_group = list(bmi_int_dm_prev_s1.columns[1:])
-    bmi_int_dm_prev_s1_overall = bmi_int_dm_prev_s1.groupby(all_but_group).sum().reset_index()
+    all_but_group = [c for c in bmi_int_dm_prev_s1.columns if c not in ("group", "n", "index")]
+    bmi_int_dm_prev_s1_overall = bmi_int_dm_prev_s1.groupby(all_but_group)["n"].sum().reset_index()
     bmi_int_dm_prev_s1_overall["group"] = "overall"
     bmi_int_dm_prev_s1 = dd.concat(
         [bmi_int_dm_prev_s1, bmi_int_dm_prev_s1_overall], ignore_index=True
@@ -723,8 +723,8 @@ if __name__ == "__main__":
     bmi_int_dm_prev = dd.read_parquet(baseline_dir / "dm_final_output.parquet").reset_index()
 
     # Add Overall
-    all_but_group = list(bmi_int_dm_prev.columns[1:])
-    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group).sum().reset_index()
+    all_but_group = [c for c in bmi_int_dm_prev.columns if c not in ("group", "n", "index")]
+    bmi_int_dm_prev_overall = bmi_int_dm_prev.groupby(all_but_group)["n"].sum().reset_index()
     bmi_int_dm_prev_overall["group"] = "overall"
     bmi_int_dm_prev = dd.concat([bmi_int_dm_prev, bmi_int_dm_prev_overall], ignore_index=True)
 
